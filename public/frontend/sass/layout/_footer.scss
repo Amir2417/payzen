@@ -1,0 +1,151 @@
+/*--------------------------------------------------------------
+# Footer-block
+--------------------------------------------------------------*/
+.footer-section{
+    position: relative;
+    z-index: 1;
+    background: #353343;
+    padding-top: 220px;
+    .footer-widget{
+        .footer-logo{
+            .site-logo{
+                display: block;
+            }
+            p{
+                margin-top: 20px;
+            }
+            .footer-btn{
+                padding-top: 20px;
+                a{
+                    font-size: 15px;
+                    font-weight: 700;
+                    border-radius: 5px;
+                    padding: 12px 29px 12px 29px;
+                    color: $white;
+                    background-color: transparent;
+                    background-image: linear-gradient(180deg,#009fff 0%,#00e8f1 100%);
+                    transition: all 0.3s;
+                    &:hover{
+                        background-image: linear-gradient(180deg,#00e8f1 0%,#009fff 100%);
+                        transition: all 0.3s;
+                    }
+                }
+            }
+        }
+        .widget-title{
+            position: relative;
+            &::before {
+                position: absolute;
+                content: "";
+                bottom: -8px;
+                left: 0;
+                width: 28px;
+                height: 2px;
+                letter-spacing: -.2px;
+                background-color: transparent;
+                background-image: linear-gradient(90deg,#00e8f1 0%,#009fff 100%);
+            }
+        }
+        .widget-subtitle{
+            padding-top: 13px;
+        }
+        .widget-input{
+            margin: 20px 0;
+            position: relative;
+            input{
+                background: $body--bg;
+                padding: 0 20px;
+                border: none;
+                color: $white;
+                font-size: 14px;
+                height: 44px;
+                margin: 0;
+                &::placeholder{
+                    color: $white;
+                }
+            }
+            button{
+                position: absolute;
+                top: 0;
+                right: 0;
+                width: 62px;
+                font-size: 14px;
+                height: 100%;
+                color: $white;
+                background-color: transparent;
+                background-image: linear-gradient(-90deg,#00e8f1 0%,#009fff 100%);
+                &:hover{
+                    background-image: linear-gradient(180deg,#009fff 0%,#00e8f1 100%);
+                    transition: all 0.3s;
+                }
+            }
+        }
+        .widget-social{
+            display: flex;
+            align-items: center;
+            margin: -10px;
+            li{
+                margin: 10px;
+                font-size: 18px;
+                transition: all 0.3s;
+                &:hover{
+                    color: $base--color;
+                }
+            }
+        }
+        .widget-list{
+            padding-top: 20px;
+            margin: -10px;
+            li{
+                margin: 10px;
+                i{
+                    color: $base--color;
+                    margin-right: 5px;
+                }
+                a{
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: $color__heading;
+                    transition: all 0.3s;
+                    &:hover{
+                        color: $base--color;
+                        text-decoration: underline;
+                    }
+                }
+            }
+        }
+        .custom-title{
+            padding-top: 10px;
+        }
+    }
+    .copyright-area{
+        position: relative;
+        margin-top: 100px;
+        padding: 20px 0;
+        text-align: center;
+        @media only screen and (max-width: 575px) {
+            margin-top: 50px;
+        }
+        &::before {
+            top: 0;
+            left: 0;
+            position: absolute;
+            content: "";
+            background: linear-gradient(90deg,rgba(55,43,75,.4) 4.78%,rgba(255,255,255,.16) 49.21%,rgba(55,43,75,.4) 93.92%);
+            width: 100%;
+            width: 85%;
+            height: 1px;
+            z-index: 2;
+            right: 0;
+            margin: auto;
+        }
+        span{
+            color: $white;
+            font-size: 14px;
+            font-weight: 400;
+            a{
+                color: $base--color;
+            }
+        }
+    }
+}

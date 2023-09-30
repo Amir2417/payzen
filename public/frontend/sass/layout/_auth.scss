@@ -1,0 +1,292 @@
+/*-------------------------------------------------
+    [ ### account block ]
+*/
+.account-section {
+    position: relative;
+    min-height: 100vh;
+    z-index: 1;
+    overflow: hidden;
+  }
+  .account-section.login {
+    display: flex;
+    align-items: center;
+  }
+  .account-section .account-element {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 45%;
+    height: 100%;
+  }
+  @media only screen and (max-width: 1199px) {
+    .account-section .account-element {
+      width: 40%;
+    }
+  }
+  @media only screen and (max-width: 991px) {
+    .account-section .account-element {
+      width: 50%;
+    }
+  }
+  @media only screen and (max-width: 767px) {
+    .account-section .account-element {
+      width: 100%;
+      height: 400px;
+    }
+  }
+  .account-section .account-element img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .account-section .right {
+    padding: 1.5rem 2rem;
+    width: 55%;
+    min-height: 100vh;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    background-color: #ffffff;
+    justify-content: space-between;
+  }
+  @media only screen and (max-width: 1199px) {
+    .account-section .right {
+      width: 60%;
+    }
+  }
+  @media only screen and (max-width: 991px) {
+    .account-section .right {
+      width: 50%;
+    }
+  }
+  @media only screen and (max-width: 767px) {
+    .account-section .right {
+      width: 100%;
+      padding: 1.5rem 1rem;
+      padding-top: 430px;
+    }
+  }
+  
+  .account-wrapper {
+    position: relative;
+    display: flex;
+    background-color: rgba($section--bg, 0.1);
+    border: 2px dashed $border--base;
+    box-shadow: rgb(0 0 0 / 15%) 0px 3px 7px 0px;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  @media only screen and (max-width: 767px) {
+    .account-wrapper {
+      display: block;
+      margin: 30px 0;
+    }
+  }
+  .account-wrapper .account-thumb {
+    width: 50%;
+  }
+  @media only screen and (max-width: 767px) {
+    .account-wrapper .account-thumb {
+      width: 100%;
+    }
+  }
+  .account-wrapper .account-thumb img {
+    height: 100%;
+    object-fit: cover;
+  }
+  .account-wrapper .account-form-area {
+    padding: 40px;
+  }
+  @media only screen and (max-width: 767px) {
+    .account-wrapper .account-form-area {
+      width: 100%;
+      padding: 19px;
+    }
+  }
+  
+  .account-logo {
+    margin-bottom: 20px;
+    .site-logo{
+        display: inline-block;
+    }
+  }
+  
+  .account-header-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 40px;
+  }
+  
+  .account-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .account-header .title {
+    margin-bottom: 0;
+  }
+  
+  .account-form-area p {
+    font-size: 14px;
+  }
+  .account-form-area .form-group {
+    position: relative;
+  }
+  .account-form-area .form-group .show-pass {
+    position: absolute;
+    top: 45px;
+    right: 30px;
+    font-size: 14px;
+    -webkit-transition: 0.5s;
+    transition: 0.5s;
+  }
+  
+  .account-form textarea {
+    min-height: 200px;
+  }
+  
+  .forgot-item label {
+    margin-bottom: 0;
+  }
+  .forgot-item label a {
+    text-decoration: underline;
+  }
+  
+  .or-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 37px;
+    margin-bottom: 20px;
+  }
+  @media only screen and (max-width: 991px) {
+    .or-area {
+      margin-bottom: 45px;
+    }
+  }
+  @media only screen and (max-width: 575px) {
+    .or-area {
+      gap: unset;
+    }
+  }
+  .or-area .or-line {
+    height: 1px;
+    border: 1px solid $border--base;
+    flex-grow: 1;
+  }
+  @media only screen and (max-width: 575px) {
+    .or-area .or-line {
+      display: none;
+    }
+  }
+  .or-area .or-title {
+    margin-bottom: 0;
+    font-size: 14px;
+  }
+  
+  .account-form-btn {
+    text-align: center;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+  }
+  .account-form-btn a {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background-color: $section--bg;
+    border-radius: 50%;
+    margin: 8px;
+    font-size: 26px;
+    color: $base--color;
+    transition: all 0.3s;
+    &:hover{
+        background-color: $base--color;
+        color: $white;
+        svg{
+            fill: $white;
+        }
+    }
+  }
+  .account-form-btn a svg {
+    fill: $base--color;
+  }
+  
+  .account-item label {
+    font-size: 15px;
+    margin-bottom: 0;
+  }
+  .account-item label a {
+    text-decoration: underline;
+  }
+
+  .otp {
+    display: inline-block;
+    width: 70px;
+    height: 50px;
+    text-align: center;
+    padding: 0;
+    border-radius: 0;
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid $border--base;
+  }
+  .otp:focus {
+    border-color: transparent;
+    border-bottom: 2px solid $base--color;
+  }
+  
+  .otp.required {
+    border-bottom: 2px solid #ea5455;
+  }
+
+  @media (max-width: 520px) {
+    .otp {
+      width: 53px;
+    }
+  }
+  @media (max-width: 480px) {
+    .otp {
+      width: 53px;
+    }
+  }
+  @media (max-width: 440px) {
+    .otp {
+      width: 48px;
+    }
+  }
+  @media (max-width: 381px) {
+    .otp {
+      width: 43px;
+      height: 45px;
+    }
+  }
+  @media (max-width: 350px) {
+    .otp {
+      width: 41px;
+      height: 41px;
+    }
+  }
+  @media (max-width: 330px) {
+    .otp {
+      width: 39px;
+      height: 39px;
+    }
+  }
+  
+  #time {
+    color: #ea5455;
+  }
+
+
+  .account-form{
+    .nice-select{
+        line-height: 23px;
+    }
+  }
