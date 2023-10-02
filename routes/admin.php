@@ -324,6 +324,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('item/store/{slug}','sectionItemStore')->name('section.item.store');
         Route::post('item/update/{slug}','sectionItemUpdate')->name('section.item.update');
         Route::delete('item/delete/{slug}','sectionItemDelete')->name('section.item.delete');
+        Route::put('slider/status/update/{slug}','sliderStatusUpdate')->name('slider.status.update');
+        Route::get('slider/items','getSliderItems')->name('slider.add.items');
+        Route::put('promotional/banner/status/update/{slug}','promotionalBannerStatusUpdate')->name('promotional.banner.status.update');
          //Setup Blog Category Type
          Route::post('category/store', 'storeCategory')->name('category.store');
          Route::put('category/status/update','categoryStatusUpdate')->name('category.status.update');

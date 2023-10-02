@@ -2,8 +2,8 @@
     <div class="sidebar-inner">
         <div class="sidebar-logo">
             <a href="{{ setRoute('admin.dashboard') }}" class="sidebar-main-logo">
-                <img src="{{ get_logo($basic_settings) }}" data-white_img="{{ get_logo($basic_settings,'white') }}"
-                data-dark_img="{{ get_logo($basic_settings,'dark') }}" alt="logo">
+                <img src="{{ get_logo($basic_settings) }}" data-white_img="{{ get_logo($basic_settings) }}"
+                data-dark_img="{{ get_logo($basic_settings) }}" alt="logo">
             </a>
             <button class="sidebar-menu-bar">
                 <i class="fas fa-exchange-alt"></i>
@@ -432,12 +432,14 @@
                             setRoute('admin.setup.sections.section','auth-section'),
                             setRoute('admin.setup.sections.section','app-section'),
                             setRoute('admin.setup.sections.section','banner'),
+                            setRoute('admin.setup.sections.section','slider'),
                             setRoute('admin.setup.sections.section','banner-floting'),
                             setRoute('admin.setup.sections.section','work-section'),
                             setRoute('admin.setup.sections.section','about-section'),
                             setRoute('admin.setup.sections.section','security-section'),
                             setRoute('admin.setup.sections.section','overview-section'),
                             setRoute('admin.setup.sections.section','why-choose-section'),
+                            setRoute('admin.setup.sections.section','promotional-banner-section'),
                             setRoute('admin.setup.sections.section','brand-section'),
                             setRoute('admin.setup.sections.section','service-section'),
                             setRoute('admin.setup.sections.section','faq-section'),
@@ -468,6 +470,10 @@
                                     <i class="menu-icon las la-ellipsis-h"></i>
                                     <span class="menu-title">{{ __("APP Section") }}</span>
                                 </a>
+                                <a href="{{ setRoute('admin.setup.sections.section','slider') }}" class="nav-link @if ($current_url == setRoute('admin.setup.sections.section','slider')) active @endif">
+                                    <i class="menu-icon las la-ellipsis-h"></i>
+                                    <span class="menu-title">{{ __("Slider Section") }}</span>
+                                </a>
                                 <a href="{{ setRoute('admin.setup.sections.section','banner') }}" class="nav-link @if ($current_url == setRoute('admin.setup.sections.section','banner')) active @endif">
                                     <i class="menu-icon las la-ellipsis-h"></i>
                                     <span class="menu-title">{{ __("Banner Section") }}</span>
@@ -495,6 +501,10 @@
                                 <a href="{{ setRoute('admin.setup.sections.section','why-choose-section') }}" class="nav-link @if ($current_url == setRoute('admin.setup.sections.section','why-choose-section')) active @endif">
                                     <i class="menu-icon las la-ellipsis-h"></i>
                                     <span class="menu-title">{{ __("Why Choose Us") }}</span>
+                                </a>
+                                <a href="{{ setRoute('admin.setup.sections.section','promotional-banner-section') }}" class="nav-link @if ($current_url == setRoute('admin.setup.sections.section','promotional-banner-section')) active @endif">
+                                    <i class="menu-icon las la-ellipsis-h"></i>
+                                    <span class="menu-title">{{ __("Promotional Banner") }}</span>
                                 </a>
                                 <a href="{{ setRoute('admin.setup.sections.section','brand-section') }}" class="nav-link @if ($current_url == setRoute('admin.setup.sections.section','brand-section')) active @endif">
                                     <i class="menu-icon las la-ellipsis-h"></i>

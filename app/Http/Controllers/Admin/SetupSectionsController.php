@@ -46,6 +46,12 @@ class SetupSectionsController extends Controller
                 'view'      => "merchantAppView",
                 'update'    => "merchantAppUpdate",
             ],
+            'slider'            => [
+                'view'          => "sliderView",
+                'itemStore'     => "sliderItemStore",
+                'itemUpdate'    => "sliderItemUpdate",
+                'itemDelete'    => "sliderItemDelete",
+            ],
             'banner'    => [
                 'view'      => "bannerView",
                 'update'    => "bannerUpdate",
@@ -99,6 +105,13 @@ class SetupSectionsController extends Controller
                 'itemStore'     => "chooseItemStore",
                 'itemUpdate'    => "chooseItemUpdate",
                 'itemDelete'    => "chooseItemDelete",
+            ],
+            'promotional-banner-section'  => [
+                'view'      => "promotionalBannerView",
+                'update'    => "promotionalBannerUpdate",
+                'itemStore'     => "promotionalBannerItemStore",
+                'itemUpdate'    => "promotionalBannerItemUpdate",
+                'itemDelete'    => "promotionalBannerItemDelete",
             ],
             'brand-section'  => [
                 'view'          => "brandView",
@@ -379,6 +392,236 @@ class SetupSectionsController extends Controller
         return back()->with(['success' => ['Section updated successfully!']]);
     }
 //=======================================Banner section End ==========================================
+/**
+     * Method for show slider section page
+     * @param string $slug
+     * @return view
+     */
+    public function sliderView($slug) {
+        $page_title     = "Slider Section";
+        $section_slug   = Str::slug(SiteSectionConst::SLIDER_SECTION);
+        $data           = SiteSections::getData($section_slug)->first();
+        $languages      = $this->languages;
+
+        return view('admin.sections.setup-sections.slider-section',compact(
+            'page_title',
+            'data',
+            'languages',
+            'slug',
+        ));
+    }
+    /**
+     * Method for all items
+     * @param string $slug
+     * @param \Illuminate\Http\Request  $request
+     */
+    public function getSliderItems(){ 
+        return view('admin.components.slider.item');
+    }
+    /**
+     * Method for store banner item
+     * @param string $slug
+     * @param \Illuminate\Http\Request  $request
+     */
+    public function sliderItemStore(Request $request,$slug) {
+        
+        $basic_field_name   = [
+            'title'       => "required|string|max:255",
+            'heading'   => "required|string|max:255",
+            'item_title'   => "required|string|max:255",
+            'button_name'   => "required|string|max:255",
+        ];
+        $language_wise_data = $this->contentValidate($request,$basic_field_name,"slider-add");
+        if($language_wise_data instanceof RedirectResponse) return $language_wise_data;
+        $slug    = Str::slug(SiteSectionConst::SLIDER_SECTION);
+        $section = SiteSections::where("key",$slug)->first();
+        if($section != null) {
+            $section_data = json_decode(json_encode($section->value),true);
+        }else {
+            $section_data = [];
+        }
+        $unique_id  = uniqid();
+        $validator  = Validator::make($request->all(),[
+            'button_link'       => 'required|url',
+            'icon'              => "nullable|array",
+            'icon.*'            => "nullable|string",
+            'item_title'        => "nullable|array",
+            'item_title.*'      => "nullable|string",
+            'counter_value'     => "nullable|array",
+            'counter_value.*'   => "nullable|string",
+            'image'             => "nullable|image|mimes:jpg,png,svg,webp|max:10240",
+        ]);
+
+        if($validator->fails()) return back()->withErrors($validator->errors())->withInput()->with('modal','slider-add');
+        $validated = $validator->validate();
+        $section_data['items'][$unique_id]['language']      = $language_wise_data;
+        $section_data['items'][$unique_id]['id']            = $unique_id;
+        $section_data['items'][$unique_id]['status']        = 1;
+        $items          = [];
+        foreach($validated['icon'] ?? [] as $key => $icon) {
+            $items[] = [
+                'icon'                  => $validated['icon'][$key] ?? "",
+                'item_title'          => $validated['item_title'][$key] ?? "",
+                'counter_value'          => $validated['counter_value'][$key] ?? "",
+            ];
+        }
+        $section_data['items'][$unique_id]['item']      = $items;
+        $section_data['items'][$unique_id]['image']         = "";
+        $section_data['items'][$unique_id]['button_link']         = $validated['button_link'];
+        
+       
+        if($request->hasFile("image")) {
+            $section_data['items'][$unique_id]['image'] = $this->imageValidate($request,"image",$section->value->items->image ?? null);
+        }
+
+        $update_data['key']     = $slug;
+        $update_data['value']   = $section_data;
+        try{
+            SiteSections::updateOrCreate(['key' => $slug],$update_data);
+        }catch(Exception $e) {
+            return back()->with(['error' => ['Something went worng! Please try again']]);
+        }
+
+        return back()->with(['success' => ['Section item added successfully!']]);
+    }
+    /**
+     * Method for update banner item section page
+     * @param string $slug
+     * @return view
+     */
+    public function sliderItemUpdate(Request $request,$slug){
+        $validator = Validator::make($request->all(),[
+            'target'            => 'required|string',
+            'button_link'       => 'required|url',
+            'icon'              => "nullable|array",
+            'icon.*'            => "nullable|string",
+            'item_title'        => "nullable|array",
+            'item_title.*'      => "nullable|string",
+            'counter_value'     => "nullable|array",
+            'counter_value.*'   => "nullable|string",
+        ]);
+
+        $basic_field_name      = [
+            'title_edit'       => "required|string|max:255",
+            'heading_edit'     => "required|string|max:255",    
+            'item_title_edit'  => "required|string|max:255",    
+            'button_name_edit' => "required|string|max:255",    
+        ];
+        
+        $slug    = Str::slug(SiteSectionConst::SLIDER_SECTION);
+        $section = SiteSections::getData($slug)->first();
+        if(!$section) return back()->with(['error' => ['Section not found!']]);
+        $section_values = json_decode(json_encode($section->value),true);
+        if(!isset($section_values['items'])) return back()->with(['error' => ['Section item not found!']]);
+        if(!array_key_exists($request->target,$section_values['items'])) return back()->with(['error' => ['Section item is invalid!']]);
+
+        $request->merge(['old_image' => $section_values['items'][$request->target]['image'] ?? null]);
+
+        $language_wise_data = $this->contentValidate($request,$basic_field_name,"slider-edit");
+        if($language_wise_data instanceof RedirectResponse) return $language_wise_data;
+
+        $language_wise_data = array_map(function($language) {
+            return replace_array_key($language,"_edit");
+        },$language_wise_data);
+
+        if($validator->fails()){
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $validated                            = $validator->validate();
+        $items          = [];
+        foreach($validated['icon'] ?? [] as $key => $icon) {
+            $items[] = [
+                'icon'                  => $validated['icon'][$key] ?? "",
+                'item_title'            => $validated['item_title'][$key] ?? "",
+                'counter_value'         => $validated['counter_value'][$key] ?? "",
+            ];
+        }
+        $section_values['items'][$request->target]['item']      = $items;
+        $section_values['items'][$request->target]['language'] = $language_wise_data;
+        $section_values['items'][$request->target]['button_link']         = $validated['button_link'];
+        if($request->hasFile("image")) {
+            $section_values['items'][$request->target]['image'] = $this->imageValidate($request,"image",$section_values['items'][$request->target]['image'] ?? null);
+        }
+        try{
+            $section->update([
+                'value' => $section_values,
+            ]);
+        }catch(Exception $e) {
+            return back()->with(['error' => ['Something went worng! Please try again']]);
+        }
+
+        return back()->with(['success' => ['Information updated successfully!']]);
+
+
+    }
+    /**
+     * Method for update banner status section page
+     * @param string $slug
+     * @return view
+     */
+    public function sliderStatusUpdate(Request $request,$slug) {
+        
+        $validator = Validator::make($request->all(),[
+            'status'                    => 'required|boolean',
+            'data_target'               => 'required|string',
+        ]);
+        
+        if ($validator->stopOnFirstFailure()->fails()) {
+            return Response::error($validator->errors()->all(),null,400);
+        }
+
+        $slug           = Str::slug(SiteSectionConst::SLIDER_SECTION);
+        $section        = SiteSections::where("key",$slug)->first();
+        if($section != null ){
+            $data       = json_decode(json_encode($section->value),true);
+        }else{
+            $data       = [];
+        }
+        if(array_key_exists("items",$data) && array_key_exists($request->data_target,$data['items'])) {
+            $data['items'][$request->data_target]['status'] = ($request->status == 1) ? 0 : 1;
+        }else {
+            return Response::error(['Items not found or invalid!'],[],404);
+        }
+
+        $section->update([
+            'value'     => $data,
+        ]);
+
+        return Response::success(['Section item status updated successfully!'],[],200);
+        
+    }
+    /**
+     * Method for delete banner item section information
+     * @param string $slug
+     * @param \Illuminate\Http\Request  $request
+     */
+    public function sliderItemDelete(Request $request,$slug){
+        $request->validate([
+            'target'  => 'required|string',
+        ]);
+
+        $slug         = Str::slug(SiteSectionConst::SLIDER_SECTION);
+        $section      = SiteSections::getData($slug)->first();
+        if(!$section) return back()->with(['error' => ['Section not found!']]);
+        $section_values = json_decode(json_encode($section->value),true);
+        if(!isset($section_values['items'])) return back()->with(['error' => ['Section item not found!']]);
+        if(!array_key_exists($request->target,$section_values['items'])) return back()->with(['error' => ['Section item is invalid!']]);
+
+        try{
+            $image_name = $section_values['items'][$request->target]['image'];
+            unset($section_values['items'][$request->target]);
+            $image_path = get_files_path('site-section') . '/' . $image_name;
+            delete_file($image_path);
+            $section->update([
+                'value'    => $section_values,
+            ]);
+
+        }catch(Exception $e){
+            return back()->with(['error' => ['Something went wrong! Please try again.']]);
+        }
+        return back()->with(['success'   => ['Section item deleted successfully!']]);
+    }
 //=======================================merchant section Start =====================================
     public function merchantView($slug) {
         $page_title = "Merchant Section";
@@ -1299,6 +1542,193 @@ public function chooseItemDelete(Request $request,$slug) {
     return back()->with(['success' => ['Section item delete successfully!']]);
 }
 //=======================Choose us  Section End===================================
+//=======================Promotional Banner Section Start===================================
+/**
+     * Method for show slider section page
+     * @param string $slug
+     * @return view
+     */
+    public function promotionalBannerView($slug) {
+        $page_title     = "Promotional Banner Section";
+        $section_slug   = Str::slug(SiteSectionConst::PROMOTIONAL_BANNER);
+        $data           = SiteSections::getData($section_slug)->first();
+        $languages      = $this->languages;
+
+        return view('admin.sections.setup-sections.promotional-banner-section',compact(
+            'page_title',
+            'data',
+            'languages',
+            'slug',
+        ));
+    }
+    /**
+     * Method for store banner item
+     * @param string $slug
+     * @param \Illuminate\Http\Request  $request
+     */
+    public function promotionalBannerItemStore(Request $request,$slug) {
+        $basic_field_name   = [
+            'button_name'       => "required|string|max:255",
+        ];
+
+        $language_wise_data = $this->contentValidate($request,$basic_field_name,"promotional-banner-add");
+        if($language_wise_data instanceof RedirectResponse) return $language_wise_data;
+        $slug    = Str::slug(SiteSectionConst::PROMOTIONAL_BANNER);
+        $section = SiteSections::where("key",$slug)->first();
+
+        if($section != null) {
+            $section_data = json_decode(json_encode($section->value),true);
+        }else {
+            $section_data = [];
+        }
+        $unique_id  = uniqid();
+
+        $validator  = Validator::make($request->all(),[
+            'button_link'     => "required|url",
+            'image'           => "nullable|image|mimes:jpg,png,svg,webp|max:10240",
+        ]);
+
+        if($validator->fails()) return back()->withErrors($validator->errors())->withInput()->with('modal','promotional-banner-add');
+        $validated = $validator->validate();
+
+        $section_data['items'][$unique_id]['language']      = $language_wise_data;
+        $section_data['items'][$unique_id]['id']            = $unique_id;
+        $section_data['items'][$unique_id]['status']        = 1;
+        $section_data['items'][$unique_id]['button_link']   = $validated['button_link'];
+        $section_data['items'][$unique_id]['image']         = "";
+
+        if($request->hasFile("image")) {
+            $section_data['items'][$unique_id]['image'] = $this->imageValidate($request,"image",$section->value->items->image ?? null);
+        }
+
+        $update_data['key']     = $slug;
+        $update_data['value']   = $section_data;
+        try{
+            SiteSections::updateOrCreate(['key' => $slug],$update_data);
+        }catch(Exception $e) {
+            return back()->with(['error' => ['Something went worng! Please try again']]);
+        }
+
+        return back()->with(['success' => ['Section item added successfully!']]);
+    }
+    /**
+     * Method for update banner item section page
+     * @param string $slug
+     * @return view
+     */
+    public function promotionalBannerItemUpdate(Request $request,$slug){
+        $request->validate([
+            'target'           => 'required|string',
+            'button_link'      => 'required|url'
+        ]);
+
+        $basic_field_name      = [
+            'button_name_edit'     => "required|string|max:255",   
+        ];
+        
+        $slug    = Str::slug(SiteSectionConst::PROMOTIONAL_BANNER);
+        $section = SiteSections::getData($slug)->first();
+        if(!$section) return back()->with(['error' => ['Section not found!']]);
+        $section_values = json_decode(json_encode($section->value),true);
+        if(!isset($section_values['items'])) return back()->with(['error' => ['Section item not found!']]);
+        if(!array_key_exists($request->target,$section_values['items'])) return back()->with(['error' => ['Section item is invalid!']]);
+
+        $request->merge(['old_image' => $section_values['items'][$request->target]['image'] ?? null]);
+
+        $language_wise_data = $this->contentValidate($request,$basic_field_name,"slider-edit");
+        if($language_wise_data instanceof RedirectResponse) return $language_wise_data;
+
+        $language_wise_data = array_map(function($language) {
+            return replace_array_key($language,"_edit");
+        },$language_wise_data);
+
+        $section_values['items'][$request->target]['language'] = $language_wise_data;
+        
+        if($request->hasFile("image")) {
+            $section_values['items'][$request->target]['image'] = $this->imageValidate($request,"image",$section_values['items'][$request->target]['image'] ?? null);
+        }
+        $section_values['items'][$request->target]['button_link']     = $request['button_link'];
+        try{
+            $section->update([
+                'value' => $section_values,
+            ]);
+        }catch(Exception $e) {
+            return back()->with(['error' => ['Something went worng! Please try again']]);
+        }
+
+        return back()->with(['success' => ['Information updated successfully!']]);
+
+
+    }
+    /**
+     * Method for update banner status section page
+     * @param string $slug
+     * @return view
+     */
+    public function promotionalBannerStatusUpdate(Request $request,$slug) {
+        
+        $validator = Validator::make($request->all(),[
+            'status'                    => 'required|boolean',
+            'data_target'               => 'required|string',
+        ]);
+        
+        if ($validator->stopOnFirstFailure()->fails()) {
+            return Response::error($validator->errors()->all(),null,400);
+        }
+
+        $slug           = Str::slug(SiteSectionConst::PROMOTIONAL_BANNER);
+        $section        = SiteSections::where("key",$slug)->first();
+        if($section != null ){
+            $data       = json_decode(json_encode($section->value),true);
+        }else{
+            $data       = [];
+        }
+        if(array_key_exists("items",$data) && array_key_exists($request->data_target,$data['items'])) {
+            $data['items'][$request->data_target]['status'] = ($request->status == 1) ? 0 : 1;
+        }else {
+            return Response::error(['Items not found or invalid!'],[],404);
+        }
+
+        $section->update([
+            'value'     => $data,
+        ]);
+
+        return Response::success(['Section item status updated successfully!'],[],200);
+        
+    }
+    /**
+     * Method for delete banner item section information
+     * @param string $slug
+     * @param \Illuminate\Http\Request  $request
+     */
+    public function promotionalBannerItemDelete(Request $request,$slug){
+        $request->validate([
+            'target'  => 'required|string',
+        ]);
+
+        $slug         = Str::slug(SiteSectionConst::PROMOTIONAL_BANNER);
+        $section      = SiteSections::getData($slug)->first();
+        if(!$section) return back()->with(['error' => ['Section not found!']]);
+        $section_values = json_decode(json_encode($section->value),true);
+        if(!isset($section_values['items'])) return back()->with(['error' => ['Section item not found!']]);
+        if(!array_key_exists($request->target,$section_values['items'])) return back()->with(['error' => ['Section item is invalid!']]);
+
+        try{
+            $image_name = $section_values['items'][$request->target]['image'];
+            unset($section_values['items'][$request->target]);
+            $image_path = get_files_path('site-section') . '/' . $image_name;
+            delete_file($image_path);
+            $section->update([
+                'value'    => $section_values,
+            ]);
+
+        }catch(Exception $e){
+            return back()->with(['error' => ['Something went wrong! Please try again.']]);
+        }
+        return back()->with(['success'   => ['Section item deleted successfully!']]);
+    }
+//=======================Promotional Banner Section End===================================
+
 //======================Service section Start ===============================
 public function serviceView($slug) {
     $page_title = "Service Section";
@@ -1905,7 +2335,7 @@ public function testimonialItemStore(Request $request,$slug) {
 
     $update_data['key'] = $slug;
     $update_data['value']   = $section_data;
-
+    dd($update_data);
     try{
         SiteSections::updateOrCreate(['key' => $slug],$update_data);
     }catch(Exception $e) {

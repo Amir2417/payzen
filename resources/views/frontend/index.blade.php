@@ -10,6 +10,8 @@
     $service = App\Models\Admin\SiteSections::getData( $service_slug)->first();
     $blog_section_slug = Illuminate\Support\Str::slug(App\Constants\SiteSectionConst::BLOG_SECTION);
     $blog_section = App\Models\Admin\SiteSections::getData( $blog_section_slug)->first();
+    $slider_section_slug = Illuminate\Support\Str::slug(App\Constants\SiteSectionConst::SLIDER_SECTION);
+    $slider_section = App\Models\Admin\SiteSections::getData( $slider_section_slug)->first();
 @endphp
 @section('content')
 
@@ -18,134 +20,47 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 <section class="banner-slider">
     <div class="swiper-wrapper">
-        <div class="swiper-slide">
-            <div class="banner-section bg_img" data-background="{{ asset("public/frontend/images/banner/banner-2.jpg") }}">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-xxl-6 col-xl-8 col-lg-8 col-md-10 col-sm-12">
-                            <div class="content-box">
-                                <div class="content-inner">
-                                    <span class="count-text">01.</span>
-                                    <h5>World Class Mobile Banking</h5>
-                                    <h2>Transfer Money, Around The QRcode In A Second</h2>
-                                    <ul class="list clearfix">
-                                        <li>
-                                           <div class="icon-box"><i class="las la-globe-americas"></i></div>
-                                           <h3>80+</h3> 
-                                           <h4>Available Country</h4>
-                                        </li>
-                                        <li>
-                                           <div class="icon-box"><i class="las la-code-branch"></i></div>
-                                           <h3>150+</h3> 
-                                           <h4>Available Branch</h4>
-                                        </li>
-                                    </ul>
-                                    <div class="banner-btn">
-                                        <a href="index.html" class="btn--base">Read More <i class="fas fa-angle-right ms-1"></i></a>
+        @if(isset($slider_section->value->items))
+        @php
+            $step = 0;
+        @endphp
+            @foreach ($slider_section->value->items ?? [] as $item)
+            @php
+                $step++;
+            @endphp
+            @if ($item->status == true)
+                <div class="swiper-slide">
+                    <div class="banner-section bg_img" data-background="{{ get_image(@$item->image,'site-section') }}">
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-xxl-6 col-xl-8 col-lg-8 col-md-10 col-sm-12">
+                                    <div class="content-box">
+                                        <div class="content-inner">
+                                            <span class="count-text">0{{ $step }}</span>
+                                            <h5>{{ @$item->language->$lang->title }}</h5>
+                                            <h2>{{ @$item->language->$lang->heading }}</h2>
+                                            <ul class="list clearfix">
+                                                @foreach ($item->item as $data)
+                                                    <li>
+                                                        <div class="icon-box"><i class="{{ @$data->icon }}"></i></div>
+                                                        <h3>{{ @$data->counter_value }}</h3> 
+                                                        <h4>{{ @$data->item_title }}</h4>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                            <div class="banner-btn">
+                                                <a href="{{ @$item->button_link }}" class="btn--base">{{ @$item->language->$lang->button_name }}<i class="fas fa-angle-right ms-1"></i></a>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="swiper-slide">
-            <div class="banner-section bg_img" data-background="{{ asset("public/frontend/images/banner/banner-3.jpg") }}">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-xxl-6 col-xl-8 col-lg-8 col-md-10 col-sm-12">
-                            <div class="content-box">
-                                <div class="content-inner">
-                                    <span class="count-text">02.</span>
-                                    <h5>World Class Mobile Banking</h5>
-                                    <h2>Transfer Money, Around The QRcode In A Second</h2>
-                                    <ul class="list clearfix">
-                                        <li>
-                                           <div class="icon-box"><i class="las la-globe-americas"></i></div>
-                                           <h3>80+</h3> 
-                                           <h4>Available Country</h4>
-                                        </li>
-                                        <li>
-                                           <div class="icon-box"><i class="las la-code-branch"></i></div>
-                                           <h3>150+</h3> 
-                                           <h4>Available Branch</h4>
-                                        </li>
-                                    </ul>
-                                    <div class="banner-btn">
-                                        <a href="index.html" class="btn--base">Read More <i class="fas fa-angle-right ms-1"></i></a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="swiper-slide">
-            <div class="banner-section bg_img" data-background="{{ asset("public/frontend/images/banner/banner-4.jpg") }}">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-xxl-6 col-xl-8 col-lg-8 col-md-10 col-sm-12">
-                            <div class="content-box">
-                                <div class="content-inner">
-                                    <span class="count-text">03.</span>
-                                    <h5>World Class Mobile Banking</h5>
-                                    <h2>Transfer Money, Around The QRcode In A Second</h2>
-                                    <ul class="list clearfix">
-                                        <li>
-                                           <div class="icon-box"><i class="las la-globe-americas"></i></div>
-                                           <h3>80+</h3> 
-                                           <h4>Available Country</h4>
-                                        </li>
-                                        <li>
-                                           <div class="icon-box"><i class="las la-code-branch"></i></div>
-                                           <h3>150+</h3> 
-                                           <h4>Available Branch</h4>
-                                        </li>
-                                    </ul>
-                                    <div class="banner-btn">
-                                        <a href="index.html" class="btn--base">Read More <i class="fas fa-angle-right ms-1"></i></a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="swiper-slide">
-            <div class="banner-section bg_img" data-background="{{ asset("public/frontend/images/banner/banner-5.jpg") }}">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-xxl-6 col-xl-8 col-lg-8 col-md-10 col-sm-12">
-                            <div class="content-box">
-                                <div class="content-inner">
-                                    <span class="count-text">04.</span>
-                                    <h5>World Class Mobile Banking</h5>
-                                    <h2>Transfer Money, Around The QRcode In A Second</h2>
-                                    <ul class="list clearfix">
-                                        <li>
-                                           <div class="icon-box"><i class="las la-globe-americas"></i></div>
-                                           <h3>80+</h3> 
-                                           <h4>Available Country</h4>
-                                        </li>
-                                        <li>
-                                           <div class="icon-box"><i class="las la-code-branch"></i></div>
-                                           <h3>150+</h3> 
-                                           <h4>Available Branch</h4>
-                                        </li>
-                                    </ul>
-                                    <div class="banner-btn">
-                                        <a href="index.html" class="btn--base">Read More <i class="fas fa-angle-right ms-1"></i></a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+            @endif
+            @endforeach
+        @endif
     </div>
     <div class="swiper-pagination"></div>
 </section>
@@ -212,7 +127,7 @@
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     End why choose us section
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
-@include('frontend.partials.professional-banner')
+@include('frontend.partials.promotional-banner')
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Start testimonial
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
