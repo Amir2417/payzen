@@ -43,4 +43,7 @@ class GlobalConst {
 
     const LIVE = 'live';
     const SANDBOX = 'sandbox';
+
+    const SENDER = 'SENDER';
+    const RECEIVER = 'RECEIVER';
 }
