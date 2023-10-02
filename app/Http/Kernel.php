@@ -78,6 +78,7 @@ class Kernel extends HttpKernel
         'admin.role.delete.guard'   => \App\Http\Middleware\Admin\RoleDeleteGuard::class,
         'verification.guard'  => \App\Http\Middleware\VerificationGuard::class,
         'verification.guard.merchant'  => \App\Http\Middleware\Merchant\VerificationGuard::class,
+        'verification.guard.agent'  => \App\Http\Middleware\Agent\VerificationGuard::class,
         'verification.guard.api'  => \App\Http\Middleware\User\VerificationGuardApi::class,
         'user.google.two.factor'    => \App\Http\Middleware\User\GoogleTwoFactor::class,
         'user.google.two.factor.api'    => \App\Http\Middleware\User\GoogleTwoFactorApi::class,

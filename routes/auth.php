@@ -12,7 +12,10 @@ use App\Http\Controllers\User\Auth\ForgotPasswordController as UserForgotPasswor
 use App\Http\Controllers\User\Auth\LoginController as UserLoginController;
 use App\Http\Controllers\User\Auth\RegisterController as UserRegisterController;
 use App\Http\Controllers\User\AuthorizationController;
-
+use App\Http\Controllers\Agent\Auth\ForgotPasswordController as AgentAuthForgotPasswordController;
+use App\Http\Controllers\Agent\Auth\LoginController as AgentAuthLoginController;
+use App\Http\Controllers\Agent\Auth\RegisterController as AuthRegisterController;
+use App\Http\Controllers\Agent\AuthorizationController as AgentAuthorizationController;
 // Admin Authentication Route
 Route::middleware(['guest','admin.login.guard'])->prefix('admin')->name('admin.')->group(function(){
     Route::get('/',function(){
@@ -100,6 +103,48 @@ Route::prefix('merchant')->name('merchant.')->group(function(){
         Route::post('kyc/submit','kycSubmit')->name('kyc.submit');
         Route::get('google/2fa','showGoogle2FAForm')->name('google.2fa');
         Route::post('google/2fa/submit','google2FASubmit')->name('google.2fa.submit');
+
+    });
+});
+//agents
+Route::prefix('agent')->name('agent.')->group(function(){
+    Route::get('/',function(){
+        return redirect()->route('agent.login');
+    });
+    Route::get('login',[AgentAuthLoginController::class,"showLoginForm"])->name('login');
+    Route::post('login',[AgentAuthLoginController::class,"login"])->name('login.submit');;
+
+    Route::get('register',[AuthRegisterController::class,"showRegistrationForm"])->name('register');
+    Route::post('register',[AuthRegisterController::class,"register"])->name('register.submit');
+    Route::post('send/verify-code',[AuthRegisterController::class,"sendVerifyCode"])->name('send.code');
+    Route::get('email/verify/{token}',[AuthRegisterController::class,"emailVerify"])->name('email.verify');
+    Route::post('verify/code/{token}',[AuthRegisterController::class,"verifyCode"])->name('verify.code');
+    Route::get('resend/code',[AuthRegisterController::class,"resendCode"])->name('resend.code');
+    Route::get('register/kyc',[AuthRegisterController::class,"registerKyc"])->name('register.kyc');
+
+     // recovery password by mobile
+    Route::controller(AgentAuthForgotPasswordController::class)->prefix("password")->name("password.")->group(function(){
+        Route::get('forgot/sms','smsForgotForm')->name('forgot.mobile');
+        Route::post('send/forgot/code','sendForgotCode')->name('send.code');
+        Route::get('forgot/verify/code/{token}','smsVerifyCodeForm')->name('verify.code');
+        Route::get('resend/code/{token}','smsResendCode')->name('resend.code');
+        Route::post('verify/code/{token}','smsVerifyCode')->name('verify.code.post');
+        Route::get('reset/form/{token}','showResetPasswordForm')->name('forgot.reset');
+        Route::post('reset/{token}','resetPasswordPost')->name('reset.submit');
+
+    });
+    Route::controller(AgentAuthorizationController::class)->prefix("authorize")->name('authorize.')->middleware("auth:agent")->group(function(){
+        Route::get('mail/{token}','showMailFrom')->name('mail');
+        Route::post('mail/verify/{token}','mailVerify')->name('mail.verify');
+        Route::get('resend/code','resendCode')->name('resend.code');
+        Route::get('kyc','showKycFrom')->name('kyc');
+        Route::post('kyc/submit','kycSubmit')->name('kyc.submit');
+        Route::get('google/2fa','showGoogle2FAForm')->name('google.2fa');
+        Route::post('google/2fa/submit','google2FASubmit')->name('google.2fa.submit');
+        //for sms
+        Route::get('sms','showSmsFrom')->name('sms');
+        Route::get('sms/resend/code','smsResendCode')->name('sms.resend.code');
+        Route::post('sms/verify/code','smsVerifyCode')->name('sms.verify.code');
 
     });
 });

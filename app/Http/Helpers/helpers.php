@@ -23,6 +23,7 @@ use App\Models\Admin\Admin;
 use App\Models\Admin\Language;
 use App\Models\Admin\ModuleSetting;
 use App\Models\Admin\PaymentGateway;
+use App\Models\AgentAuthorization;
 use App\Models\Merchants\MerchantAuthorization;
 use App\Models\Merchants\MerchantNotification;
 use App\Models\Merchants\MerchantWallet;
@@ -31,6 +32,7 @@ use App\Models\UserNotification;
 use App\Models\UserSupportTicket;
 use App\Models\UserWallet;
 use App\Models\VirtualCardApi;
+use App\Notifications\Agent\Auth\SendAuthorizationCode as AgentAuthSendAuthorizationCode;
 use App\Notifications\Merchant\Auth\SendAuthorizationCode as AuthSendAuthorizationCode;
 use App\Notifications\User\Auth\SendAuthorizationCode;
 use App\Providers\Admin\BasicSettingsProvider;
@@ -1429,6 +1431,30 @@ function mailVerificationTemplate($user) {
         }
         UserAuthorization::where("user_id",$user->id)->delete();
         DB::table("user_authorizations")->insert($data);
+        DB::commit();
+    }catch(Exception $e) {
+        DB::rollBack();
+        return back()->with(['error' => ['Something went worng! Please try again']]);
+    }
+    return redirect()->route('user.authorize.mail',$data['token'])->with(['warning' => ['Please verify your mail address. Check your mail inbox to get verification code']]);
+}
+function mailVerificationTemplateAgent($agent) {
+    $basic_settings = BasicSettingsProvider::get();
+    $data = [
+        'agent_id'       => $agent->id,
+        'code'          => generate_random_code(),
+        'token'         => generate_unique_string("agent_authorizations","token",200),
+        'created_at'    => now(),
+    ];
+
+    DB::beginTransaction();
+    try{
+
+        if( $basic_settings->email_notification == true){
+            $agent->notify(new AgentAuthSendAuthorizationCode((object) $data));
+        }
+        AgentAuthorization::where("agent_id",$agent->id)->delete();
+        DB::table("agent_authorizations")->insert($data);
         DB::commit();
     }catch(Exception $e) {
         DB::rollBack();

@@ -12,7 +12,7 @@ class AgentAuthorization extends Model
 
     protected $casts    = [
         'agent_id'      => 'integer',
-        'mobile'        => 'string',
+        'email'         => 'string',
         'code'          => 'integer',
         'token'         => 'string'
     ];

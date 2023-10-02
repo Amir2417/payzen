@@ -5,6 +5,7 @@ namespace App\Constants;
 class GlobalConst {
     const USER_PASS_RESEND_TIME_MINUTE = "1";
     const USER_VERIFY_RESEND_TIME_MINUTE = 1;
+    const AGENT_VERIFY_RESEND_TIME_MINUTE = 1;
 
     const ACTIVE = true;
     const SUCCESS = true;
