@@ -14,7 +14,7 @@ class AgentPasswordReset extends Model
     ];
 
     protected $casts    = [
-        'mobile'        => 'string',
+        'email'        => 'string',
         'code'          => 'integer',
         'token'         => 'string',
         'agent_id'      => 'integer',

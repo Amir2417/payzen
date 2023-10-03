@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Agent\Auth;
 
-use App\Constants\GlobalConst;
-use App\Http\Controllers\Controller;
-use App\Models\Agent;
-use App\Models\AgentPasswordReset;
-use App\Providers\Admin\BasicSettingsProvider;
-use Carbon\Carbon;
 use Exception;
+use Carbon\Carbon;
+use App\Models\Agent;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Password;
+use App\Constants\GlobalConst;
+use App\Models\AgentPasswordReset;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Validator;
+use App\Providers\Admin\BasicSettingsProvider;
+use Illuminate\Validation\ValidationException;
+use App\Notifications\Agent\Auth\PasswordResetEmail;
 
 class ForgotPasswordController extends Controller
 {
@@ -44,6 +45,7 @@ class ForgotPasswordController extends Controller
         $column = "username";
         if(check_email($request->credentials)) $column = "email";
         $user = Agent::where($column,$request->credentials)->first();
+        // dd($user);
         if(!$user) {
             throw ValidationException::withMessages([
                 'credentials'       => "Agent doesn't exists.",
@@ -57,11 +59,14 @@ class ForgotPasswordController extends Controller
             AgentPasswordReset::where("agent_id",$user->id)->delete();
             $password_reset = AgentPasswordReset::create([
                 'agent_id'       => $user->id,
+                'email'       => $request->credentials,
                 'token'         => $token,
                 'code'          => $code,
             ]);
             $user->notify(new PasswordResetEmail($user,$password_reset));
+            dd("test");
         }catch(Exception $e) {
+            dd($e->getMessage());
             return back()->with(['error' => ['Something went worng! Please try again.']]);
         }
         return redirect()->route('agent.password.forgot.code.verify.form',$token)->with(['success' => ['Varification code sended to your email address.']]);
@@ -77,6 +82,7 @@ class ForgotPasswordController extends Controller
             $resend_time = Carbon::now()->diffInSeconds($password_reset->created_at->addMinutes(GlobalConst::USER_PASS_RESEND_TIME_MINUTE));
         }
         $user_email = $password_reset->merchant->email ?? "";
+        dd($user_email);
         return view('agent.auth.forgot-password.verify',compact('page_title','token','user_email','resend_time'));
     }
 

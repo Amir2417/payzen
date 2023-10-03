@@ -29,6 +29,8 @@ use Database\Seeders\Admin\SetupPageSeeder;
 use Database\Seeders\Admin\TopupSeeder;
 use Database\Seeders\Admin\TransactionSettingSeeder;
 use Database\Seeders\Admin\VirtualApiSeeder;
+use Database\Seeders\Agent\AgentSeeder;
+use Database\Seeders\Agent\AgentWalletSeeder;
 use Database\Seeders\Fresh\BasicSettingsSeeder as FreshBasicSettingsSeeder;
 use Database\Seeders\Fresh\ExtensionSeeder as FreshExtensionSeeder;
 use Database\Seeders\Merchant\ApiCredentialsSeeder;
@@ -80,6 +82,10 @@ class DatabaseSeeder extends Seeder
             MerchantSeeder::class,
             MerchantWalletSeeder::class,
             ApiCredentialsSeeder::class,
+
+            //agent
+            AgentSeeder::class,
+            AgentWalletSeeder::class,
         ]);
 
 

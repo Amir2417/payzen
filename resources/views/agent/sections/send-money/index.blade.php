@@ -26,7 +26,7 @@
                 <div class="dash-payment-item active">
                     <div class="dash-payment-title-area">
                         <span class="dash-payment-badge">!</span>
-                        <h5 class="title">{{ __(@$page_title) }}</h5>
+                        <h5 class="title">{{ __("Money Transfer") }}</h5>
                     </div>
                     <div class="dash-payment-body">
                         <form class="card-form" action="{{ setRoute('agent.send.money.confirmed') }}" method="POST">
@@ -37,20 +37,20 @@
                                         <code class="d-block text-center"><span class="fees-show">--</span> <span class="limit-show">--</span></code>
                                     </div>
                                 </div>
-                                <div class="col-xxl-6 col-xl-12 col-lg-6 form-group paste-wrapper">
-                                    <label>{{ __("Mobile Number") }} <span class="text--base">*</span></label>
+                                <div class="col-xxl-6 col-xl-6 col-lg-6 form-group paste-wrapper">
+                                    <label>{{ __("Email Address") }} ({{ __("Agent") }})<span class="text--base">*</span></label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text copytext">+{{ getDialCode() }}</span>
+                                            <span class="input-group-text copytext">{{ __("Email") }}</span>
                                         </div>
-                                        <input type="number" name="mobile" class="form--control checkUser" id="username" placeholder="Enter Mobile Number" value="{{ old('mobile') }}" />
+                                        <input type="email" name="email" class="form--control checkUser" id="username" placeholder="Enter Email" value="{{ old('email') }}" />
                                     </div>
                                     <button type="button" class="paste-badge scan"  data-toggle="tooltip" title="Scan QR"><i class="fas fa-camera"></i></button>
                                     <label class="exist text-start"></label>
 
                                 </div>
 
-                                <div class="col-xxl-6 col-xl-12 col-lg-6 form-group">
+                                <div class="col-xxl-6 col-xl-6 col-lg-6 form-group">
                                     <label>{{ __("Amount") }}<span>*</span></label>
                                     <div class="input-group">
                                         <input type="number" class="form--control" required placeholder="Enter Amount" name="amount" value="{{ old("amount") }}">
@@ -58,7 +58,6 @@
                                             <option value="{{ get_default_currency_code() }}">{{ get_default_currency_code() }}</option>
                                         </select>
                                     </div>
-
                                     <code class="d-block mt-10 text-end text--warning balance-show">{{ __("Available Balance") }} {{ authWalletBalance() }} {{ get_default_currency_code() }}</code>
                                 </div>
 
@@ -76,7 +75,7 @@
                 <div class="dash-payment-item active">
                     <div class="dash-payment-title-area">
                         <span class="dash-payment-badge">!</span>
-                        <h5 class="title">{{__("Send Money Preview")}}</h5>
+                        <h5 class="title">{{__("Money Transfer Summery")}}</h5>
                     </div>
                     <div class="dash-payment-body">
                         <div class="preview-list-wrapper">
@@ -212,10 +211,10 @@
         });
         $('.checkUser').on('keyup',function(e){
             var url = '{{ route('agent.send.money.check.exist') }}';
-            var value = Number($(this).val());
+            var value = $(this).val();
             var token = '{{ csrf_token() }}';
-            if ($(this).attr('name') == 'mobile') {
-                var data = {mobile:value,_token:token}
+            if ($(this).attr('name') == 'email') {
+                var data = {email:value,_token:token}
 
             }
             $.post(url,data,function(response) {
@@ -231,13 +230,13 @@
                     if($('.exist').hasClass('text--danger')){
                         $('.exist').removeClass('text--danger');
                     }
-                    $('.exist').text(`Valid agent for transaction.`).addClass('text--success');
+                    $('.exist').text(`Valid user for transaction.`).addClass('text--success');
                     $('.transfer').attr('disabled',false)
                 } else {
                     if($('.exist').hasClass('text--success')){
                         $('.exist').removeClass('text--success');
                     }
-                    $('.exist').text('Agent doesn\'t  exists.').addClass('text--danger');
+                    $('.exist').text('User doesn\'t  exists.').addClass('text--danger');
                     $('.transfer').attr('disabled',true)
                     return false
                 }
@@ -247,154 +246,134 @@
     })(jQuery);
 </script>
 <script>
-     var defualCurrency = "{{ get_default_currency_code() }}";
-     var defualCurrencyRate = "{{ get_default_currency_rate() }}";
+    var defualCurrency = "{{ get_default_currency_code() }}";
+    var defualCurrencyRate = "{{ get_default_currency_rate() }}";
 
-    $(document).ready(function(){
-            getLimit();
+       $(document).ready(function(){
+
+           getLimit();
+           getFees();
+           getPreview();
+       });
+       $("input[name=amount]").keyup(function(){
             getFees();
             getPreview();
-        });
-        $("input[name=amount]").keyup(function(){
-             getFees();
-             getPreview();
-        });
-        $("input[name=amount]").focusout(function(){
-             enterLimit();
+       });
+       function getLimit() {
+           var currencyCode = acceptVar().currencyCode;
+           var currencyRate = acceptVar().currencyRate;
 
-        });
-        function getLimit() {
-            var currencyCode = acceptVar().currencyCode;
-            var currencyRate = acceptVar().currencyRate;
+           var min_limit = acceptVar().currencyMinAmount;
+           var max_limit =acceptVar().currencyMaxAmount;
+           if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
+               var min_limit_calc = parseFloat(min_limit/currencyRate).toFixed(2);
+               var max_limit_clac = parseFloat(max_limit/currencyRate).toFixed(2);
+               $('.limit-show').html("Limit " + min_limit_calc + " " + currencyCode + " - " + max_limit_clac + " " + currencyCode);
 
-            var min_limit = acceptVar().currencyMinAmount;
-            var max_limit =acceptVar().currencyMaxAmount;
-            if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
-                var min_limit_calc = parseFloat(min_limit/currencyRate).toFixed(2);
-                var max_limit_clac = parseFloat(max_limit/currencyRate).toFixed(2);
-                $('.limit-show').html("Limit " + min_limit_calc + " " + currencyCode + " - " + max_limit_clac + " " + currencyCode);
+               return {
+                   minLimit:min_limit_calc,
+                   maxLimit:max_limit_clac,
+               };
+           }else {
+               $('.limit-show').html("--");
+               return {
+                   minLimit:0,
+                   maxLimit:0,
+               };
+           }
+       }
+       function acceptVar() {
+           var selectedVal = $("select[name=currency] :selected");
+           var currencyCode = $("select[name=currency] :selected").val();
+           var currencyRate = defualCurrencyRate;
+           var currencyMinAmount ="{{getAmount($sendMoneyCharge->min_limit)}}"
+           var currencyMaxAmount = "{{getAmount($sendMoneyCharge->max_limit)}}"
+           var currencyFixedCharge = "{{getAmount($sendMoneyCharge->fixed_charge)}}"
+           var currencyPercentCharge = "{{getAmount($sendMoneyCharge->percent_charge)}}"
 
-                return {
-                    minLimit:min_limit_calc,
-                    maxLimit:max_limit_clac,
-                };
-            }else {
-                $('.limit-show').html("--");
-                return {
-                    minLimit:0,
-                    maxLimit:0,
-                };
-            }
-        }
-        function acceptVar() {
-            var selectedVal = $("select[name=currency] :selected");
-            var currencyCode = $("select[name=currency] :selected").val();
-            var currencyRate = defualCurrencyRate;
-            var currencyMinAmount ="{{getAmount($sendMoneyCharge->min_limit)}}"
-            var currencyMaxAmount = "{{getAmount($sendMoneyCharge->max_limit)}}"
-            var currencyFixedCharge = "{{getAmount($sendMoneyCharge->fixed_charge)}}"
-            var currencyPercentCharge = "{{getAmount($sendMoneyCharge->percent_charge)}}"
+           return {
+               currencyCode:currencyCode,
+               currencyRate:currencyRate,
+               currencyMinAmount:currencyMinAmount,
+               currencyMaxAmount:currencyMaxAmount,
+               currencyFixedCharge:currencyFixedCharge,
+               currencyPercentCharge:currencyPercentCharge,
+               selectedVal:selectedVal,
 
-            return {
-                currencyCode:currencyCode,
-                currencyRate:currencyRate,
-                currencyMinAmount:currencyMinAmount,
-                currencyMaxAmount:currencyMaxAmount,
-                currencyFixedCharge:currencyFixedCharge,
-                currencyPercentCharge:currencyPercentCharge,
-                selectedVal:selectedVal,
+           };
+       }
+       function feesCalculation() {
+           var currencyCode = acceptVar().currencyCode;
+           var currencyRate = acceptVar().currencyRate;
+           var sender_amount = $("input[name=amount]").val();
+           sender_amount == "" ? (sender_amount = 0) : (sender_amount = sender_amount);
 
-            };
-        }
-        function feesCalculation() {
-            var currencyCode = acceptVar().currencyCode;
-            var currencyRate = acceptVar().currencyRate;
-            var sender_amount = $("input[name=amount]").val();
-            sender_amount == "" ? (sender_amount = 0) : (sender_amount = sender_amount);
+           var fixed_charge = acceptVar().currencyFixedCharge;
+           var percent_charge = acceptVar().currencyPercentCharge;
+           if ($.isNumeric(percent_charge) && $.isNumeric(fixed_charge) && $.isNumeric(sender_amount)) {
+               // Process Calculation
+               var fixed_charge_calc = parseFloat(currencyRate * fixed_charge);
+               var percent_charge_calc = parseFloat(currencyRate)*(parseFloat(sender_amount) / 100) * parseFloat(percent_charge);
+               var total_charge = parseFloat(fixed_charge_calc) + parseFloat(percent_charge_calc);
+               total_charge = parseFloat(total_charge).toFixed(2);
+               // return total_charge;
+               return {
+                   total: total_charge,
+                   fixed: fixed_charge_calc,
+                   percent: percent_charge,
+               };
+           } else {
+               // return "--";
+               return false;
+           }
+       }
 
-            var fixed_charge = acceptVar().currencyFixedCharge;
-            var percent_charge = acceptVar().currencyPercentCharge;
-            if ($.isNumeric(percent_charge) && $.isNumeric(fixed_charge) && $.isNumeric(sender_amount)) {
-                // Process Calculation
-                var fixed_charge_calc = parseFloat(currencyRate * fixed_charge);
-                var percent_charge_calc = parseFloat(currencyRate)*(parseFloat(sender_amount) / 100) * parseFloat(percent_charge);
-                var total_charge = parseFloat(fixed_charge_calc) + parseFloat(percent_charge_calc);
-                total_charge = parseFloat(total_charge).toFixed(2);
-                // return total_charge;
-                return {
-                    total: total_charge,
-                    fixed: fixed_charge_calc,
-                    percent: percent_charge,
-                };
-            } else {
-                // return "--";
-                return false;
-            }
-        }
+       function getFees() {
+           var currencyCode = acceptVar().currencyCode;
+           var percent = acceptVar().currencyPercentCharge;
+           var charges = feesCalculation();
+           if (charges == false) {
+               return false;
+           }
+           $(".fees-show").html("Transfer Fee: " + parseFloat(charges.fixed).toFixed(2) + " " + currencyCode + " + " + parseFloat(charges.percent).toFixed(2) + "%  ");
+       }
+       function getPreview() {
+               var senderAmount = $("input[name=amount]").val();
+               var sender_currency = acceptVar().currencyCode;
+               var sender_currency_rate = acceptVar().currencyRate;
+               senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
+               // Sending Amount
+               $('.request-amount').text(senderAmount + " " + defualCurrency);
 
-        function getFees() {
-            var currencyCode = acceptVar().currencyCode;
-            var percent = acceptVar().currencyPercentCharge;
-            var charges = feesCalculation();
-            if (charges == false) {
-                return false;
-            }
-            $(".fees-show").html("Transfer Fee: " + parseFloat(charges.fixed).toFixed(2) + " " + currencyCode + " + " + parseFloat(charges.percent).toFixed(2) + "%  ");
-        }
-        function getPreview() {
-                var senderAmount = $("input[name=amount]").val();
-                var sender_currency = acceptVar().currencyCode;
-                var sender_currency_rate = acceptVar().currencyRate;
-                senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
-                // Sending Amount
-                $('.request-amount').text(senderAmount + " " + defualCurrency);
+               // Fees
+               var charges = feesCalculation();
+               var total_charge = 0;
+               if(senderAmount == 0){
+                   total_charge = 0;
+               }else{
+                   total_charge = charges.total;
+               }
 
-                // Fees
-                var charges = feesCalculation();
-                var total_charge = 0;
-                if(senderAmount == 0){
-                    total_charge = 0;
-                }else{
-                    total_charge = charges.total;
-                }
+               $('.fees').text(total_charge + " " + sender_currency);
+               // // recipient received
+               var recipient = parseFloat(senderAmount) * parseFloat(sender_currency_rate)
+               var recipient_get = 0;
+               if(senderAmount == 0){
+                    recipient_get = 0;
+               }else{
+                    recipient_get =  parseFloat(recipient);
+               }
+               $('.recipient-get').text(parseFloat(recipient_get).toFixed(2) + " " + sender_currency);
 
-                $('.fees').text(total_charge + " " + sender_currency);
-                // // recipient received
-                var recipient = parseFloat(senderAmount) * parseFloat(sender_currency_rate)
-                var recipient_get = 0;
-                if(senderAmount == 0){
-                     recipient_get = 0;
-                }else{
-                     recipient_get =  parseFloat(recipient);
-                }
-                $('.recipient-get').text(parseFloat(recipient_get).toFixed(2) + " " + sender_currency);
-
-                 // Pay In Total
-                var totalPay = parseFloat(senderAmount) * parseFloat(sender_currency_rate)
-                var pay_in_total = 0;
-                if(senderAmount == 0){
-                     pay_in_total = 0;
-                }else{
-                     pay_in_total =  parseFloat(totalPay) + parseFloat(charges.total);
-                }
-                $('.payable-total').text(parseFloat(pay_in_total).toFixed(2) + " " + sender_currency);
-
-        }
-        function enterLimit(){
-        var min_limit = parseFloat("{{getAmount($sendMoneyCharge->min_limit)}}");
-        var max_limit =parseFloat("{{getAmount($sendMoneyCharge->max_limit)}}");
-        var currencyRate = acceptVar().currencyRate;
-        var sender_amount = parseFloat($("input[name=amount]").val());
-
-        if( sender_amount < min_limit ){
-            throwMessage('error',["Please follow the mimimum limit"]);
-            $('.transfer').attr('disabled',true)
-        }else if(sender_amount > max_limit){
-            throwMessage('error',["Please follow the maximum limit"]);
-            $('.transfer').attr('disabled',true)
-        }else{
-            $('.transfer').attr('disabled',false)
-        }
+                // Pay In Total
+               var totalPay = parseFloat(senderAmount) * parseFloat(sender_currency_rate)
+               var pay_in_total = 0;
+               if(senderAmount == 0){
+                    pay_in_total = 0;
+               }else{
+                    pay_in_total =  parseFloat(totalPay) + parseFloat(charges.total);
+               }
+               $('.payable-total').text(parseFloat(pay_in_total).toFixed(2) + " " + sender_currency);
 
        }
 

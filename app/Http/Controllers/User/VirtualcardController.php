@@ -2,23 +2,26 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Constants\NotificationConst;
-use App\Constants\PaymentGatewayConst;
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\Response;
-use App\Models\Admin\BasicSettings;
-use App\Models\Admin\Currency;
-use App\Models\Admin\TransactionSetting;
-use App\Models\Transaction;
-use App\Models\UserNotification;
-use App\Models\UserWallet;
-use App\Models\VirtualCard;
-use App\Models\VirtualCardApi;
-use App\Notifications\User\VirtualCard\CreateMail;
 use Exception;
+use App\Models\UserWallet;
+use App\Models\Transaction;
+use App\Models\VirtualCard;
 use Illuminate\Http\Request;
+use App\Http\Helpers\Response;
+use App\Models\Admin\Currency;
+use App\Models\VirtualCardApi;
+use App\Models\UserNotification;
 use Illuminate\Support\Facades\DB;
+use App\Models\Admin\BasicSettings;
+use App\Constants\NotificationConst;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
+use App\Constants\PaymentGatewayConst;
+use App\Models\Admin\TransactionSetting;
+use App\Models\StripeCard;
 use Illuminate\Support\Facades\Validator;
+use App\Notifications\User\VirtualCard\CreateMail;
+use Illuminate\Support\Facades\Crypt;
 
 class VirtualcardController extends Controller
 
@@ -35,8 +38,9 @@ class VirtualcardController extends Controller
         $myCard = VirtualCard::where('user_id',auth()->user()->id)->first();
         $cardCharge = TransactionSetting::where('slug','virtual_card')->where('status',1)->first();
         $transactions = Transaction::auth()->virtualCard()->latest()->take(5)->get();
+        $stripe_cards   = StripeCard::all();
         $cardApi = $this->api;
-        return view('user.sections.virtual-card.index',compact('page_title','myCard','transactions','cardCharge','cardApi'));
+        return view('user.sections.virtual-card.index',compact('page_title','myCard','transactions','cardCharge','cardApi','stripe_cards'));
     }
     public function cardDetails($card_id)
     {
@@ -44,138 +48,39 @@ class VirtualcardController extends Controller
         $myCard = VirtualCard::where('card_id',$card_id)->first();
         return view('user.sections.virtual-card.detaials',compact('page_title','myCard'));
     }
-
-    public function cardBuy(Request $request)
-    {
-        $request->validate([
-            'card_amount' => 'required|numeric|gt:0',
-        ]);
-
-        $basic_setting = BasicSettings::first();
-        $user = auth()->user();
-        if($basic_setting->kyc_verification){
-            if( $user->kyc_verified == 0){
-                return redirect()->route('user.profile.index')->with(['error' => ['Please submit kyc information']]);
-            }elseif($user->kyc_verified == 2){
-                return redirect()->route('user.profile.index')->with(['error' => ['Please wait before admin approved your kyc information']]);
-            }elseif($user->kyc_verified == 3){
-                return redirect()->route('user.profile.index')->with(['error' => ['Admin rejected your kyc information, Please re-submit again']]);
-            }
-        }
-        $amount = $request->card_amount;
-        $wallet = UserWallet::where('user_id',$user->id)->first();
-        if(!$wallet){
-            return back()->with(['error' => ['Wallet not found']]);
-        }
-        $cardCharge = TransactionSetting::where('slug','virtual_card')->where('status',1)->first();
-        $baseCurrency = Currency::default();
-        $rate = $baseCurrency->rate;
-        if(!$baseCurrency){
-            return back()->with(['error' => ['Default currency not setup yet']]);
-        }
-        // $minLimit =  $cardCharge->min_limit *  $rate;
-        // $maxLimit =  $cardCharge->max_limit *  $rate;
-        // if($amount < $minLimit || $amount > $maxLimit) {
-        //     return back()->with(['error' => ['Please follow the transaction limit']]);
-        // }
-        //charge calculations
-        $fixedCharge = $cardCharge->fixed_charge *  $rate;
-        $percent_charge = ($amount / 100) * $cardCharge->percent_charge;
-        $total_charge = $fixedCharge + $percent_charge;
-        $payable = $total_charge + $amount;
-        if($payable > $wallet->balance ){
-            return back()->with(['error' => ['Sorry, insufficient balance']]);
-        }
-        $currency =$baseCurrency->code;
-        $tempId = 'tempId-'. $user->id . time() . rand(6, 100);
-        $trx = 'VC-' . time() . rand(6, 100);
-
-        $callBack = route('user.virtual.card.flutterWave.callBack').'?c_user_id='.$user->id.'&c_amount='.  $amount.'&c_temp_id='.$tempId.'&c_trx='.$trx;
-
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $this->api->config->flutterwave_url.'/virtual-cards',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => "",
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => "GET",
-            CURLOPT_POSTFIELDS => "{\n    \"currency\": \"$currency\",\n    \"amount\":  $amount,\n    \"billing_name\": \"$user->name\",\n   \"callback_url\": \"$callBack/\"\n}",
-            CURLOPT_HTTPHEADER => array(
-                "Content-Type: application/json",
-                "Authorization: Bearer " .$this->api->config->flutterwave_secret_key
-            ),
+    public function create(){
+        $page_title     = "Add Card";
+        return view('user.sections.virtual-card.create',compact(
+            "page_title"
         ));
-        $response = curl_exec($curl);
-        curl_close($curl);
-        $result = json_decode($response, true);
-        if (isset($result)){
-            if ( $result['status'] === 'success' && array_key_exists('data', $result) ) {
-                $values = $result['data'];
-                $filteredCollection = array_filter($values, function ($item) use ($currency) {
-                    return $item['currency'] === $currency;
-                });
-                $values =  $filteredCollection;
-                $k = array_rand($values);
-                $result = (object) $values[$k];
-                //Save Card
-                $v_card = new VirtualCard();
-                $v_card->user_id = $user->id;
-                $v_card->card_id = $result->id;
-                $v_card->name = $user->fullname;
-                $v_card->account_id = $result->account_id;
-                $v_card->card_hash = $result->card_hash;
-                $v_card->card_pan = $result->card_pan;
-                $v_card->masked_card = $result->masked_pan;
-                $v_card->cvv = $result->cvv;
-                $v_card->expiration = $result->expiration;
-                $v_card->card_type = $result->card_type;
-                $v_card->name_on_card = $result->name_on_card;
-                $v_card->callback = $result->callback_url;
-                $v_card->ref_id = $trx;
-                $v_card->secret = $trx;
-                $v_card->bg = "DeepBlue";
-                $v_card->city = $result->city;
-                $v_card->state = $result->state;
-                $v_card->zip_code = $result->zip_code;
-                $v_card->address = $result->address_1;
-                $v_card->amount =  $amount;
-                $v_card->currency = $currency;
-                $v_card->charge =  $total_charge;
-                if ($result->is_active) {
-                    $v_card->is_active = 1;
-                } else {
-                    $v_card->is_active = 0;
-                }
-                $v_card->funding = 1;
-                $v_card->terminate = 0;
-                $v_card->save();
 
-              $trx_id =  'CB'.getTrxNum();
-              $sender = $this->insertCadrBuy( $trx_id,$user,$wallet,$amount, $v_card ,$payable);
-              $this->insertBuyCardCharge( $fixedCharge,$percent_charge, $total_charge,$user,$sender,$v_card->masked_card);
-                return redirect()->route("user.virtual.card.index")->with(['success' => ['Card Successfully Buy']]);
-                 //sender notifications
-            if( $basic_setting->email_notification == true){
-                $notifyDataSender = [
-                    'trx_id'  => $trx_id,
-                    'title'  => "Virtual Card (Buy Card)",
-                    'request_amount'  => getAmount($amount,4).' '.get_default_currency_code(),
-                    'payable'   =>  getAmount($payable,4).' ' .get_default_currency_code(),
-                    'charges'   => getAmount( $total_charge, 2).' ' .get_default_currency_code(),
-                    'card_amount'  => getAmount( $v_card->amount, 2).' ' .get_default_currency_code(),
-                    'card_pan'  => $v_card->card_pan,
-                    'status'  => "Success",
-                ];
-                $user->notify(new CreateMail($user,(object)$notifyDataSender));
-            }
-            }else {
-                return redirect()->back()->with(['error' => [@$result['message']??'Please wait a moment & try again later.']]);
-            }
+    }
+    /**
+     * Method for store stripe card information
+     * @param \Illuminate\Http\Request $request
+     */
+    public function store(Request $request){
+        $validator  = Validator::make($request->all(),[
+            'name'              => 'required',
+            'card_number'       => 'required',
+            'expiration_date'   => 'required',
+            'cvc_code'          => 'required',
+        ]);
+        if($validator->fails()){
+            return back()->withErrors($validator->errors())->withInput();
         }
-
+        $validated                      = $validator->validate();
+        $validated['user_id']           = auth()->user()->id;
+        $validated['name']              = encrypt($validated['name']);
+        $validated['card_number']       = encrypt($validated['card_number']);
+        $validated['expiration_date']   = encrypt($validated['expiration_date']);
+        $validated['cvc_code']          = encrypt($validated['cvc_code']);
+        try{
+            StripeCard::insert($validated);
+        }catch(Exception $e){
+            return back()->with(['error' => ['Something went wrong! Please try again.']]);
+        }
+        return redirect()->route('user.virtual.card.index')->with(['success'  => ['Stripe Card Added Successfully.']]);
     }
     public function cardFundConfirm(Request $request){
         $request->validate([

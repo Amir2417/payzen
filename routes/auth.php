@@ -125,12 +125,12 @@ Route::prefix('agent')->name('agent.')->group(function(){
      // recovery password by mobile
     Route::controller(AgentAuthForgotPasswordController::class)->prefix("password")->name("password.")->group(function(){
         Route::get('forgot','showForgotForm')->name('forgot');
-        Route::post('send/forgot/code','sendForgotCode')->name('send.code');
-        Route::get('forgot/verify/code/{token}','smsVerifyCodeForm')->name('verify.code');
-        Route::get('resend/code/{token}','smsResendCode')->name('resend.code');
-        Route::post('verify/code/{token}','smsVerifyCode')->name('verify.code.post');
-        Route::get('reset/form/{token}','showResetPasswordForm')->name('forgot.reset');
-        Route::post('reset/{token}','resetPasswordPost')->name('reset.submit');
+        Route::post('forgot/send/code','sendCode')->name('forgot.send.code');
+        Route::get('forgot/code/verify/form/{token}','showVerifyForm')->name('forgot.code.verify.form');
+        Route::post('forgot/verify/{token}','verifyCode')->name('forgot.verify.code');
+        Route::get('forgot/resend/code/{token}','resendCode')->name('forgot.resend.code');
+        Route::get('forgot/reset/form/{token}','showResetForm')->name('forgot.reset.form');
+        Route::post('forgot/reset/{token}','resetPassword')->name('reset');
 
     });
     Route::controller(AgentAuthorizationController::class)->prefix("authorize")->name('authorize.')->middleware("auth:agent")->group(function(){

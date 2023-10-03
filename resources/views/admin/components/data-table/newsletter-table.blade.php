@@ -1,7 +1,6 @@
 <table class="custom-table newletter-search-table">
     <thead>
         <tr>
-            <th>Name</th>
             <th>Email</th>
             <th>Action</th>
         </tr>
@@ -9,7 +8,6 @@
     <tbody>
         @forelse ($data ?? [] as $item)
             <tr data-item="{{ $item->editData }}">
-                <td>{{ $item->fullname }}
                 <td>{{ $item->email }}</td>
                 <td>
                     @include('admin.components.link.delete-default',[

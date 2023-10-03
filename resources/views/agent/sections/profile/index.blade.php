@@ -35,7 +35,7 @@
                             <div class="profile-thumb-content">
                                 <div class="preview-thumb profile-thumb">
                                     <div class="avatar-preview">
-                                        <div class="profilePicPreview bg_img" data-background="{{ auth()->user()->userImage }}"></div>
+                                        <div class="profilePicPreview bg_img" data-background="{{ auth()->user()->agentImage }}"></div>
                                     </div>
                                     <div class="avatar-edit">
                                         <input type='file' class="profilePicUpload" name="image" id="profilePicUpload2"

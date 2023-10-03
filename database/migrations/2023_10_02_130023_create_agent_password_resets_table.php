@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('agent_password_resets', function (Blueprint $table) {
             $table->id();
-            $table->string('mobile')->nullable();
+            $table->string('email')->nullable();
             $table->unsignedBigInteger('code')->nullable()->unique();
             $table->text('token')->unique();
             $table->unsignedBigInteger('agent_id')->nullable();

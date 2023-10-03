@@ -17,8 +17,8 @@
 <div class="body-wrapper">
     <div class="dashboard-area mt-10">
         <div class="dashboard-header-wrapper">
-            <h3 class="title">{{ __("Link Card") }}</h3>
-            <a href="" class="btn--base small buyCard">Add Card <i class="las la-plus"></i></a>
+            <h3 class="title">Link Card</h3>
+            <a href="link-card-add.html" class="btn--base">Add Card <i class="las la-plus"></i></a>
         </div>
     </div>
     <div class="row mb-30-none">
@@ -29,10 +29,10 @@
                     <button class="link-card-remove-btn"><i class="fas fa-trash"></i> Remove</button>
                 </div>
                 <div class="link-card-wrapper">
-                    <div class="link-card bg_img" data-background="{{ asset('public/frontend/images/account/account.jpg') }}">
+                    <div class="link-card bg_img" data-background="assets/images/account/account.jpg">
                         <div class="top">
                             <h2>John Doe</h2>
-                            <img src="{{ asset('public/frontend/images/element/stripe.png') }}" />
+                            <img src="assets/images/element/stripe.png" />
                         </div>
                         <div class="infos">
                             <div class="card-number">
@@ -52,46 +52,7 @@
                                 </div>
                                 <div>
                                     <section>
-                                        <img src="{{ asset('public/frontend/images/element/visa.png') }}" class="brand" />
-                                    </section>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 mb-30">
-            <div class="link-card-item">
-                <div class="title-area">
-                    <div class="h5 title">Card 1</div>
-                    <button class="link-card-remove-btn"><i class="fas fa-trash"></i> Remove</button>
-                </div>
-                <div class="link-card-wrapper">
-                    <div class="link-card bg_img" data-background="{{ asset('') }}public/frontend/images/account/account.jpg">
-                        <div class="top">
-                            <h2>John Doe</h2>
-                            <img src="public/frontend/images/element/stripe.png" />
-                        </div>
-                        <div class="infos">
-                            <div class="card-number">
-                                <p>Card Number</p>
-                                <h1>**** **** **** 4242</h1>
-                            </div>
-                            <div class="bottom">
-                                <div class="infos--bottom">
-                                    <section>
-                                        <p>Expiry date</p>
-                                        <h3>08/24</h3>
-                                    </section>
-                                    <section>
-                                        <p>CVV</p>
-                                        <h3>748</h3>
-                                    </section>
-                                </div>
-                                <div>
-                                    <section>
-                                        <img src="{{ asset('') }}public/frontend/images/element/visa.png" class="brand" />
+                                        <img src="assets/images/element/visa.png" class="brand" />
                                     </section>
                                 </div>
                             </div>

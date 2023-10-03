@@ -2,22 +2,23 @@
 
 namespace App\Http\Controllers\Agent;
 
-use App\Constants\NotificationConst;
-use App\Constants\PaymentGatewayConst;
-use App\Http\Controllers\Controller;
-use App\Models\Admin\BasicSettings;
-use App\Models\Admin\Currency;
-use App\Models\Admin\TransactionSetting;
+use Exception;
+use App\Models\User;
 use App\Models\Agent;
-use App\Models\AgentNotification;
+use App\Models\UserWallet;
 use App\Models\AgentWallet;
 use App\Models\Transaction;
-use App\Models\User;
-use App\Models\UserNotification;
-use App\Models\UserWallet;
-use Exception;
 use Illuminate\Http\Request;
+use App\Models\Admin\Currency;
+use App\Models\UserNotification;
+use App\Models\AgentNotification;
 use Illuminate\Support\Facades\DB;
+use App\Models\Admin\BasicSettings;
+use App\Constants\NotificationConst;
+use App\Http\Controllers\Controller;
+use App\Constants\PaymentGatewayConst;
+use App\Models\Admin\TransactionSetting;
+use App\Notifications\User\SendMoney\ReceiverMail;
 
 class SendMoneyController extends Controller
 {
@@ -33,11 +34,11 @@ class SendMoneyController extends Controller
         return view('agent.sections.send-money.index',compact("page_title",'sendMoneyCharge','transactions'));
     }
     public function checkUser(Request $request){
-        $fullMobile = $request->mobile;
-        $exist['data'] = Agent::where('full_mobile',$fullMobile)->orWhere('mobile',$fullMobile)->first();
+        $email = $request->email;
+        $exist['data'] = Agent::where('email',$email)->first();
 
         $user = auth()->user();
-        if(@$exist['data'] && $user->full_mobile == @$exist['data']->full_mobile || $user->mobile == @$exist['data']->mobile){
+        if(@$exist['data'] && $user->email == @$exist['data']->email){
             return response()->json(['own'=>'Can\'t transfer/request to your own']);
         }
         return response($exist);
@@ -45,7 +46,7 @@ class SendMoneyController extends Controller
     public function confirmed(Request $request){
         $request->validate([
             'amount' => 'required|numeric|gt:0',
-            'mobile' => 'required'
+            'email' => 'required'
         ]);
         $basic_setting = BasicSettings::first();
         $agent = userGuard()['user'];
@@ -70,7 +71,7 @@ class SendMoneyController extends Controller
         if(!$baseCurrency){
             return back()->with(['error' => ['Default currency not found']]);
         }
-        $receiver = Agent::where('mobile',(int)$request->mobile)->orWhere('full_mobile',(int)$request->mobile)->first();
+        $receiver = Agent::where('email',$request->email)->first();
         if(!$receiver){
             return back()->with(['error' => ['Receiver not exist']]);
         }
@@ -99,25 +100,33 @@ class SendMoneyController extends Controller
             $sender = $this->insertSender( $trx_id,$agent,$agentWallet,$amount,$recipient,$payable,$receiver);
             if($sender){
                  $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$agent,$sender,$receiver);
-                 sendSms($agent,'SEND_MONEY',[
-                    'amount'=> get_amount($amount,get_default_currency_code()),
-                    'charge' => get_amount( $total_charge,get_default_currency_code()),
-                    'to_user' => $receiver->fullname.' ( '.$receiver->username.' )',
-                    'trx' => $trx_id,
-                    'time' =>  now()->format('Y-m-d h:i:s A'),
-                    'balance' => get_amount($agentWallet->balance,$agentWallet->currency->code),
-                ]);
+                 if( $basic_setting->email_notification == true){
+                    $notifyDataSender = [
+                        'trx_id'  => $trx_id,
+                        'title'  => "Send Money to @" . @$receiver->username." (".@$receiver->email.")",
+                        'request_amount'  => getAmount($amount,4).' '.get_default_currency_code(),
+                        'payable'   =>  getAmount($payable,4).' ' .get_default_currency_code(),
+                        'charges'   => getAmount( $total_charge, 2).' ' .get_default_currency_code(),
+                        'received_amount'  => getAmount( $recipient, 2).' ' .get_default_currency_code(),
+                        'status'  => "Success",
+                    ];
+                    //sender notifications
+                    $agent->notify(new SenderMail($agent,(object)$notifyDataSender));
+                }
             }
             $receiverTrans = $this->insertReceiver( $trx_id,$agent,$agentWallet,$amount,$recipient,$payable,$receiver,$receiverWallet);
             if($receiverTrans){
                  $this->insertReceiverCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$agent,$receiverTrans,$receiver);
-                 sendSms($receiver,'RECEIVED_MONEY',[
-                    'amount'=> get_amount($amount,get_default_currency_code()),
-                    'from_user' => $agent->fullname.' ( '.$agent->username.' )',
-                    'trx' => $trx_id,
-                    'time' =>  now()->format('Y-m-d h:i:s A'),
-                    'balance' => get_amount($receiverWallet->balance,$receiverWallet->currency->code),
-                ]);
+                 if( $basic_setting->email_notification == true){
+                    $notifyDataReceiver = [
+                        'trx_id'  => $trx_id,
+                        'title'  => "Received Money from @" .@$agent->username." (".@$agent->email.")",
+                        'received_amount'  => getAmount( $recipient, 2).' ' .get_default_currency_code(),
+                        'status'  => "Success",
+                    ];
+                    //send notifications
+                    $receiver->notify(new ReceiverMail($receiver,(object)$notifyDataReceiver));
+                }
             }
 
             return redirect()->route("agent.send.money.index")->with(['success' => ['Send Money successful to '.$receiver->fullname]]);
