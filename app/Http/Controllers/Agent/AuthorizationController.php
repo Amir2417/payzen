@@ -272,6 +272,7 @@ class AuthorizationController extends Controller
     }
     public function showGoogle2FAForm() {
         $page_title =  "Authorize Google Two Factor";
+        dd("test");
         return view('agent.auth.authorize.verify-google-2fa',compact('page_title'));
     }
 

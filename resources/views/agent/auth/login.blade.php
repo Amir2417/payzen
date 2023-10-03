@@ -27,7 +27,7 @@
                         </div>
                         <h4 class="title">{{ __("Login Information") }}</h4>
                         <p>{{ __(@$auth_text->value->language->$lang->login_text) }}</p>
-                        <form class="account-form" action="{{ setRoute('user.login.submit') }}" method="POST">
+                        <form class="account-form" action="{{ setRoute('agent.login.submit') }}" method="POST">
                             @csrf
                             <div class="row">
                                 <div class="col-lg-12 form-group">
@@ -41,7 +41,7 @@
                                 </div>
                                 <div class="col-lg-12 form-group">
                                     <div class="forgot-item">
-                                        <label><a href="{{ setRoute('user.password.forgot') }}" class="text--base">{{ __("Forgot Password?") }}</a></label>
+                                        <label><a href="{{ setRoute('agent.password.forgot') }}" class="text--base">{{ __("Forgot Password?") }}</a></label>
                                     </div>
                                 </div>
                                 <div class="col-lg-12 form-group text-center">

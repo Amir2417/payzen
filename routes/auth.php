@@ -124,7 +124,7 @@ Route::prefix('agent')->name('agent.')->group(function(){
 
      // recovery password by mobile
     Route::controller(AgentAuthForgotPasswordController::class)->prefix("password")->name("password.")->group(function(){
-        Route::get('forgot/sms','smsForgotForm')->name('forgot.mobile');
+        Route::get('forgot','showForgotForm')->name('forgot');
         Route::post('send/forgot/code','sendForgotCode')->name('send.code');
         Route::get('forgot/verify/code/{token}','smsVerifyCodeForm')->name('verify.code');
         Route::get('resend/code/{token}','smsResendCode')->name('resend.code');

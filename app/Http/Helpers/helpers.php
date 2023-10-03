@@ -1712,11 +1712,16 @@ function userGuard() {
     } else if(auth()->guard('merchant')->check()){
         $user = auth()->guard('merchant')->user();
         $userType = 'MERCHANT';
-        $guard = "4";
+        $guard = "3";
     }else if(auth()->guard('merchant_api')->check()){
         $user = auth()->guard('merchant_api')->user();
         $userType = 'MERCHANT';
         $guard = "4";
+    }
+    else if(auth()->guard('agent')->check()){
+        $user = auth()->guard('agent')->user();
+        $userType = 'AGENT';
+        $guard = "5";
     }
 
     return [
@@ -1725,6 +1730,7 @@ function userGuard() {
         'guard'=>$guard
     ];
 }
+
 function generate_google_2fa_auth_qr() {
     $google2FA = new \PragmaRX\Google2FA\Google2FA();
     $secret_key = $google2FA->generateSecretKey();
@@ -1750,7 +1756,9 @@ function googleTwoFactorVerificationTemplate($user) {
 function merchantGoogleTwoFactorVerificationTemplate($user) {
     return redirect()->route('merchant.authorize.google.2fa')->with(['error' => ['Please verify two factor authentication']]);
 }
-
+function agentGoogleTwoFactorVerificationTemplate($user) {
+    return redirect()->route('agent.authorize.google.2fa')->with(['error' => ['Please verify two factor authentication']]);
+}
 function google_2fa_verify($secret_key,$code) {
     $google2FA = new \PragmaRX\Google2FA\Google2FA();
     if($google2FA->verifyKey($secret_key, $code,0) == false) {

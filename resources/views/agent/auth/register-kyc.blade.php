@@ -24,7 +24,7 @@
                         </div>
                         <h4 class="title">{{ __("KYC Form") }}</h4>
                         <p>{{ __("Please input all the fild for login to your account to get access to your dashboard.") }}</p>
-                        <form class="account-form" action="{{ setRoute('user.register.submit') }}" method="POST" enctype="multipart/form-data">
+                        <form class="account-form" action="{{ setRoute('agent.register.submit') }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <div class="row">
                                 <div class="col-xl-4 col-lg-4 col-md-4 form-group">
@@ -97,7 +97,7 @@
                                 </div>
                                 <div class="col-lg-12">
                                     <div class="account-item text-center mt-10">
-                                        <label>{{ __("Already Have An Account?") }} <a href="{{ setRoute('user.login') }}" class="text--base">{{ __("Login Now") }}</a></label>
+                                        <label>{{ __("Already Have An Account?") }} <a href="{{ setRoute('agent.login') }}" class="text--base">{{ __("Login Now") }}</a></label>
                                     </div>
                                 </div>
                             </div>

@@ -4,12 +4,13 @@ namespace App\Models;
 
 use App\Constants\GlobalConst;
 use App\Traits\Agent\UserPartials;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Passport\HasApiTokens;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Agent extends Model
+class Agent extends Authenticatable
 {
     use UserPartials,HasApiTokens, HasFactory, Notifiable;
     protected $appends = ['fullname','agentImage','stringStatus','lastLogin','kycStringStatus'];

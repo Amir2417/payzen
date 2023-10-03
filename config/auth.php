@@ -48,6 +48,10 @@ return [
             'driver' => 'session',
             'provider' => 'merchants',
         ],
+        'agent' => [
+            'driver' => 'session',
+            'provider' => 'agents',
+        ],
         'api' => [
             'driver' => 'passport',
             'provider' => 'users',
@@ -89,6 +93,10 @@ return [
             'driver' => 'eloquent',
             'model' => App\Models\Merchants\Merchant::class,
         ],
+        'agents' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Agent::class,
+        ],
 
         // 'users' => [
         //     'driver' => 'database',
@@ -127,6 +135,11 @@ return [
         'merchants' => [
             'provider' => 'merchants',
             'table' => 'merchant_password_resets',
+            'expire' => 60,
+        ],
+        'agents' => [
+            'provider' => 'agents',
+            'table' => 'agent_password_resets',
             'expire' => 60,
         ],
 

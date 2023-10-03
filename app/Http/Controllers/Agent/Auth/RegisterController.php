@@ -142,10 +142,8 @@ class RegisterController extends Controller
         try{
             $auth_column->delete();
         }catch(Exception $e) {
-            dd($e);
             return redirect()->route('agent.register')->with(['error' => ['Something went worng! Please try again']]);
         }
-// dd("test");
         return redirect()->route("agent.register.kyc")->with(['success' => ['Otp successfully verified']]);
     }
     public function resendCode(Request $request){
@@ -213,20 +211,22 @@ class RegisterController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
-    public function register(Request $request)
-    {
-
+    public function register(Request $request){
+        $basic_settings             = $this->basic_settings;
         $validated = $this->validator($request->all())->validate();
-        $user_kyc_fields = SetupKyc::agentKyc()->first()->fields ?? [];
-        $validation_rules = $this->generateValidationRules($user_kyc_fields);
-        $kyc_validated = Validator::make($request->all(),$validation_rules)->validate();
-        $get_values = $this->registerPlaceValueWithFields($user_kyc_fields,$kyc_validated);
+        if($basic_settings->kyc_verification == true){
+            $agent_kyc_fields = SetupKyc::agentKyc()->first()->fields ?? [];
+            $validation_rules = $this->generateValidationRules($agent_kyc_fields);
+            $kyc_validated = Validator::make($request->all(),$validation_rules)->validate();
+            $get_values = $this->registerPlaceValueWithFields($agent_kyc_fields,$kyc_validated);
+        }
+
         try{
             $validated['phone_code'] = get_country_phone_code($validated['country']);
         }catch(Exception $e) {
             return $this->breakAuthentication($e->getMessage());
         }
-        $basic_settings             = $this->basic_settings;
+
         $validated['mobile']        = remove_speacial_char($validated['phone']);
         $validated['mobile_code']   = remove_speacial_char($validated['phone_code']);
         $complete_phone             = $validated['mobile_code'] . $validated['mobile'];
@@ -236,18 +236,12 @@ class RegisterController extends Controller
                 'phone'     => 'Phone number is already exists',
             ]);
         }
-        if(Agent::where('email',$validated['email'])->exists()) {
-            throw ValidationException::withMessages([
-                'email'     => 'Email address is already exists',
-            ]);
-        }
-
 
         $validated['full_mobile']       = $complete_phone;
         $validated = Arr::except($validated,['agree','phone_code','phone']);
-        $validated['email_verified']    = ($basic_settings->email_verification == true) ? false : true;
-        // $validated['sms_verified']      = ($basic_settings->sms_verification == true) ? false : true;
-        $validated['sms_verified']      =  true;
+       
+        $validated['email_verified']    = true;
+        $validated['sms_verified']      = ($basic_settings->sms_verification == true) ? false : true;
         $validated['kyc_verified']      = ($basic_settings->kyc_verification == true) ? false : true;
         $validated['password']          = Hash::make($validated['password']);
         $validated['username']          = make_username($validated['firstname'],$validated['lastname']);
@@ -259,7 +253,7 @@ class RegisterController extends Controller
                                             'address' => '',
                                         ];
        $data = event(new Registered($user = $this->create($validated)));
-       if( $data){
+       if( $data && $basic_settings->kyc_verification == true){
         $create = [
             'agent_id'       => $user->id,
             'data'          => json_encode($get_values),
@@ -279,15 +273,16 @@ class RegisterController extends Controller
                 'kyc_verified'  => GlobalConst::DEFAULT,
             ]);
 
-            return back()->with(['error' => ['Something went worng! Please try again']]);
+            return back()->with(['error' => ['Something went wrong! Please try again']]);
         }
 
-        $request->session()->forget('register_info');
        }
+       $request->session()->forget('register_info');
         $this->guard()->login($user);
 
-        return $this->registered($request, $user);
+        return $this->registered($request, $user); 
     }
+    
     protected function guard()
     {
         return Auth::guard('agent');
@@ -317,7 +312,7 @@ class RegisterController extends Controller
             'lastname'      => 'required|string|max:60',
             'email'         => 'required|string|email|max:150|unique:agents,email',
             'password'      => $passowrd_rule,
-            'country'       => 'required|string|max:15',
+            'country'       => 'required|string',
             'city'       => 'required|string|max:20',
             'phone_code'    => 'required|string|max:10',
             'phone'         => 'required|string|max:20',
