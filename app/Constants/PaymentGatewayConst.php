@@ -22,6 +22,11 @@ class PaymentGatewayConst {
     const TYPEMONEYEXCHANGE = "MONEY-EXCHANGE";
     const BILLPAY = "BILL-PAY";
     const MOBILETOPUP = "MOBILE-TOPUP";
+    const REQUESTMONEY = "REQUEST-MONEY";
+    const VOUCHER = "VOUCHER";
+    const INVOICE = "INVOICE";
+    const EDUCATIONALFEE = "EDUCATION-FEE";
+    const CASHIN  ="CASH-IN";
     const VIRTUALCARD = "VIRTUAL-CARD";
     const CARDBUY = "CARD-BUY";
     const CARDFUND = "CARD-FUND";

@@ -17,12 +17,14 @@ use App\Http\Controllers\Controller;
 use App\Constants\PaymentGatewayConst;
 use App\Models\Admin\TransactionSetting;
 use Illuminate\Support\Facades\Validator;
+use App\Traits\Transaction as TransactionTrait;
 use App\Providers\Admin\BasicSettingsProvider;
 use App\Notifications\User\SendMoney\SenderMail;
 use App\Notifications\User\SendMoney\ReceiverMail;
 
 class SendMoneyController extends Controller
 {
+    use TransactionTrait;
     protected  $trx_id;
 
     public function __construct()
@@ -34,7 +36,6 @@ class SendMoneyController extends Controller
         $sender_wallets = UserWallet::auth()->whereHas('currency',function($q) {
             $q->where("sender",GlobalConst::ACTIVE)->where("status",GlobalConst::ACTIVE);
         })->active()->get();
-        // dd($sender_wallets);
         $receiver_wallets = Currency::receiver()->active()->get();
         $sendMoneyCharge = TransactionSetting::where('slug','transfer')->where('status',1)->first();
         $transactions = Transaction::auth()->senMoney()->latest()->take(10)->get();
@@ -89,14 +90,13 @@ class SendMoneyController extends Controller
         $receiver_wallet = UserWallet::where("user_id",$receiver->id)->whereHas("currency",function($q) use ($receiver_currency){
             $q->receiver()->where("code",$receiver_currency->code);
         })->first();
-
         if(!$receiver_wallet) return back()->with(['error' => ['Receiver wallet not available']]);
 
         if($charges['payable'] > $sender_wallet->balance) return back()->with(['error' => ['Your wallet balance is insufficient']]);
 
         DB::beginTransaction();
         try{
-            $trx_id = generate_unique_string("transactions","trx_id",16);
+            $trx_id = 'SM'.getTrxNum();
             // Sender TRX
             $inserted_id = DB::table("transactions")->insertGetId([
                 'user_id'           => $sender_wallet->user->id,
@@ -107,7 +107,7 @@ class SendMoneyController extends Controller
                 'payable'           => $charges['payable'],
                 'available_balance' => $sender_wallet->balance - $charges['payable'],
                 'attribute'         => PaymentGatewayConst::SEND,
-                'details'           => json_encode(['receiver_username'=> $receiver_wallet->user->username,'sender_username'=> $sender_wallet->user->username,'charges' => $charges]),
+                'details'           => json_encode(['receiver_username'=> $receiver_wallet->user->username,'receiver_email'=> $receiver_wallet->user->email,'sender_username'=> $sender_wallet->user->username,'sender_email'=> $sender_wallet->user->email,'charges' => $charges]),
                 'status'            => GlobalConst::SUCCESS,
                 'created_at'        => now(),
             ]);
@@ -122,12 +122,12 @@ class SendMoneyController extends Controller
                 'payable'           => $charges['receiver_amount'],
                 'available_balance' => $receiver_wallet->balance + $charges['receiver_amount'],
                 'attribute'         => PaymentGatewayConst::RECEIVED,
-                'details'           => json_encode(['receiver_username'=> $receiver_wallet->user->username,'sender_username'=> $sender_wallet->user->username,'charges' => $charges]),
+                'details'           => json_encode(['receiver_username'=> $receiver_wallet->user->username,'receiver_email'=> $receiver_wallet->user->email,'sender_username'=> $sender_wallet->user->username,'sender_email'=> $sender_wallet->user->email,'charges' => $charges]),
                 'status'            => GlobalConst::SUCCESS,
                 'created_at'        => now(),
             ]);
 
-            // $this->createTransactionChildRecords($inserted_id,(object) $charges);
+            $this->createTransactionChildRecords($inserted_id,(object) $charges);
 
             $sender_wallet->balance -= $charges['payable'];
             $sender_wallet->save();

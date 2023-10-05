@@ -35,13 +35,19 @@ class RemitanceController extends Controller
         $receipients = Receipient::auth()->orderByDesc("id")->paginate(12);
         $transactions = Transaction::auth()->remitance()->latest()->take(5)->get();
         $defaultCurrency = Currency::where('default',true)->first();
+        $sender_wallets = UserWallet::auth()->whereHas('currency',function($q) {
+            $q->where("sender",GlobalConst::ACTIVE)->where("status",GlobalConst::ACTIVE);
+        })->active()->get();
+        $receiver_wallets = Currency::receiver()->active()->get();
         return view('user.sections.remittance.index',compact(
             "page_title",
             'exchangeCharge',
             'receiverCountries',
             'receipients',
             'transactions',
-            'defaultCurrency'
+            'defaultCurrency',
+            "sender_wallets",
+            "receiver_wallets"
         ));
     }
     public function confirmed(Request $request){
@@ -50,8 +56,8 @@ class RemitanceController extends Controller
             'to_country'                 =>'required',
             'transaction_type'           =>'required|string',
             'recipient'                  =>'required',
-            'send_amount'                =>"required|numeric",
-            'receive_amount'             =>'required|numeric',
+            'send_amount'                =>"required",
+            'receive_amount'             =>'required',
 
         ]);
         $basic_setting = BasicSettings::first();

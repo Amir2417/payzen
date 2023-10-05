@@ -49,7 +49,7 @@
 
                             </div>
                             <div class="col-xl-6 col-lg-6 form-group">
-                                <label>{{ __("Transfer Amount") }}<span>*</span></label>
+                                <label>{{ __("Request Amount") }}<span>*</span></label>
                                 <div class="input-group">
                                     <input type="text" class="form--control" maxlength="20" placeholder="Enter Amount" name="sender_amount" value="{{ old("sender_amount") }}">
                                     <div class="ad-select">
@@ -253,7 +253,7 @@
             </div>
         </div>
         <div class="dashboard-list-wrapper">
-            {{-- @include('user.components.transaction-log',compact("transactions")) --}}
+            @include('user.components.transaction-log',compact("transactions"))
         </div>
     </div>
 </div>

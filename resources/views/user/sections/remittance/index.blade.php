@@ -32,15 +32,19 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                             <div class="row">
                                 <div class="col-xl-6 col-lg-6 form-group">
                                     <label>{{ __("From Country") }} <span class="text--base">*</span></label>
-                                    <select class="form--control select2-auto-tokenize"  name="form_country" required data-minimum-results-for-search="Infinity">
-                                        <option value="{{ get_default_currency_code() }}" ><img src="{{ get_image(@$defaultCurrency->flag ,'currency-flag') }}" alt="">{{ get_default_currency_name() }}</option>
+                                    <select class="form--control select2-basic"  name="form_country" required data-minimum-results-for-search="Infinity">
+                                        @foreach ($sender_wallets as $item)
+                                            <option value="{{ $item->currency->id }}"
+                                                data-code="{{ $item->currency->code }}"
+                                                data-symbol="{{ $item->currency->symbol }}"
+                                                data-rate="{{ $item->currency->rate }}"
+                                                data-name="{{ $item->currency->country }}"><img src="{{ get_image($item->currency->flag ,'currency-flag') }}" alt="">{{ $item->currency->country }}</option>
+                                        @endforeach
                                     </select>
-
                                 </div>
                                 <div class="col-xl-6 col-lg-6 form-group">
                                     <label>{{ __("To Country ") }}<span class="text--base">*</span></label>
                                     <select name="to_country" class="form--control select2-basic" required data-placeholder="Select To Country" >
-                                        {{-- <option disabled selected value="">Select To Country</option> --}}
                                         @foreach ($receiverCountries as $country)
                                             <option value="{{ $country->id }}" {{ @$token->receiver_country ==  $country->id ? 'selected':''}}
                                                 data-code="{{ $country->code }}"
@@ -54,10 +58,6 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                 <div class="col-xl-10 col-lg-10 form-group">
                                     <label>{{__("Receipient")}} <span class="text--base">*</span></label>
                                     <select name="recipient" class="form--control  select2-basic  recipient" required data-placeholder="Select Receipient" >
-
-                                        {{-- @foreach ($receipients as $value)
-                                            <option value="{{ $value->id }}">{{ $value->fullname }}</option>
-                                        @endforeach --}}
                                     </select>
                                 </div>
                                 <div class="col-xl-2 col-lg-2 form-group mt-4">
@@ -68,29 +68,27 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                 <div class="col-xl-12 col-lg-12 form-group">
                                     <label>{{ __("Payment Method") }}<span>*</span></label>
                                     <select  name="transaction_type" required  class="form--control nice-select" data-placeholder="Select Transaction Type" data-minimum-results-for-search="Infinity">
-                                        {{-- <option disabled selected value="">{{ __("Select Transaction Type") }}</option> --}}
                                         <option value="bank-transfer" {{ @$token->transacion_type == 'bank-transfer' ? 'selected':''}} data-name="Bank Transfer">{{__("Bank Transfer")}}</option>
                                         <option value="wallet-to-wallet-transfer" {{ @$token->transacion_type == 'wallet-to-wallet-transfer' ? 'selected':''}} data-name="wallet-to-wallet-transfer">{{ @$basic_settings->site_name }} {{__("Wallet")}}</option>
                                         <option value="cash-pickup" {{ @$token->transacion_type ==  'cash-pickup' ? 'selected':''}} data-name="Cash Pickup">{{__("Cash Pickup")}}</option>
 
                                 </select>
                                 </div>
-                                
-
                                 <div class="col-xl-6 col-lg-6 form-group">
                                     <label>{{ __("Sending Amount") }} <span class="text--base">*</span></label>
                                     <div class="input-group">
-                                        <input type="number" name="send_amount" class="form--control" placeholder="Enter Amount" value="{{ old('send_amount') }}" >
+                                        <input type="number" name="send_amount" class="form--control" step="0.01" placeholder="Enter Amount" value="{{ old('send_amount') }}" >
                                         <div class="input-group-append">
-                                            <span class="input-group-text copytext">{{ get_default_currency_code() }}</span>
+                                            <span class="input-group-text copytext send_cur_code">{{ get_default_currency_code() }}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-xl-6 col-lg-6 form-group">
                                     <label>{{ __("Recipient Get") }} <span class="text--base">*</span></label>
                                     <div class="input-group">
-                                        <input type="number" name="receive_amount" class="form--control" placeholder="Enter Amount" value="{{ old('receive_amount') }}" >
+                                        <input type="number" name="receive_amount" class="form--control" step="0.01" placeholder="Enter Amount" value="{{ old('receive_amount') }}" >
                                         <div class="input-group-append">
+                                            
                                             <span class="input-group-text reciver_curr_code">{{ get_default_currency_code() }}</span>
                                         </div>
                                     </div>
@@ -303,6 +301,13 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
     // readOnly();
 
     });
+    $("select[name=form_country]").change(function(){
+        
+        set_from_currency_code();
+        getPreview();
+        getExchangeRate();
+
+    });
     $("select[name=to_country]").change(function(){
         recipientFilterByCountry();
         set_currency_code();
@@ -377,13 +382,14 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             var element = event;
             var currencyCode = acceptVar().receiverCurrency;
             var currencyRate = acceptVar().receiverCurrency_rate;
+            var sender_currency = acceptVar().sCurrency;
             // var currencyMinAmount = acceptVar().currencyMinAmount;
             // var currencyMaxAmount = acceptVar().currencyMaxAmount;
-            $('.rate-show').html("1 " + defualCurrency + " = " + parseFloat(currencyRate).toFixed(2) + " " + currencyCode);
+            $('.rate-show').html("1 " + sender_currency + " = " + parseFloat(currencyRate).toFixed(2) + " " + currencyCode);
     }
     function acceptVar() {
-           var senderCurrency = defualCurrency;
-           var senderCurrency_rate = defualCurrencyRate;
+           var senderCurrency = $("select[name=form_country] :selected").data('code');
+           var senderCurrency_rate = $("select[name=form_country] :selected").data('rate');
            var receiver_conctry = $("select[name=to_country] :selected").val();
            var receiver_conctry_name = $("select[name=to_country] :selected").data('name');
            var receiverCurrency = $("select[name=to_country] :selected").data('code');
@@ -477,6 +483,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             var sender_amount = $("input[name=send_amount]").val();
             var receiver_amount = $("input[name=receive_amount]");
             if($.isNumeric(sender_amount)) {
+                console.log(sender_amount);
                 var rate = parseFloat(receiver_currency_rate) / parseFloat(sender_currency_rate);
                 var receiver_will_get = parseFloat(rate) * parseFloat(sender_amount);
                 receiver_will_get = parseFloat(receiver_will_get).toFixed(2);
@@ -558,6 +565,14 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         }
 
     }
+    function set_from_currency_code(){
+        var senderCurrency = acceptVar().sCurrency;
+        var transacion_type = acceptVar().tranaction_type;
+        
+        $('.send_cur_code').text(senderCurrency)
+        
+
+    }
     function getPreview() {
             var senderAmount = $("input[name=send_amount]").val();
             var receiveAmount = $("input[name=receive_amount]").val();
@@ -566,14 +581,14 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             var receiverCurrency = acceptVar().receiverCurrency;
             var receiverCurrency_rate = acceptVar().receiverCurrency_rate;
             var receiver_conctry_name = acceptVar().receiver_conctry_name;
-            var sender_country = senderCountry;
+            var sender_country = $("select[name=form_country] :selected").data('name');
             var receipient = acceptVar().recipientName;
             var tranaction_name = acceptVar().tranaction_name;
 
 
             senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
             // Sending Amount
-            $('.request-amount').text(senderAmount + " " + defualCurrency);
+            $('.request-amount').text(senderAmount + " " + sender_currency);
             receiveAmount == "" ? receiveAmount = 0 : receiveAmount = receiveAmount;
             // receiveAmount Amount
             $('.recipient-amount').text(receiveAmount + " " + receiverCurrency);

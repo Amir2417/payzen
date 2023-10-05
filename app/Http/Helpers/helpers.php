@@ -1562,7 +1562,14 @@ function its_image(string $string) {
     if(in_array($extension,imageExtenstions())) return true;
     return false;
 }
-
+function get_transaction_numeric_attribute(string $attribute) {
+    if($attribute == PaymentGatewayConst::SEND) {
+        return "-";
+    }else if($attribute == PaymentGatewayConst::RECEIVED) {
+        return "+";
+    }
+    return "";
+}
 function get_file_link($path_source, $name = null) {
     if($name == null) return false;
     $path = files_asset_path($path_source);
