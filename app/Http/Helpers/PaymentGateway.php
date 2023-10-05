@@ -125,8 +125,6 @@ class PaymentGateway {
 
         $amount = $this->request_data[$this->amount_input];
         $sender_currency_rate = $currency->rate;
-        // $defualt_currency = Currency::default();
-        // $receiver_currency = $defualt_currency;
         ($sender_currency_rate == "" || $sender_currency_rate == null) ? $sender_currency_rate = 0 : $sender_currency_rate;
         ($amount == "" || $amount == null) ? $amount : $amount;
 

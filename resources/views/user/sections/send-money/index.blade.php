@@ -20,128 +20,224 @@
             <h3 class="title">{{__(@$page_title)}}</h3>
         </div>
     </div>
-    <div class="row mb-30-none">
-        <div class="col-xl-6 mb-30">
-            <div class="dash-payment-item-wrapper">
-                <div class="dash-payment-item active">
-                    <div class="dash-payment-title-area">
-                        <span class="dash-payment-badge">!</span>
-                        <h5 class="title">{{ __("Money Transfer") }}</h5>
-                    </div>
-                    <div class="dash-payment-body">
-                        <form class="card-form" action="{{ setRoute('user.send.money.confirmed') }}" method="POST">
-                            @csrf
-                            <div class="row">
-                                <div class="col-xl-12 col-lg-12 form-group text-center">
-                                    <div class="exchange-area">
-                                        <code class="d-block text-center"><span class="fees-show">--</span> <span class="limit-show">--</span></code>
-                                    </div>
-                                </div>
-                                <div class="col-xxl-6 col-xl-6 col-lg-6 form-group paste-wrapper">
-                                    <label>{{ __("Email Address") }} ({{ __("User") }})<span class="text--base">*</span></label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text copytext">{{ __("Email") }}</span>
-                                        </div>
-                                        <input type="email" name="email" class="form--control checkUser" id="username" placeholder="Enter Email" value="{{ old('email') }}" />
-                                    </div>
-                                    <button type="button" class="paste-badge scan"  data-toggle="tooltip" title="Scan QR"><i class="fas fa-camera"></i></button>
-                                    <label class="exist text-start"></label>
-
-                                </div>
-
-                                <div class="col-xxl-6 col-xl-6 col-lg-6 form-group">
-                                    <label>{{ __("Amount") }}<span>*</span></label>
-                                    <div class="input-group">
-                                        <input type="number" class="form--control" required placeholder="Enter Amount" name="amount" value="{{ old("amount") }}">
-                                        <select class="form--control nice-select currency" name="currency">
-                                            <option value="{{ get_default_currency_code() }}">{{ get_default_currency_code() }}</option>
-                                        </select>
-                                    </div>
-                                    <code class="d-block mt-10 text-end text--warning balance-show">{{ __("Available Balance") }} {{ authWalletBalance() }} {{ get_default_currency_code() }}</code>
-                                </div>
-
-                                <div class="col-xl-12 col-lg-12">
-                                    <button type="submit" class="btn--base w-100 btn-loading transfer">{{ __("Confirm Send") }} <i class="fas fa-paper-plane ms-1"></i></i></button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+    <div class="row mb-20-none">
+        <div class="col-xl-7 col-lg-7 mb-20">
+            <div class="custom-card mt-10">
+                <div class="dashboard-header-wrapper">
+                    <h5 class="title">{{ __($page_title) }}</h5>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-6 mb-30">
-            <div class="dash-payment-item-wrapper">
-                <div class="dash-payment-item active">
-                    <div class="dash-payment-title-area">
-                        <span class="dash-payment-badge">!</span>
-                        <h5 class="title">{{__("Money Transfer Summery")}}</h5>
-                    </div>
-                    <div class="dash-payment-body">
-                        <div class="preview-list-wrapper">
+                <div class="card-body">
+                    <form class="card-form bounce-safe" method="POST" action="{{ setRoute('user.send.money.confirmed') }}">
+                        @csrf
+                        <div class="row">
+                            <div class="col-xl-12 col-lg-12 form-group text-center">
+                                <div class="exchange-area">
+                                    <code class="d-block mt-10 fees-show">--</code>
+                                    <code class="d-block mt-10 limit-show">--</code>
+                                </div>
+                            </div>
+                            <div class="col-xxl-12 col-xl-12 col-lg- form-group paste-wrapper">
+                                <label>{{ __("Email Address") }} ({{ __("User") }})<span class="text--base">*</span></label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text copytext">{{ __("Email") }}</span>
+                                    </div>
+                                    <input type="email" name="email" class="form--control checkUser" id="username" placeholder="Enter Email" value="{{ old('email') }}" />
+                                </div>
+                                <button type="button" class="paste-badge scan"  data-toggle="tooltip" title="Scan QR"><i class="fas fa-camera"></i></button>
+                                <label class="exist text-start"></label>
 
-                            <div class="preview-list-item">
-                                <div class="preview-list-left">
-                                    <div class="preview-list-user-wrapper">
-                                        <div class="preview-list-user-icon">
-                                            <i class="las la-coins"></i>
-                                        </div>
-                                        <div class="preview-list-user-content">
-                                            <span>{{ __("Entered Amount") }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="preview-list-right">
-                                    <span class="fw-bold request-amount">--</span>
-                                </div>
                             </div>
-                            <div class="preview-list-item">
-                                <div class="preview-list-left">
-                                    <div class="preview-list-user-wrapper">
-                                        <div class="preview-list-user-icon">
-                                            <i class="las la-battery-half"></i>
+                            <div class="col-xl-6 col-lg-6 form-group">
+                                <label>{{ __("Transfer Amount") }}<span>*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form--control" maxlength="20" placeholder="Enter Amount" name="sender_amount" value="{{ old("sender_amount") }}">
+                                    <div class="ad-select">
+                                        <div class="custom-select">
+                                            <div class="custom-select-inner">
+                                                <input type="hidden" name="sender_currency">
+                                                <span class="custom-currency">--</span>
+                                            </div>
                                         </div>
-                                        <div class="preview-list-user-content">
-                                            <span>{{ __("Transfer Fee") }}</span>
+                                        <div class="custom-select-wrapper">
+                                            <div class="custom-select-search-box">
+                                                <div class="custom-select-search-wrapper">
+                                                    <button type="submit" class="search-btn"><i class="las la-search"></i></button>
+                                                    <input type="text" class="form--control custom-select-search" placeholder="Search currency...">
+                                                </div>
+                                            </div>
+                                            <div class="custom-select-list-wrapper">
+                                                <ul class="custom-select-list">
+                                                    @foreach ($sender_wallets as $item)
+                                                        <li class="custom-option" data-item='{{ json_encode($item->currency) }}'>
+                                                            <img src="{{ get_image($item->currency->flag,'currency-flag') }}" alt="flag" class="custom-flag">
+                                                            <span class="custom-country">{{ $item->currency->name }}</span>
+                                                            <span class="custom-currency">{{ $item->currency->code }}</span>
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="preview-list-right">
-                                    <span class="fees">--</span>
-                                </div>
+                                <code class="d-block mt-10 balance-show">--</code>
+                                
                             </div>
-                            <div class="preview-list-item">
-                                <div class="preview-list-left">
-                                    <div class="preview-list-user-wrapper">
-                                        <div class="preview-list-user-icon">
-                                            <i class="las la-receipt"></i>
+                            <div class="col-xl-6 col-lg-6 form-group">
+                                <label>{{ __("Receiver Amount") }}<span>*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form--control" readonly maxlength="20" placeholder="Enter Amount" name="receiver_amount" value="{{ old("receiver_amount") }}">
+                                    <div class="ad-select">
+                                        <div class="custom-select">
+                                            <div class="custom-select-inner">
+                                                <input type="hidden" name="receiver_currency">
+                                                <span class="custom-currency">--</span>
+                                            </div>
                                         </div>
-                                        <div class="preview-list-user-content">
-                                            <span>{{ __("Recipient Received") }}</span>
+                                        <div class="custom-select-wrapper">
+                                            <div class="custom-select-search-box">
+                                                <div class="custom-select-search-wrapper">
+                                                    <button type="submit" class="search-btn"><i class="las la-search"></i></button>
+                                                    <input type="text" class="form--control custom-select-search" placeholder="Search currency...">
+                                                </div>
+                                            </div>
+                                            <div class="custom-select-list-wrapper">
+                                                <ul class="custom-select-list">
+                                                    @foreach ($receiver_wallets as $item)
+                                                        <li class="custom-option" data-item='{{ json_encode($item) }}'>
+                                                            <img src="{{ get_image($item->flag,'currency-flag') }}" alt="flag" class="custom-flag">
+                                                            <span class="custom-country" b>{{ $item->name }}</span>
+                                                            <span class="custom-currency">{{ $item->code }}</span>
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="preview-list-right">
-                                    <span class="recipient-get">--</span>
-                                </div>
-                            </div>
-                            <div class="preview-list-item">
-                                <div class="preview-list-left">
-                                    <div class="preview-list-user-wrapper">
-                                        <div class="preview-list-user-icon">
-                                            <i class="las la-money-check-alt"></i>
-                                        </div>
-                                        <div class="preview-list-user-content">
-                                            <span>{{__("Total Payable")}}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="preview-list-right">
-                                    <span class="last payable-total text-warning">--</span>
                                 </div>
                             </div>
                         </div>
-
+                     
+                    
+                        <div class="col-xl-12 col-lg-12">
+                            <button type="submit" class="btn--base w-100 btn-loading transfer">{{ __("Confirm Send") }} <i class="fas fa-paper-plane ms-1"></i></i></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-5 col-lg-5 mb-20">
+            <div class="custom-card mt-10">
+                <div class="dashboard-header-wrapper">
+                    <h5 class="title">{{ __("Summary") }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="preview-list-wrapper">
+                        <div class="preview-list-item">
+                            <div class="preview-list-left">
+                                <div class="preview-list-user-wrapper">
+                                    <div class="preview-list-user-icon">
+                                        <i class="las la-wallet"></i>
+                                    </div>
+                                    <div class="preview-list-user-content">
+                                        <span>{{ __("Sending From Wallet") }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="preview-list-right">
+                                <span><span class="text--base sender-currency">--</span></span>
+                            </div>
+                        </div>
+                        <div class="preview-list-item">
+                            <div class="preview-list-left">
+                                <div class="preview-list-user-wrapper">
+                                    <div class="preview-list-user-icon">
+                                        <i class="las la-wallet"></i>
+                                    </div>
+                                    <div class="preview-list-user-content">
+                                        <span>{{ __("Receiver Wallet") }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="preview-list-right">
+                                <span><span class="text--base receiver-currency">--</span></span>
+                            </div>
+                        </div>
+                        <div class="preview-list-item">
+                            <div class="preview-list-left">
+                                <div class="preview-list-user-wrapper">
+                                    <div class="preview-list-user-icon">
+                                        <i class="las la-receipt"></i>
+                                    </div>
+                                    <div class="preview-list-user-content">
+                                        <span>{{ __("Sending Amount") }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="preview-list-right">
+                                <span class="text--success request-amount">--</span>
+                            </div>
+                        </div>
+                        <div class="preview-list-item">
+                            <div class="preview-list-left">
+                                <div class="preview-list-user-wrapper">
+                                    <div class="preview-list-user-icon">
+                                        <i class="las la-exchange-alt"></i>
+                                    </div>
+                                    <div class="preview-list-user-content">
+                                        <span>{{ __("Exchange Rate") }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="preview-list-right">
+                                <span class="rate-show">--</span>
+                            </div>
+                        </div>
+                        <div class="preview-list-item">
+                            <div class="preview-list-left">
+                                <div class="preview-list-user-wrapper">
+                                    <div class="preview-list-user-icon">
+                                        <i class="las la-battery-half"></i>
+                                    </div>
+                                    <div class="preview-list-user-content">
+                                        <span>{{ __("Total Fees & Charges") }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="preview-list-right">
+                                <span class="text--warning fees">--</span>
+                            </div>
+                        </div>
+                        <div class="preview-list-item">
+                            <div class="preview-list-left">
+                                <div class="preview-list-user-wrapper">
+                                    <div class="preview-list-user-icon">
+                                        <i class="lab la-get-pocket"></i>
+                                    </div>
+                                    <div class="preview-list-user-content">
+                                        <span>{{ __("Receiver Will Get") }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="preview-list-right">
+                                <span class="text--danger receive-amount">--</span>
+                            </div>
+                        </div>
+                        <div class="preview-list-item">
+                            <div class="preview-list-left">
+                                <div class="preview-list-user-wrapper">
+                                    <div class="preview-list-user-icon">
+                                        <i class="las la-money-check-alt"></i>
+                                    </div>
+                                    <div class="preview-list-user-content">
+                                        <span class="last">{{ __("Total Payable Amount") }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="preview-list-right">
+                                <span class="text--info last pay-in-total">--</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -149,15 +245,15 @@
     </div>
     <div class="dashboard-list-area mt-20">
         <div class="dashboard-header-wrapper">
-            <h4 class="title ">{{__("Send Money Log")}}</h4>
+            <h5 class="title">{{ __("Send Money Log") }}</h5>
             <div class="dashboard-btn-wrapper">
-                <div class="dashboard-btn mb-2">
-                    <a href="{{ setRoute('user.transactions.index','transfer-money') }}" class="btn--base">{{__("View More")}}</a>
+                <div class="dashboard-btn">
+                    <a href="{{ setRoute('user.transactions.index','transfer-money') }}" class="btn--base">{{ __("View More") }}</a>
                 </div>
             </div>
         </div>
         <div class="dashboard-list-wrapper">
-            @include('user.components.transaction-log',compact("transactions"))
+            {{-- @include('user.components.transaction-log',compact("transactions")) --}}
         </div>
     </div>
 </div>
@@ -176,17 +272,13 @@
 @endsection
 
 @push('script')
-<script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
 <script>
-//  'use strict'
-    (function ($) {
-        $('.scan').click(function(){
-            var scanner = new Instascan.Scanner({ video: document.getElementById('preview'), scanPeriod: 5, mirror: false });
+    $('.scan').click(function(){
+        var scanner = new Instascan.Scanner({ video: document.getElementById('preview'), scanPeriod: 5, mirror: false });
             scanner.addListener('scan',function(content){
                 var route = '{{url('user/qr/scan/')}}'+'/'+content
                 $.get(route, function( data ) {
                     if(data.error){
-                        // alert(data.error)
                         throwMessage('error',[data.error]);
                     } else {
                         $("#username").val(data);
@@ -195,21 +287,22 @@
                     $('#scanModal').modal('hide')
                 });
             });
-
             Instascan.Camera.getCameras().then(function (cameras){
                 if(cameras.length>0){
                     $('#scanModal').modal('show')
                         scanner.start(cameras[0]);
                 } else{
-                //    alert('No cameras found.');
                     throwMessage('error',["No camera found "]);
                 }
             }).catch(function(e){
-                // alert('No cameras found.');
                 throwMessage('error',["No camera found "]);
             });
-        });
-        $('.checkUser').on('keyup',function(e){
+
+    });
+
+</script>
+<script>
+    $('.checkUser').on('keyup',function(e){
             var url = '{{ route('user.send.money.check.exist') }}';
             var value = $(this).val();
             var token = '{{ csrf_token() }}';
@@ -243,33 +336,95 @@
 
             });
         });
-    })(jQuery);
+
 </script>
 <script>
-     var defualCurrency = "{{ get_default_currency_code() }}";
-     var defualCurrencyRate = "{{ get_default_currency_rate() }}";
+    var default_currency = "{{ get_default_currency_code() }}";
+    var userBalanceRoute = "{{ setRoute('user.wallets.balance') }}";
 
-        $(document).ready(function(){
+    var fixedCharge     = "{{ $charges->fixed_charge ?? 0 }}";
+    var percentCharge   = "{{ $charges->percent_charge ?? 0 }}";
+    var minLimit        = "{{ $charges->min_limit ?? 0 }}";
+    var maxLimit        = "{{ $charges->max_limit ?? 0 }}";
+    $(document).ready(function(){
 
-            getLimit();
-            getFees();
-            getPreview();
-        });
-        $("input[name=amount]").keyup(function(){
-             getFees();
-             getPreview();
-        });
+        getLimit();
+        getFees();
+        getPreview();
+    });
+    function setAdSelectInputValue(data) {
+        var data = JSON.parse(data);
+        return data.code;
+    }
+
+    function adSelectActiveItem(input) {
+        var adSelect        = $(input).parents(".ad-select");
+        var selectedItem    = adSelect.find(".custom-option.active");
+        if(selectedItem.length > 0) {
+            return selectedItem.attr("data-item");
+        }
+        return false;
+    }
+
+    function run(selectedItem, receiver = false, userBalance = true) {
+        if(selectedItem == false) {
+            return false;
+        }
+        if(selectedItem.length == 0) {
+            return false;
+        }
+
+        function acceptVar() {
+            var senderCurrency                  = selectedItem.code ?? "";
+            var senderCountry                   = selectedItem.name ?? "";
+            var senderCurrency_rate             = selectedItem.rate ?? 0;
+            var senderCurrency_minLimit         = "{{getAmount($sendMoneyCharge->min_limit)}}"
+            var senderCurrency_maxLimit         = "{{getAmount($sendMoneyCharge->max_limit)}}"
+            var senderCurrency_percentCharge    = "{{getAmount($sendMoneyCharge->percent_charge)}}"
+            var senderCurrency_fixedCharge      = "{{getAmount($sendMoneyCharge->fixed_charge)}}"
+
+            var receiverCurrency                = receiver.code ? receiver.code : "";
+            var receiverCountry                 = receiver.name ? receiver.name : "";
+            var receiverCurrencyRate            = receiver.rate ? receiver.rate : 0;
+
+            return {
+                sCurrency: senderCurrency,
+                sCountry: senderCountry,
+                sCurrency_rate: senderCurrency_rate,
+                sCurrency_minLimit: senderCurrency_minLimit,
+                sCurrency_maxLimit: senderCurrency_maxLimit,
+                sCurrency_percentCharge: senderCurrency_percentCharge,
+                sCurrency_fixedCharge: senderCurrency_fixedCharge,
+                rCurrency           : receiverCurrency,
+                rCountry            : receiverCountry,
+                rCurrency_rate      : receiverCurrencyRate,
+            };
+        }
+
+        function receiveAmount() {
+            var senderAmount = $("input[name=sender_amount]").val();
+            var exchangeRate = getExchangeRate();
+
+            if(senderAmount == "" || !$.isNumeric(senderAmount)) {
+                senderAmount = 0;
+            }
+
+            var receiverCurrency = acceptVar().rCurrency;
+            var receiveAmount = parseFloat(senderAmount) * parseFloat(exchangeRate);
+            $("input[name=receiver_amount]").val(parseFloat(receiveAmount).toFixed(2));
+            return receiveAmount;
+        }
+
         function getLimit() {
-            var currencyCode = acceptVar().currencyCode;
-            var currencyRate = acceptVar().currencyRate;
+            var sender_currency = acceptVar().sCurrency;
+            var sender_currency_rate = acceptVar().sCurrency_rate;
+            var min_limit = acceptVar().sCurrency_minLimit;
+            var max_limit = acceptVar().sCurrency_maxLimit
 
-            var min_limit = acceptVar().currencyMinAmount;
-            var max_limit =acceptVar().currencyMaxAmount;
-            if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
-                var min_limit_calc = parseFloat(min_limit/currencyRate).toFixed(2);
-                var max_limit_clac = parseFloat(max_limit/currencyRate).toFixed(2);
-                $('.limit-show').html("Limit " + min_limit_calc + " " + currencyCode + " - " + max_limit_clac + " " + currencyCode);
-
+            if($.isNumeric(min_limit) && $.isNumeric(max_limit)) {
+                var min_limit_calc = parseFloat(min_limit*sender_currency_rate).toFixed(2);
+                var max_limit_clac = parseFloat(max_limit*sender_currency_rate).toFixed(2);
+                $('.limit-show').html("Limit " + min_limit_calc + " " + sender_currency + " - " + max_limit_clac + " " + sender_currency);
                 return {
                     minLimit:min_limit_calc,
                     maxLimit:max_limit_clac,
@@ -282,101 +437,172 @@
                 };
             }
         }
-        function acceptVar() {
-            var selectedVal = $("select[name=currency] :selected");
-            var currencyCode = $("select[name=currency] :selected").val();
-            var currencyRate = defualCurrencyRate;
-            var currencyMinAmount ="{{getAmount($sendMoneyCharge->min_limit)}}"
-            var currencyMaxAmount = "{{getAmount($sendMoneyCharge->max_limit)}}"
-            var currencyFixedCharge = "{{getAmount($sendMoneyCharge->fixed_charge)}}"
-            var currencyPercentCharge = "{{getAmount($sendMoneyCharge->percent_charge)}}"
+        getLimit();
 
-            return {
-                currencyCode:currencyCode,
-                currencyRate:currencyRate,
-                currencyMinAmount:currencyMinAmount,
-                currencyMaxAmount:currencyMaxAmount,
-                currencyFixedCharge:currencyFixedCharge,
-                currencyPercentCharge:currencyPercentCharge,
-                selectedVal:selectedVal,
+        function feesCalculation(){
+            var sender_currency = acceptVar().sCurrency;
+            var sender_currency_rate = acceptVar().sCurrency_rate;
+            var sender_amount = $("input[name=sender_amount]").val();
+            sender_amount == "" ? sender_amount = 0 : sender_amount = sender_amount;
 
-            };
-        }
-        function feesCalculation() {
-            var currencyCode = acceptVar().currencyCode;
-            var currencyRate = acceptVar().currencyRate;
-            var sender_amount = $("input[name=amount]").val();
-            sender_amount == "" ? (sender_amount = 0) : (sender_amount = sender_amount);
+            var fixed_charge = acceptVar().sCurrency_fixedCharge;
+            var percent_charge = acceptVar().sCurrency_percentCharge;
 
-            var fixed_charge = acceptVar().currencyFixedCharge;
-            var percent_charge = acceptVar().currencyPercentCharge;
-            if ($.isNumeric(percent_charge) && $.isNumeric(fixed_charge) && $.isNumeric(sender_amount)) {
+            if($.isNumeric(percent_charge) && $.isNumeric(fixed_charge) && $.isNumeric(sender_amount)) {
                 // Process Calculation
-                var fixed_charge_calc = parseFloat(currencyRate * fixed_charge);
-                var percent_charge_calc = parseFloat(currencyRate)*(parseFloat(sender_amount) / 100) * parseFloat(percent_charge);
+                var fixed_charge_calc = parseFloat(sender_currency_rate*fixed_charge);
+                var percent_charge_calc  = (parseFloat(sender_amount) / 100) * parseFloat(percent_charge);
                 var total_charge = parseFloat(fixed_charge_calc) + parseFloat(percent_charge_calc);
                 total_charge = parseFloat(total_charge).toFixed(2);
                 // return total_charge;
                 return {
                     total: total_charge,
                     fixed: fixed_charge_calc,
-                    percent: percent_charge,
+                    percent: percent_charge_calc,
                 };
-            } else {
+            }else {
                 // return "--";
                 return false;
             }
         }
 
         function getFees() {
-            var currencyCode = acceptVar().currencyCode;
-            var percent = acceptVar().currencyPercentCharge;
+            var sender_currency = acceptVar().sCurrency;
+            var percent = acceptVar().sCurrency_percentCharge;
             var charges = feesCalculation();
-            if (charges == false) {
+            if(charges == false) {
                 return false;
             }
-            $(".fees-show").html("Transfer Fee: " + parseFloat(charges.fixed).toFixed(2) + " " + currencyCode + " + " + parseFloat(charges.percent).toFixed(2) + "%  ");
+            $('.fees-show').html("Charge: " + parseFloat(charges.fixed).toFixed(2) + " " + sender_currency +" + " + parseFloat(percent).toFixed(2) + "%" + " = "+ parseFloat(charges.total).toFixed(2) + " " + sender_currency);
         }
+        getFees();
+
+        function getExchangeRate() {
+            var sender_currency = acceptVar().sCurrency;
+            var sender_currency_rate = acceptVar().sCurrency_rate;
+            // console.log("sender_currency_rate",sender_currency_rate);
+            var receiver_currency = acceptVar().rCurrency;
+            var receiver_currency_rate = acceptVar().rCurrency_rate;
+            // console.log("receiver_currency_rate",receiver_currency_rate);
+            var rate = parseFloat(receiver_currency_rate) / parseFloat(sender_currency_rate);
+            // console.log(rate);
+            $('.rate-show').html("1 " + sender_currency + " = " + parseFloat(rate).toFixed(4) + " " + receiver_currency);
+
+            return rate;
+        }
+        getExchangeRate();
+
         function getPreview() {
-                var senderAmount = $("input[name=amount]").val();
-                var sender_currency = acceptVar().currencyCode;
-                var sender_currency_rate = acceptVar().currencyRate;
-                senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
-                // Sending Amount
-                $('.request-amount').text(senderAmount + " " + defualCurrency);
 
-                // Fees
-                var charges = feesCalculation();
-                var total_charge = 0;
-                if(senderAmount == 0){
-                    total_charge = 0;
-                }else{
-                    total_charge = charges.total;
-                }
+            var senderAmount = $("input[name=sender_amount]").val();
+            var sender_currency = acceptVar().sCurrency;
+            senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
 
-                $('.fees').text(total_charge + " " + sender_currency);
-                // // recipient received
-                var recipient = parseFloat(senderAmount) * parseFloat(sender_currency_rate)
-                var recipient_get = 0;
-                if(senderAmount == 0){
-                     recipient_get = 0;
-                }else{
-                     recipient_get =  parseFloat(recipient);
-                }
-                $('.recipient-get').text(parseFloat(recipient_get).toFixed(2) + " " + sender_currency);
+            // Sending Amount
+            $('.request-amount').text(senderAmount + " " + sender_currency);
 
-                 // Pay In Total
-                var totalPay = parseFloat(senderAmount) * parseFloat(sender_currency_rate)
-                var pay_in_total = 0;
-                if(senderAmount == 0){
-                     pay_in_total = 0;
-                }else{
-                     pay_in_total =  parseFloat(totalPay) + parseFloat(charges.total);
-                }
-                $('.payable-total').text(parseFloat(pay_in_total).toFixed(2) + " " + sender_currency);
+            var receiver_currency = acceptVar().rCurrency;
+            var receiverAmount = receiveAmount();
+            receiveAmount = parseFloat(receiverAmount).toFixed(2);
+            $('.receive-amount').text(receiveAmount + " " + receiver_currency);
+
+            $(".sender-currency").text(sender_currency + " (" + acceptVar().sCountry + ")");
+            $(".receiver-currency").text(receiver_currency + " (" + acceptVar().rCountry + ")");
+
+            // Fees
+            var charges = feesCalculation();
+            // console.log(total_charge + "--");
+            $('.fees').text(charges.total + " " + sender_currency);
+
+            // Pay In Total
+            var pay_in_total = parseFloat(charges.total) + parseFloat(senderAmount);
+            $('.pay-in-total').text(parseFloat(pay_in_total).toFixed(2) + " " + sender_currency);
 
         }
+        getPreview();
 
+        function getUserBalance() {
+            var selectedCurrency = acceptVar().sCurrency;
+            var CSRF = $("meta[name=csrf-token]").attr("content");
+            var data = {
+                _token      : CSRF,
+                target      : selectedCurrency,
+            };
+            // Make AJAX request for getting user balance
+            $.post(userBalanceRoute,data,function() {
+                // success
+            }).done(function(response){
+                var balance = response.data;
+                balance = parseFloat(balance).toFixed(2);
+                $(".balance-show").html("Available Balance " + balance + " " + selectedCurrency);
+
+            }).fail(function(response) {
+                var response = JSON.parse(response.responseText);
+                throwMessage(response.type,response.message.error);
+            });
+        }
+
+        if(userBalance) {
+            getUserBalance();
+        }
+    }
+
+    $(document).on("click",".custom-option",function() {
+        run(JSON.parse(adSelectActiveItem("input[name=sender_currency]")),JSON.parse(adSelectActiveItem("input[name=receiver_currency]")));
+    });
+
+    $("input[name=sender_amount]").keyup(function(){
+        run(JSON.parse(adSelectActiveItem("input[name=sender_currency]")),JSON.parse(adSelectActiveItem("input[name=receiver_currency]")));
+    });
+
+    var timeOut;
+    $("input[name=receiver]").bind("keyup",function(){
+        clearTimeout(timeOut);
+        timeOut = setTimeout(getUser, 500,$(this).val(),"{{ setRoute('user.info') }}",$(this).parents(".input-group"));
+    });
+
+    function getUser(string,URL,errorPlace = null) {
+        if(string.length < 3) {
+            return false;
+        }
+
+        var CSRF = laravelCsrf();
+        var data = {
+            _token      : CSRF,
+            text        : string,
+        };
+
+        $.post(URL,data,function() {
+            // success
+        }).done(function(response){
+            if(response.data == null) {
+                if(errorPlace != null) {
+                    $(errorPlace).css('border','1px solid rgba(153, 153, 153, 0.2)');
+                    $(errorPlace).parent().find(".get-user-success").remove();
+                    if($(errorPlace).parent().find(".get-user-error").length > 0) {
+                        $(errorPlace).parent().find(".get-user-error").text("User doesn't exists");
+                    }else {
+                        $(`<span class="text--danger get-user-error mt-2" style="font-size:14px">User doesn't exists!</span>`).insertAfter($(errorPlace));
+                    }
+                }
+
+            }else {
+                if(errorPlace != null) {
+                    var account_name = response.data.firstname +' '+response.data.lastname;
+                    $(errorPlace).parent().find(".get-user-error").remove();
+                    $(errorPlace).css('border','1px solid green');
+                    if($(errorPlace).parent().find(".get-user-success").length > 0) {
+                        $(errorPlace).parent().find(".get-user-success").text(account_name);
+                    }else {
+                        $(` <span class="text--success get-user-success mt-2" style="font-size:14px"><span class="text-white">Account Holder Name: </span> ${account_name}</span>`).insertAfter($(errorPlace));
+                    }
+                }
+            }
+        }).fail(function(response) {
+            var response = JSON.parse(response.responseText);
+            throwMessage(response.type,response.message.error);
+        });
+    }
 </script>
 
 @endpush

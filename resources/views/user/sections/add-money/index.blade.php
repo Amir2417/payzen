@@ -40,7 +40,6 @@
                                 <div class="col-xl-6 col-lg-6 form-group">
                                     <label>{{ __("Payment Gateway") }}<span>*</span></label>
                                     <select class="form--control nice-select gateway-select" name="currency">
-                                        {{-- <option disabled selected>Select Gateway</option> --}}
                                         @foreach ($payment_gateways_currencies ?? [] as $item)
                                             <option
                                                 value="{{ $item->alias  }}"

@@ -9533,3 +9533,11 @@ pre.prettyprint {
 .blog-item-details .blog-social-area .blog-social li + li {
   margin-left: 5px;
 }
+
+.ad-select .custom-select{
+  min-width: 120px;
+}
+
+.ad-select .custom-select-wrapper{
+  top: 46px;
+}

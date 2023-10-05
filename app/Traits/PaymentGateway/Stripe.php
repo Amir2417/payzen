@@ -33,7 +33,6 @@ trait Stripe
     public function stripeInit($output = null) {
         if(!$output) $output = $this->output;
         $gatewayAlias = $output['gateway']['alias'];
-
         $identifier = generate_unique_string("transactions","trx_id",16);
         $this->stripeJunkInsert($identifier);
         Session::put('identifier',$identifier);

@@ -31,9 +31,6 @@
                         <a href="{{ setRoute('user.receive.money.index') }}">
                             <i class="menu-icon fas fa-receipt"></i>
                             <span class="menu-title">{{ __("Receive Money") }}</span>
-                            <div class="sidebar-item-badge">
-                                <span class="badge">2</span>
-                            </div>
                         </a>
                     </li>
                     @endif

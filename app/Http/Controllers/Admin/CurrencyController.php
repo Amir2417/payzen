@@ -72,9 +72,9 @@ class CurrencyController extends Controller
                 foreach($item as $column => $value) {
                     $validated[$column] = $value;
                 }
-            }
+            }   
         }
-
+        
         $default = [
             'default' => true,
             'optional'  => false,
@@ -104,7 +104,7 @@ class CurrencyController extends Controller
         try{
             $currency = Currency::create($validated);
         }catch(Exception $e) {
-            return back()->withErrors($validator)->withInput()->with(['error' => ['Something went worng! Please try again.']]);
+            return back()->withErrors($validator)->withInput()->with(['error' => ['Something went wrong! Please try again.']]);
         }
 
         // Uplaod File
@@ -112,13 +112,13 @@ class CurrencyController extends Controller
             try{
                 $image = get_files_from_fileholder($request,'flag');
                 $uploadFlag = upload_files_from_path_dynamic($image,'currency-flag');
-
+    
                 // Update Database
                 $currency->update([
                     'flag'  => $uploadFlag,
                 ]);
             }catch(Exception $e) {
-                return back()->withErrors($validator)->withInput()->with(['error' => ['Something went worng! Please try again.']]);
+                return back()->withErrors($validator)->withInput()->with(['error' => ['Something went wrong! Please try again.']]);
             }
         }
 
@@ -152,7 +152,7 @@ class CurrencyController extends Controller
                 'status' => ($validated['status'] == true) ? false : true,
             ]);
         }catch(Exception $e) {
-            $error = ['error' => ['Something went worng!. Please try again.']];
+            $error = ['error' => ['Something went wrong!. Please try again.']];
             return Response::error($error,null,500);
         }
 
@@ -177,63 +177,62 @@ class CurrencyController extends Controller
         $request->merge(['old_flag' => $currency->flag]);
 
         $validator = Validator::make($request->all(),[
-            // 'currency_type'      => 'required|string',
+            'currency_type'      => 'required|string',
             'currency_country'   => 'required|string',
             'currency_name'      => 'required|string',
             'currency_code'      => ['required','string',Rule::unique('currencies','code')->ignore($currency->id)],
             'currency_symbol'    => 'required|string',
-            // 'currency_rate'      => 'required|numeric',
-            // 'currency_option'    => 'required|string',
+            'currency_rate'      => 'required|numeric',
+            'currency_option'    => 'required|string',
             'currency_target'    => 'nullable|string',
-            // 'currency_role'      => 'required|string',
+            'currency_role'      => 'required|string',
         ]);
         if($validator->fails()) {
             return back()->withErrors($validator)->withInput()->with('modal','currency_edit');
         }
         $validated = $validator->validate();
 
-        // $roles = [
-        //     'both'  => [
-        //         'sender'    => true,
-        //         'receiver'  => true,
-        //     ],
-        //     'sender'    => [
-        //         'sender'    => true,
-        //         'receiver'  => false,
-        //     ],
-        //     'receiver'  => [
-        //         'sender'    => false,
-        //         'receiver'  => true,
-        //     ]
-        // ];
-        // foreach($roles as $key => $item) {
-        //     if($key == $validated['currency_role']) {
-        //         foreach($item as $column => $value) {
-        //             $validated[$column] = $value;
-        //         }
-        //     }
-        // }
+        $roles = [
+            'both'  => [
+                'sender'    => true,
+                'receiver'  => true,
+            ],
+            'sender'    => [
+                'sender'    => true,
+                'receiver'  => false,
+            ],
+            'receiver'  => [
+                'sender'    => false,
+                'receiver'  => true,
+            ]
+        ];
+        foreach($roles as $key => $item) {
+            if($key == $validated['currency_role']) {
+                foreach($item as $column => $value) {
+                    $validated[$column] = $value;
+                }
+            }   
+        }
 
         $default = [
             '1' => true,
             '0'  => false,
         ];
 
-        // // If Default is already available
-        // if($default[$validated['currency_option']] == true) {
-        //     $check_default = Currency::where('default',true);
-        //     if($check_default->count() > 0) {
-        //         try{
-        //             $check_default->update([
-        //                 'default'       => false,
-        //             ]);
-        //         }catch(Exception $e) {
-        //             return back()->with(['error' => ['Default currency make faild! Please try again.']]);
-        //         }
-        //     }
-        // }
-        // $validated['currency_default']   = $default[$validated['currency_option']];
-        $validated['currency_default']   = true;
+        // If Default is already available
+        if($default[$validated['currency_option']] == true) {
+            $check_default = Currency::where('default',true);
+            if($check_default->count() > 0) {
+                try{
+                    $check_default->update([
+                        'default'       => false,
+                    ]);
+                }catch(Exception $e) {
+                    return back()->with(['error' => ['Default currency make faild! Please try again.']]);
+                }
+            }
+        }
+        $validated['currency_default']   = $default[$validated['currency_option']];
         $validated = Arr::except($validated,['currency_role','currency_flag','currency_option']);
 
         if($request->hasFile('currency_flag')) {
@@ -249,7 +248,7 @@ class CurrencyController extends Controller
         try{
             $currency->update($validated);
         }catch(Exception $e) {
-            return back()->withErrors($validator)->withInput()->with(['error' => ['Something went worng! Please try again.']]);
+            return back()->withErrors($validator)->withInput()->with(['error' => ['Something went wrong! Please try again.']]);
         }
 
         return back()->with(['success' => ['Successfully updated the information.']]);
@@ -270,7 +269,7 @@ class CurrencyController extends Controller
             $currency->delete();
             delete_file(get_files_path('currency-flag').'/'.$currency->flag);
         }catch(Exception $e) {
-            return back()->with(['error' => ['Something went worng! Please try again.']]);
+            return back()->with(['error' => ['Something went wrong! Please try again.']]);
         }
 
         return back()->with(['success' => ['Currency deleted successfully!']]);

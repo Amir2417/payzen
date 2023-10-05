@@ -31,7 +31,7 @@
             @includeUnless($default_currency,'admin.components.alerts.warning',['message' => "There is no default currency in your system."])
             <div class="table-header">
                 <h5 class="title">{{ __("Setup Currency") }}</h5>
-                {{-- <div class="table-btn-area">
+                <div class="table-btn-area">
                     @include('admin.components.search-input',[
                         'name'  => 'currency_search',
                     ])
@@ -41,7 +41,7 @@
                         'class'         => "modal-btn",
                         'permission'    => "admin.currency.store",
                     ])
-                </div> --}}
+                </div>
             </div>
             <div class="table-responsive">
                 @include('admin.components.data-table.currency-table',[
@@ -85,7 +85,7 @@
                 selectedValue.parents("form").find("input[name=name],input[name=currency_name]").val(currencyName).prop("readonly",readOnly);
                 selectedValue.parents("form").find("input[name=code],input[name=currency_code]").val(currencyCode).prop("readonly",readOnly);
                 selectedValue.parents("form").find("input[name=symbol],input[name=currency_symbol]").val(currencySymbol).prop("readonly",readOnly);
-                selectedValue.parents("form").find(".selcted-currency").text(currencyCode);
+                selectedValue.parents("form").find(".selcted-currency,.selcted-currency-edit").text(currencyCode);
             });
 
         });

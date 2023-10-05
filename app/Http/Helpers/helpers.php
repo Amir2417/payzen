@@ -1,48 +1,49 @@
 <?php
 
+use App\Models\UserWallet;
+use App\Models\Admin\Admin;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Jenssegers\Agent\Agent;
+use App\Constants\GlobalConst;
+use App\Models\Admin\Language;
+use App\Models\VirtualCardApi;
+use Illuminate\Support\Carbon;
+use App\Constants\LanguageConst;
+use App\Models\UserNotification;
 use App\Constants\AdminRoleConst;
 use App\Constants\ExtensionConst;
-use App\Constants\GlobalConst;
-use App\Constants\LanguageConst;
-use App\Models\Admin\AdminHasRole;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\File;
-use Illuminate\Validation\ValidationException;
-use Intervention\Image\Facades\Image;
-use Buglinjo\LaravelWebp\Facades\Webp;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
-use App\Models\Admin\AdminNotification;
-use App\Constants\NotificationConst;
-use App\Constants\PaymentGatewayConst;
-use App\Constants\SupportTicketConst;
 use App\Http\Helpers\Api\Helpers;
-use App\Models\Admin\Admin;
-use App\Models\Admin\Language;
-use App\Models\Admin\ModuleSetting;
-use App\Models\Admin\PaymentGateway;
-use App\Models\AgentAuthorization;
-use App\Models\Merchants\MerchantAuthorization;
-use App\Models\Merchants\MerchantNotification;
-use App\Models\Merchants\MerchantWallet;
 use App\Models\UserAuthorization;
-use App\Models\UserNotification;
 use App\Models\UserSupportTicket;
-use App\Models\UserWallet;
-use App\Models\VirtualCardApi;
-use App\Notifications\Agent\Auth\SendAuthorizationCode as AgentAuthSendAuthorizationCode;
-use App\Notifications\Merchant\Auth\SendAuthorizationCode as AuthSendAuthorizationCode;
-use App\Notifications\User\Auth\SendAuthorizationCode;
-use App\Providers\Admin\BasicSettingsProvider;
-use App\Providers\Admin\CurrencyProvider;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
+use Illuminate\Http\UploadedFile;
+use App\Models\Admin\AdminHasRole;
+use App\Models\AgentAuthorization;
 use Illuminate\Support\Facades\DB;
-use Jenssegers\Agent\Agent;
-
+use App\Models\Admin\ModuleSetting;
+use Illuminate\Support\Facades\App;
+use App\Constants\NotificationConst;
+use App\Models\Admin\PaymentGateway;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
+use App\Constants\SupportTicketConst;
+use Illuminate\Support\Facades\Route;
+use Intervention\Image\Facades\Image;
+use App\Constants\PaymentGatewayConst;
+use Buglinjo\LaravelWebp\Facades\Webp;
+use App\Models\Admin\AdminNotification;
+use App\Models\Admin\TransactionSetting;
+use App\Models\Merchants\MerchantWallet;
+use App\Providers\Admin\CurrencyProvider;
 use function PHPUnit\Framework\returnSelf;
+use App\Models\Merchants\MerchantNotification;
+use App\Providers\Admin\BasicSettingsProvider;
+use Illuminate\Validation\ValidationException;
+use App\Models\Merchants\MerchantAuthorization;
+use App\Notifications\User\Auth\SendAuthorizationCode;
+
+use App\Notifications\Merchant\Auth\SendAuthorizationCode as AuthSendAuthorizationCode;
+use App\Notifications\Agent\Auth\SendAuthorizationCode as AgentAuthSendAuthorizationCode;
 
 function setRoute($route_name, $param = null)
 {
@@ -1730,7 +1731,18 @@ function userGuard() {
         'guard'=>$guard
     ];
 }
-
+function userGroupTransactionsCharges($slug){
+    $user = auth()->user();
+    $kyc_status = $user->kyc_verified;
+    $transaction='';
+    if( $kyc_status == 1){
+        $transaction = TransactionSetting::where('slug',$slug)->first();
+       
+    }else{
+        $transaction = TransactionSetting::where('slug',$slug)->first();
+    }
+    return $transaction;
+}
 function generate_google_2fa_auth_qr() {
     $google2FA = new \PragmaRX\Google2FA\Google2FA();
     $secret_key = $google2FA->generateSecretKey();

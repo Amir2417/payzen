@@ -1,18 +1,20 @@
 <?php
 namespace App\Http\Controllers\User;
 
-use App\Constants\PaymentGatewayConst;
-use App\Http\Controllers\Controller;
-use App\Models\Admin\Currency;
-use App\Models\Merchants\Merchant;
-use App\Models\Merchants\MerchantQrCode;
-use App\Models\Transaction;
-use App\Models\User;
 use Exception;
+use App\Models\User;
 use App\Models\UserQrCode;
+use App\Models\UserWallet;
+use App\Models\Transaction;
 use App\Models\VirtualCard;
 use Illuminate\Http\Request;
+use App\Constants\GlobalConst;
+use App\Models\Admin\Currency;
+use App\Models\Merchants\Merchant;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use App\Constants\PaymentGatewayConst;
+use App\Models\Merchants\MerchantQrCode;
 use Illuminate\Support\Facades\Validator;
 
 class DashboardController extends Controller
@@ -21,6 +23,14 @@ class DashboardController extends Controller
     {
         $page_title = "Dashboard";
         $baseCurrency = Currency::default();
+        $fiat_wallets = UserWallet::auth()->whereHas("currency",function($q) {
+            return $q->where("type",GlobalConst::FIAT);
+        })->with('currency','user')->orderByDesc("balance")->limit(8)->get();
+
+        $crypto_wallets = UserWallet::auth()->whereHas("currency",function($q) {
+            return $q->where("type",GlobalConst::CRYPTO);
+        })->with('currency','user')->orderByDesc("balance")->limit(8)->get();
+        
         $transactions = Transaction::auth()->latest()->take(5)->get();
         $data['totalReceiveRemittance'] =Transaction::auth()->remitance()->where('attribute',"RECEIVED")->where('status',1)->sum('request_amount');
         $data['totalSendRemittance'] =Transaction::auth()->remitance()->where('attribute',"SEND")->where('status',1)->sum('request_amount');
@@ -114,7 +124,8 @@ class DashboardController extends Controller
 
 
          //
-        return view('user.dashboard',compact("page_title","baseCurrency",'transactions','data','chartData'));
+        return view('user.dashboard',compact("page_title","baseCurrency",'transactions','data','chartData',"fiat_wallets",
+        "crypto_wallets",));
     }
 
     public function logout(Request $request) {

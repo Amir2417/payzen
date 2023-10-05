@@ -22,12 +22,18 @@
         </div>
     </div>
     <div class="row mb-30-none">
+        @php
+            $step = 0;
+        @endphp
         @if(isset($stripe_cards))
             @foreach ($stripe_cards ?? [] as $item)
+            @php
+                $step++;
+            @endphp
             <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 mb-30">
                 <div class="link-card-item">
                     <div class="title-area">
-                        <div class="h5 title">Card 1</div>
+                        <div class="h5 title">Card {{ $step }}</div>
                         <button class="link-card-remove-btn"><i class="fas fa-trash"></i> Remove</button>
                     </div>
                     <div class="link-card-wrapper">

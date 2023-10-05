@@ -2,26 +2,27 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Constants\PaymentGatewayConst;
+use Exception;
+use App\Models\UserWallet;
+use App\Models\Transaction;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\PaymentGateway as PaymentGatewayHelper;
-use App\Models\Admin\PaymentGateway;
+use App\Models\TemporaryData;
 use App\Http\Helpers\Response;
 use App\Models\Admin\Currency;
-use App\Models\Admin\PaymentGatewayCurrency;
-use App\Models\TemporaryData;
-use App\Models\Transaction;
-use Illuminate\Support\Facades\Validator;
-use App\Models\UserWallet;
-use Exception;
-use Illuminate\Support\Facades\Session;
-use App\Traits\PaymentGateway\Stripe;
-use App\Traits\PaymentGateway\Manual;
 use App\Models\Admin\BasicSettings;
-use App\Traits\PaymentGateway\FlutterwaveTrait;
+use App\Http\Controllers\Controller;
+use App\Models\Admin\PaymentGateway;
+use App\Traits\PaymentGateway\Manual;
+use App\Traits\PaymentGateway\Stripe;
+use App\Constants\PaymentGatewayConst;
+use Illuminate\Support\Facades\Session;
 use App\Traits\PaymentGateway\RazorTrait;
+use Illuminate\Support\Facades\Validator;
+use App\Models\Admin\PaymentGatewayCurrency;
+use App\Traits\PaymentGateway\FlutterwaveTrait;
 use KingFlamez\Rave\Facades\Rave as Flutterwave;
+use App\Http\Helpers\PaymentGateway as PaymentGatewayHelper;
 
 class AddMoneyController extends Controller
 {
@@ -42,7 +43,50 @@ class AddMoneyController extends Controller
         return view('user.sections.add-money.index',compact("page_title","transactions","payment_gateways_currencies"));
     }
 
-
+    /**
+     * Method for store add money information in the temporary data table
+     */
+    public function send(Request $request){
+        $validator = Validator::make($request->all(),[
+            'currency'  => 'required',
+            'amount'    => 'required',
+        ]);
+        if($validator->fails()){
+            return back()->withErrors($validator->errors())->withInput();
+        }
+        $validated                  = $validator->validate();
+        $payment_gateway_currency   = PaymentGatewayCurrency::where('alias',$validated['currency'])->first();
+        $payment_gateway            = PaymentGateway::where('id',$payment_gateway_currency->payment_gateway_id)->first();
+        $fixed_charge               = floatval($payment_gateway_currency->fixed_charge);
+        $percent_charge             = floatval($payment_gateway_currency->rate) * ((floatval($validated['amount']) / 100 ) * $payment_gateway_currency->percent_charge );
+        $total_charge               = $fixed_charge + $percent_charge;
+        $total_amount               = $validated['amount']  + $total_charge;
+        try{
+            $temporay_data  = [];
+            $temporay_data[] = [
+                'type'          =>  $payment_gateway->name,
+                'identifier'    => Str::uuid(),
+                'data'          => [
+                    'gateway'   => $payment_gateway->id,
+                    'currency'  => $payment_gateway_currency->id,
+                    'amount'    => [
+                        'requested_amount'  => $validated['amount'],
+                        'sender_cur_code'   => $payment_gateway_currency->currency_code,
+                        'sender_cur_rate'   => $payment_gateway_currency->rate,
+                        'fixed_charge'      => $payment_gateway_currency->fixed_charge,
+                        'percent_charge'    => $percent_charge,
+                        'total_charge'      => $total_charge,
+                        'total_amount'      => $total_amount,
+                    ],
+                ]
+            ];
+            dd($temporay_data);
+        }catch(Exception $e){
+            dd($e->getMessage());
+            return back()->with(['error' => ['Something went wrong! Please try again']]);
+        }
+        return back()->with(['success'  => ['Add Money Inserted']]);
+    }
 
     public function submit(Request $request) {
         $basic_setting = BasicSettings::first();

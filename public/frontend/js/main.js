@@ -441,22 +441,24 @@ $('#body-overlay').on('click', function (e) {
   $('.body-overlay').removeClass('active');
 });
 
-$('.custom-option').on('click', function(){
+$(document).on('click','.custom-option', function(){
   $(this).parent().find(".custom-option").removeClass("active");
   $(this).addClass('active');
   var flag = $(this).find("img").attr("src");
   var currencyCode = $(this).find(".custom-currency").text();
+  var inputValue = setAdSelectInputValue($(this).attr("data-item"));
   $(this).parents(".custom-select-wrapper").siblings(".custom-select").find(".custom-select-inner").find(".custom-currency").text(currencyCode);
-  $(this).parents(".custom-select-wrapper").siblings(".custom-select").find(".custom-select-inner").find("img").attr("src",flag);
-  $(this).parents(".custom-select-wrapper").removeClass("active");
-  $('.body-overlay').removeClass('active');
-});
 
-$('.custom-option').on('click', function(){
-  $(this).parent().find(".custom-option").removeClass("active");
-  $(this).addClass('active');
-  var method = $(this).find(".title").text();
-  $(this).parents(".custom-select-wrapper").siblings(".custom-select").find(".custom-select-inner").find(".method").text(method);
+  // console.log($(this).find(".custom-select-inner").find("img").length);
+
+  if($(this).parents(".custom-select-wrapper").siblings(".custom-select").find(".custom-select-inner").find("img").length > 0) {
+    $(this).parents(".custom-select-wrapper").siblings(".custom-select").find(".custom-select-inner").find("img").attr("src",flag);
+  }else {
+    var image = `<img src="${flag}" alt="flag" class="custom-flag">`;
+    $(image).insertBefore($(this).parents(".custom-select-wrapper").siblings(".custom-select").find(".custom-select-inner").find("span.custom-currency"));
+  }
+
+  $(this).parents(".custom-select-wrapper").siblings(".custom-select").find(".custom-select-inner").find("input").val(inputValue);
   $(this).parents(".custom-select-wrapper").removeClass("active");
   $('.body-overlay').removeClass('active');
 });
@@ -584,7 +586,6 @@ function setVersion(version) {
 
 }
 // dark - light mode end
-
 
 })(jQuery);
 
@@ -740,3 +741,5 @@ function switcherAjax(hitUrl,method = "PUT") {
   });
 }
 // slider
+
+

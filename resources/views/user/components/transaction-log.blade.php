@@ -295,7 +295,7 @@
                                 </div>
                             </div>
                             <div class="preview-list-right">
-                                <span>{{ get_amount($item->charge->total_charge,$item->user_wallet->currency->code) }}</span>
+                                {{-- <span>{{ get_amount($item->charge->total_charge,$item->user_wallet->currency->code) }}</span> --}}
                             </div>
                         </div>
                         <div class="preview-list-item">
@@ -310,7 +310,7 @@
                                 </div>
                             </div>
                             <div class="preview-list-right">
-                                <span>{{ get_amount($item->details->recipient_amount,get_default_currency_code()) }}</span>
+                                {{-- <span>{{ get_amount($item->details->recipient_amount,get_default_currency_code()) }}</span> --}}
                             </div>
                         </div>
                         {{-- <div class="preview-list-item">

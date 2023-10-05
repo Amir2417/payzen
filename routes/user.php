@@ -63,10 +63,11 @@ Route::prefix("user")->name("user.")->group(function(){
     Route::middleware('module:add-money')->group(function(){
         Route::controller(AddMoneyController::class)->prefix("add-money")->name("add.money.")->group(function(){
             Route::get('/','index')->name("index");
+            Route::post('send','send')->name('send');
             Route::post('submit','submit')->name('submit');
             Route::get('success/response/{gateway}','success')->name('payment.success');
             Route::get("cancel/response/{gateway}",'cancel')->name('payment.cancel');
-                Route::get('payment/{gateway}','payment')->name('payment');
+            Route::get('payment/{gateway}','payment')->name('payment');
             // FlutterWave Gateway
             Route::post('stripe/payment/confirm','paymentConfirmed')->name('stripe.payment.confirmed');
             //manual gateway

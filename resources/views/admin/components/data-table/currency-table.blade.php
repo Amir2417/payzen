@@ -1,14 +1,13 @@
 <table class="custom-table currency-search-table">
     <thead>
         <tr>
-            <th>Flag</th>
             <th></th>
             <th>Name | Code</th>
             <th>Symbol</th>
-            {{-- <th>Type | Rate</th> --}}
-            {{-- <th>Role</th>
-            <th>Status</th> --}}
-            <th>Action</th>
+            <th>Type | Rate</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -19,15 +18,14 @@
                         <li><img src="{{ get_image($item->flag,'currency-flag') }}" alt="flag"></li>
                     </ul>
                 </td>
-                <td></td>
                 <td>{{ $item->name }}
                     @if ($item->default)
                         <span class="badge badge--success ms-1">{{ __("Default") }}</span>
                     @endif
                     <br> <span>{{ $item->code }}</span></td>
                 <td>{{ $item->symbol }}</td>
-                {{-- <td><span class="text--info">{{ $item->type }}</span> <br> 1 {{ get_default_currency_code($default_currency) }} = {{ get_amount($item->rate,$item->code) }}</td> --}}
-                {{-- <td>
+                <td><span class="text--info">{{ $item->type }}</span> <br> 1 {{ get_default_currency_code($default_currency) }} = {{ get_amount($item->rate,$item->code,4) }}</td>
+                <td>
                     @if ($item->both)
                         <span class="badge badge--success">{{ __("Sender") }}</span>
                         <span class="badge badge--danger">{{ __("Receiver") }}</span>
@@ -36,8 +34,8 @@
                     @elseif ($item->receiverCurrency)
                         <span class="badge badge--danger">{{ __("Receiver") }}</span>
                     @endif
-                </td> --}}
-                {{-- <td>
+                </td>
+                <td>
                     @include('admin.components.form.switcher',[
                         'name'          => 'currency_status',
                         'value'         => $item->status,
@@ -46,7 +44,7 @@
                         'data_target'   => $item->code,
                         'permission'    => "admin.currency.status.update",
                     ])
-                </td> --}}
+                </td>
                 <td>
                     @include('admin.components.link.edit-default',[
                         'href'          => "javascript:void(0)",
