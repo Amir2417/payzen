@@ -60,8 +60,10 @@
                                     <label>{{ __("Amount") }}<span>*</span></label>
                                     <div class="input-group">
                                         <input type="text" class="form--control" placeholder="Enter Amount" required name="amount" value="{{ old("amount") }}">
-                                        <select class="form--control nice-select">
-                                            <option value="{{ get_default_currency_code() }}">{{ get_default_currency_code() }}</option>
+                                        <select class="form--control nice-select" name="currency-code">
+                                            @foreach ($user_currencies as $item)
+                                                <option value="{{ $item->code }}">{{ $item->code }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
                                     <code class="d-block mt-10 text-end text--warning balance-show">{{ __("Available Balance") }} {{ authWalletBalance() }} {{ get_default_currency_code() }}</code>
@@ -182,6 +184,9 @@
             getLimit();
             getFees();
             getPreview();
+        });
+        $('slelect[name=currency-code]').on('change',function(){
+            
         });
         $(document).ready(function(){
             getExchangeRate();

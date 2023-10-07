@@ -16,13 +16,13 @@ class SetupEmailSeeder extends Seeder
     {
         $env_modify_keys = [
             "MAIL_MAILER"       => "smtp",
-            "MAIL_HOST"         => "appdevs.net",
-            "MAIL_PORT"         => "465",
-            "MAIL_USERNAME"     => "noreply@appdevs.net",
+            "MAIL_HOST"         => "smtp.titan.email",
+            "MAIL_PORT"         => "587",
+            "MAIL_USERNAME"     => "do-not-reply@appdevs.net",
             "MAIL_PASSWORD"     => "QP2fsLk?80Ac",
-            "MAIL_ENCRYPTION"   => "ssl",
+            "MAIL_ENCRYPTION"   => "tls",
             "MAIL_FROM_ADDRESS" => "noreply@appdevs.net",
-            "MAIL_FROM_NAME"    => "QRPAY",
+            "MAIL_FROM_NAME"    => "Payzen",
         ];
 
         modifyEnv($env_modify_keys);

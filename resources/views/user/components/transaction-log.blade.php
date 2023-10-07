@@ -165,7 +165,6 @@
                             <span>1 {{ $item->user_wallet->currency->code }} = {{ get_amount($item->details->exchange_rate,$item->details->exchange_currency) }}</span>
                         @elseif ($item->type == payment_gateway_const()::TYPEADDSUBTRACTBALANCE)
                             <span>1 {{ get_default_currency_code() }} = {{ get_amount($item->user_wallet->currency->rate,$item->user_wallet->currency->code) }}</span>
-
                         @endif
                     </div>
                 </div>

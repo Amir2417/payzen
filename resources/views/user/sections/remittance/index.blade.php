@@ -38,6 +38,8 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                                 data-code="{{ $item->currency->code }}"
                                                 data-symbol="{{ $item->currency->symbol }}"
                                                 data-rate="{{ $item->currency->rate }}"
+                                                data-balance="{{ $item->balance }}"
+                                                data-wallet="{{ $item->id }}"
                                                 data-name="{{ $item->currency->country }}"><img src="{{ get_image($item->currency->flag ,'currency-flag') }}" alt="">{{ $item->currency->country }}</option>
                                         @endforeach
                                     </select>
@@ -79,6 +81,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                     <div class="input-group">
                                         <input type="number" name="send_amount" class="form--control" step="0.01" placeholder="Enter Amount" value="{{ old('send_amount') }}" >
                                         <div class="input-group-append">
+                                            <input type="hidden" name="sender_wallet" class="sender-wallet">
                                             <span class="input-group-text copytext send_cur_code">{{ get_default_currency_code() }}</span>
                                         </div>
                                     </div>
@@ -101,7 +104,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                 </div>
                                 <div class="col-xl-12 col-lg-12 form-group">
                                     <div class="note-area">
-                                        <code class="d-block">{{ __("Available Balance ") }}: {{ authWalletBalance() }} {{ get_default_currency_code() }}</code>
+                                        <code class="d-block available-balance">{{ __("Available Balance ") }}: {{ authWalletBalance() }} {{ get_default_currency_code() }}</code>
                                     </div>
                                 </div>
                                 <div class="withdraw-btn mt-20">
@@ -305,6 +308,10 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         
         set_from_currency_code();
         getPreview();
+        getLimit();
+        getFees();
+        getReceiverAmount();
+        getSenderAmount();
         getExchangeRate();
 
     });
@@ -356,7 +363,6 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             enterLimit();
     });
 
-
     function getLimit() {
             var sender_currency = acceptVar().sCurrency;
             var sender_currency_rate = acceptVar().sCurrency_rate;
@@ -383,9 +389,14 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             var currencyCode = acceptVar().receiverCurrency;
             var currencyRate = acceptVar().receiverCurrency_rate;
             var sender_currency = acceptVar().sCurrency;
+            var walletBalance   = acceptVar().walletBalance;
+            var walletId   = acceptVar().walletId;
+            console.log("walletId",walletId);
             // var currencyMinAmount = acceptVar().currencyMinAmount;
             // var currencyMaxAmount = acceptVar().currencyMaxAmount;
             $('.rate-show').html("1 " + sender_currency + " = " + parseFloat(currencyRate).toFixed(2) + " " + currencyCode);
+            $('.available-balance').html("Available Balance :" + " " + walletBalance + " " + sender_currency);
+            $('.sender-wallet').val(walletId);
     }
     function acceptVar() {
            var senderCurrency = $("select[name=form_country] :selected").data('code');
@@ -402,6 +413,8 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
            var currencyPercentCharge = "{{getAmount($exchangeCharge->percent_charge)}}";
            var recipient =  $("select[name=recipient] :selected").val();
            var recipientName =  $("select[name=recipient] :selected").data('name');
+           var walletBalance    = $("select[name=form_country] :selected").data('balance');
+           var walletId    = $("select[name=form_country] :selected").data('wallet');
 
            return {
             sCurrency:senderCurrency,
@@ -418,6 +431,8 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             currencyPercentCharge:currencyPercentCharge,
             recipient:recipient,
             recipientName:recipientName,
+            walletBalance:walletBalance,
+            walletId:walletId
         };
     }
     function feesCalculation() {
@@ -627,7 +642,8 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             }else{
                 pay_in_total =  parseFloat(totalPay) + parseFloat(charges.total);
             }
-            $('.payable-amount').text(parseFloat(pay_in_total).toFixed(2) + " " + sender_currency);
+            var payableAmount = parseFloat(senderAmount) + parseFloat(total_charge);
+            $('.payable-amount').text(parseFloat(payableAmount).toFixed(2) + " " + sender_currency);
 
        }
        function enterLimit(){

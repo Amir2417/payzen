@@ -2,24 +2,25 @@
 
 namespace App\Http\Controllers\User;
 
+use Exception;
 use App\Models\Receipient;
+use App\Models\UserWallet;
+use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Constants\GlobalConst;
-use App\Constants\NotificationConst;
-use App\Constants\PaymentGatewayConst;
-use App\Http\Controllers\Controller;
-use App\Models\Admin\BasicSettings;
 use App\Models\Admin\Currency;
-use App\Models\Admin\ReceiverCounty;
-use App\Models\Admin\TransactionSetting;
-use App\Models\Transaction;
 use App\Models\UserNotification;
-use App\Models\UserWallet;
-use App\Notifications\User\Remittance\BankTransferMail;
-use Exception;
 use Illuminate\Support\Facades\DB;
+use App\Models\Admin\BasicSettings;
+use App\Constants\NotificationConst;
+use App\Http\Controllers\Controller;
+use App\Models\Admin\ReceiverCounty;
+use App\Constants\PaymentGatewayConst;
 use Illuminate\Support\Facades\Session;
+use App\Models\Admin\TransactionSetting;
+use Illuminate\Support\Facades\Validator;
+use App\Notifications\User\Remittance\BankTransferMail;
 
 class RemitanceController extends Controller
 {
@@ -51,15 +52,18 @@ class RemitanceController extends Controller
         ));
     }
     public function confirmed(Request $request){
-        $request->validate([
+        $validated = Validator::make($request->all(),[
             'form_country'               =>'required',
             'to_country'                 =>'required',
             'transaction_type'           =>'required|string',
             'recipient'                  =>'required',
             'send_amount'                =>"required",
             'receive_amount'             =>'required',
+            'sender_wallet'              =>'required',
 
-        ]);
+        ])->validate();
+        // dd($request->all());
+        
         $basic_setting = BasicSettings::first();
         $user = auth()->user();
         if($basic_setting->kyc_verification){
@@ -74,7 +78,9 @@ class RemitanceController extends Controller
         $exchangeCharge = TransactionSetting::where('slug','remittance')->where('status',1)->first();
         $user = auth()->user();
 
-        $userWallet = UserWallet::where('user_id',$user->id)->first();
+        $userWallet = UserWallet::auth()->whereHas("currency",function($q) use ($validated) {
+            $q->where("id",$validated['sender_wallet'])->active();
+        })->active()->first();
         if(!$userWallet){
             return back()->with(['error' => ['Sender wallet not found']]);
         }

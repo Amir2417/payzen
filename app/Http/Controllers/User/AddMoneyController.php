@@ -31,16 +31,16 @@ class AddMoneyController extends Controller
 
     public function index() {
 
-        $page_title = "Add Money";
-        $user_wallets = UserWallet::auth()->get();
-        $user_currencies = Currency::whereIn('id',$user_wallets->pluck('id')->toArray())->get();
-
+        $page_title         = "Add Money";
+        $user_wallets       = UserWallet::auth()->get();
+        $user_currencies    = Currency::whereIn('id',$user_wallets->pluck('id')->toArray())->get();
         $payment_gateways_currencies = PaymentGatewayCurrency::whereHas('gateway', function ($gateway) {
             $gateway->where('slug', PaymentGatewayConst::add_money_slug());
             $gateway->where('status', 1);
         })->get();
         $transactions = Transaction::auth()->addMoney()->latest()->take(10)->get();
-        return view('user.sections.add-money.index',compact("page_title","transactions","payment_gateways_currencies"));
+
+        return view('user.sections.add-money.index',compact("page_title","transactions","payment_gateways_currencies","user_currencies"));
     }
 
     /**

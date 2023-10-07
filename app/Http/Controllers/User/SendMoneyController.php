@@ -62,7 +62,6 @@ class SendMoneyController extends Controller
         $sender_wallet = UserWallet::auth()->whereHas("currency",function($q) use ($validated) {
             $q->where("code",$validated['sender_currency'])->active();
         })->active()->first();
-
         if(!$sender_wallet) return back()->with(['error' => ['Your wallet isn\'t available with currency ('.$validated['sender_currency'].')']]);
 
         $receiver_currency = Currency::receiver()->active()->where('code',$validated['receiver_currency'])->first();
