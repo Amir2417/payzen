@@ -60,13 +60,20 @@
                                     <label>{{ __("Amount") }}<span>*</span></label>
                                     <div class="input-group">
                                         <input type="text" class="form--control" placeholder="Enter Amount" required name="amount" value="{{ old("amount") }}">
-                                        <select class="form--control nice-select" name="currency-code">
+                                        <input type="hidden" name="sender_wallet" class="sender-wallet">
+                                        <select class="form--control nice-select" name="currency_code">
                                             @foreach ($user_currencies as $item)
-                                                <option value="{{ $item->code }}">{{ $item->code }}</option>
+                                                <option value="{{ $item->currency->id }}"
+                                                    data-code="{{ $item->currency->code }}"
+                                                    data-symbol="{{ $item->currency->symbol }}"
+                                                    data-rate="{{ $item->currency->rate }}"
+                                                    data-balance="{{ $item->balance }}"
+                                                    data-wallet="{{ $item->id }}"
+                                                    data-name="{{ $item->currency->country }}">{{ $item->currency->code }}</option>
                                             @endforeach
                                         </select>
                                     </div>
-                                    <code class="d-block mt-10 text-end text--warning balance-show">{{ __("Available Balance") }} {{ authWalletBalance() }} {{ get_default_currency_code() }}</code>
+                                    <code class="d-block mt-10 text-end text--warning balance-show"></code>
                                 </div>
                                 <div class="col-xl-12 col-lg-12 form-group">
                                     <div class="note-area">
@@ -176,8 +183,8 @@
 
 @push('script')
     <script>
-         var defualCurrency = "{{ get_default_currency_code() }}";
-         var defualCurrencyRate = "{{ get_default_currency_rate() }}";
+         var defualCurrency = acceptVar().selectedCurrency;
+         var defualCurrencyRate = acceptVar().selectedCurrencyRate;
 
         $('select[name=currency]').on('change',function(){
             getExchangeRate($(this));
@@ -185,8 +192,11 @@
             getFees();
             getPreview();
         });
-        $('slelect[name=currency-code]').on('change',function(){
-            
+        $('select[name=currency_code]').on('change',function(){
+            getExchangeRate();
+            getLimit();
+            getFees();
+            getPreview();
         });
         $(document).ready(function(){
             getExchangeRate();
@@ -200,21 +210,26 @@
         });
         function getExchangeRate(event) {
             var element = event;
-            var currencyCode = acceptVar().currencyCode;
-            var currencyRate = acceptVar().currencyRate;
+            var currencyCode = acceptVar().selectedCurrency;
+            var defualCurrencyRate = acceptVar().selectedCurrencyRate;
             var currencyMinAmount = acceptVar().currencyMinAmount;
             var currencyMaxAmount = acceptVar().currencyMaxAmount;
-            $('.rate-show').html("1 " + defualCurrency + " = " + parseFloat(currencyRate).toFixed(2) + " " + currencyCode);
+            var walletBalance   = acceptVar().walletBalance;
+            var walletId   = acceptVar().walletId;
+
+            $('.rate-show').html("1 " + defualCurrency + " = " + parseFloat(defualCurrencyRate).toFixed(2) + " " + currencyCode);
+            $('.balance-show').html("Available Balance :" + " " + walletBalance + " " + currencyCode);
+            $('.sender-wallet').val(walletId);
         }
         function getLimit() {
-            var sender_currency = acceptVar().currencyCode;
-            var sender_currency_rate = acceptVar().currencyRate;
+            var sender_currency = acceptVar().selectedCurrency;
+            var sender_currency_rate = acceptVar().selectedCurrencyRate;
             var min_limit = acceptVar().currencyMinAmount;
             var max_limit =acceptVar().currencyMaxAmount;
             if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
-                var min_limit_calc = parseFloat(min_limit/sender_currency_rate).toFixed(2);
-                var max_limit_clac = parseFloat(max_limit/sender_currency_rate).toFixed(2);
-                $('.limit-show').html("Limit " + min_limit_calc + " " + defualCurrency + " - " + max_limit_clac + " " + defualCurrency);
+                var min_limit_calc = parseFloat(min_limit*sender_currency_rate).toFixed(2);
+                var max_limit_clac = parseFloat(max_limit*sender_currency_rate).toFixed(2);
+                $('.limit-show').html("Limit " + min_limit_calc + " " + sender_currency + " - " + max_limit_clac + " " + sender_currency);
                 return {
                     minLimit:min_limit_calc,
                     maxLimit:max_limit_clac,
@@ -236,8 +251,10 @@
             var currencyMaxAmount = $("select[name=currency] :selected").attr("data-max_amount");
             var currencyFixedCharge = $("select[name=currency] :selected").attr("data-fixed_charge");
             var currencyPercentCharge = $("select[name=currency] :selected").attr("data-percent_charge");
-
-            // var sender_select = $("input[name=from_wallet_id] :selected");
+            var selectedCurrency        = $("select[name=currency_code] :selected").attr("data-code");
+            var selectedCurrencyRate        = $("select[name=currency_code] :selected").attr("data-rate");
+            var walletBalance    = $("select[name=currency_code] :selected").attr('data-balance');
+            var walletId    = $("select[name=currency_code] :selected").attr('data-wallet');
 
             return {
                 currencyCode:currencyCode,
@@ -247,13 +264,16 @@
                 currencyFixedCharge:currencyFixedCharge,
                 currencyPercentCharge:currencyPercentCharge,
                 selectedVal:selectedVal,
-
+                selectedCurrency:selectedCurrency,
+                selectedCurrencyRate:selectedCurrencyRate,
+                walletBalance:walletBalance,
+                walletId:walletId
             };
         }
 
         function feesCalculation() {
-            var sender_currency = acceptVar().currencyCode;
-            var sender_currency_rate = acceptVar().currencyRate;
+            var sender_currency = acceptVar().selectedCurrency;
+            var sender_currency_rate = acceptVar().selectedCurrencyRate;
             var sender_amount = $("input[name=amount]").val();
             sender_amount == "" ? (sender_amount = 0) : (sender_amount = sender_amount);
 
@@ -261,7 +281,8 @@
             var percent_charge = acceptVar().currencyPercentCharge;
             if ($.isNumeric(percent_charge) && $.isNumeric(fixed_charge) && $.isNumeric(sender_amount)) {
                 // Process Calculation
-                var fixed_charge_calc = parseFloat(fixed_charge);
+                var fixed_charge_calc = parseFloat(fixed_charge) * parseFloat(sender_currency_rate);
+                console.log(fixed_charge_calc);
                 var percent_charge_calc = parseFloat(sender_currency_rate)*(parseFloat(sender_amount) / 100) * parseFloat(percent_charge);
                 var total_charge = parseFloat(fixed_charge_calc) + parseFloat(percent_charge_calc);
                 total_charge = parseFloat(total_charge).toFixed(2);
@@ -278,7 +299,7 @@
         }
 
         function getFees() {
-            var sender_currency = acceptVar().currencyCode;
+            var sender_currency = acceptVar().selectedCurrency;
             var percent = acceptVar().currencyPercentCharge;
             var charges = feesCalculation();
             if (charges == false) {
@@ -288,13 +309,13 @@
         }
         function getPreview() {
                 var senderAmount = $("input[name=amount]").val();
-                var sender_currency = acceptVar().currencyCode;
+                var sender_currency = acceptVar().selectedCurrency;
                 var sender_currency_rate = acceptVar().currencyRate;
                 // var receiver_currency = acceptVar().rCurrency;
                 senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
 
                 // Sending Amount
-                $('.request-amount').text(senderAmount + " " + defualCurrency);
+                $('.request-amount').text(senderAmount + " " + sender_currency);
 
                 // Fees
                 var charges = feesCalculation();
@@ -304,7 +325,7 @@
                 // will get amount
                 // var willGet = parseFloat(senderAmount) - parseFloat(charges.total);
                 var willGet = parseFloat(senderAmount).toFixed(2);
-                $('.will-get').text(willGet + " " + defualCurrency);
+                $('.will-get').text(willGet + " " + sender_currency);
 
                 // Pay In Total
                 var totalPay = parseFloat(senderAmount) * parseFloat(sender_currency_rate)

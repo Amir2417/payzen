@@ -26,6 +26,7 @@ class PaymentGateway {
     protected $output;
     protected $currency_input_name = "currency";
     protected $amount_input = "amount";
+    protected $sender_wallet_name = "sender_wallet";
 
     public function __construct(array $request_data)
     {
@@ -38,8 +39,10 @@ class PaymentGateway {
 
     public function gateway() {
         $request_data = $this->request_data;
+        // dd($request_data);
         if(empty($request_data)) throw new Exception("Gateway Information is not available. Please provide payment gateway currency alias");
         $validated = $this->validator($request_data)->validate();
+        // dd($validated['sender_wallet']);
         $gateway_currency = PaymentGatewayCurrency::where("alias",$validated[$this->currency_input_name])->first();
 
         if(!$gateway_currency || !$gateway_currency->gateway) {
@@ -47,10 +50,10 @@ class PaymentGateway {
                 $this->currency_input_name = "Gateway not available",
             ]);
         }
-        $defualt_currency = Currency::default();
-
+        $defualt_currency = Currency::where('id',$validated['sender_wallet'])->first();
+        // dd($defualt_currency);
         $user_wallet = UserWallet::auth()->where('currency_id', $defualt_currency->id)->first();
-
+        // dd($user_wallet);
         if(!$user_wallet) {
             throw ValidationException::withMessages([
                 $this->currency_input_name = "User wallet not found!",
@@ -81,6 +84,7 @@ class PaymentGateway {
         return Validator::make($data,[
             $this->currency_input_name  => "required|exists:payment_gateway_currencies,alias",
             $this->amount_input         => "required|numeric",
+            $this->sender_wallet_name         => "required",
         ]);
     }
 
@@ -226,9 +230,11 @@ class PaymentGateway {
         $gateway_currency = PaymentGatewayCurrency::find($currency_id);
         if(!$gateway_currency) throw new Exception('Transaction Failed. Gateway currency not available.');
         $requested_amount = $tempData['data']->amount->requested_amount ?? 0;
+        
         $validator_data = [
             $this->currency_input_name  => $gateway_currency->alias,
-            $this->amount_input         => $requested_amount
+            $this->amount_input         => $requested_amount,
+            $this->sender_wallet_name   => $tempData['data']->wallet_id,
         ];
         $this->request_data = $validator_data;
         $this->gateway();

@@ -298,7 +298,7 @@ trait Paypal
                 'attribute'                      =>PaymentGatewayConst::SEND,
                 'created_at'                    => now(),
             ]);
-
+            
             $this->updateWalletBalance($output);
             DB::commit();
         }catch(Exception $e) {

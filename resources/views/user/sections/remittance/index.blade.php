@@ -294,18 +294,15 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
 
 
    $(document).ready(function(){
-    recipientFilterByCountry();
-    recipientFilterByTransactionType();
-    set_currency_code();
-    getLimit();
-    getFees();
-    getExchangeRate();
-    getPreview();
-    // readOnly();
-
+        recipientFilterByCountry();
+        recipientFilterByTransactionType();
+        set_currency_code();
+        getLimit();
+        getFees();
+        getExchangeRate();
+        getPreview();
     });
     $("select[name=form_country]").change(function(){
-        
         set_from_currency_code();
         getPreview();
         getLimit();
@@ -313,7 +310,6 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         getReceiverAmount();
         getSenderAmount();
         getExchangeRate();
-
     });
     $("select[name=to_country]").change(function(){
         recipientFilterByCountry();
@@ -324,8 +320,6 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         getReceiverAmount();
         getSenderAmount();
         getPreview();
-        // readOnly();
-
     });
     $("select[name=transaction_type]").change(function(){
         recipientFilterByTransactionType();
@@ -334,8 +328,6 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         getFees();
         getExchangeRate();
         getPreview();
-        // readOnly();
-
     });
     $("select[name=recipient]").change(function(){
         set_currency_code();
@@ -343,13 +335,11 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         getFees();
         getExchangeRate();
         getPreview();
-        // readOnly();
     });
     $("input[name=send_amount]").keyup(function(){
         getFees();
         getReceiverAmount();
         getPreview();
-
     });
     $("input[name=receive_amount]").keyup(function(){
         getSenderAmount();
@@ -391,9 +381,6 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             var sender_currency = acceptVar().sCurrency;
             var walletBalance   = acceptVar().walletBalance;
             var walletId   = acceptVar().walletId;
-            console.log("walletId",walletId);
-            // var currencyMinAmount = acceptVar().currencyMinAmount;
-            // var currencyMaxAmount = acceptVar().currencyMaxAmount;
             $('.rate-show').html("1 " + sender_currency + " = " + parseFloat(currencyRate).toFixed(2) + " " + currencyCode);
             $('.available-balance').html("Available Balance :" + " " + walletBalance + " " + sender_currency);
             $('.sender-wallet').val(walletId);

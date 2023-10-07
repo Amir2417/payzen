@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\TemporaryData;
+use App\Constants\GlobalConst;
 use App\Http\Helpers\Response;
 use App\Models\Admin\Currency;
 use App\Models\Admin\BasicSettings;
@@ -28,12 +29,13 @@ class AddMoneyController extends Controller
 {
     use Stripe,Manual,FlutterwaveTrait,RazorTrait;
 
-
     public function index() {
 
         $page_title         = "Add Money";
         $user_wallets       = UserWallet::auth()->get();
-        $user_currencies    = Currency::whereIn('id',$user_wallets->pluck('id')->toArray())->get();
+        $user_currencies    = UserWallet::auth()->whereHas('currency',function($q) {
+            $q->where("status",GlobalConst::ACTIVE);
+        })->active()->get();
         $payment_gateways_currencies = PaymentGatewayCurrency::whereHas('gateway', function ($gateway) {
             $gateway->where('slug', PaymentGatewayConst::add_money_slug());
             $gateway->where('status', 1);
@@ -50,7 +52,9 @@ class AddMoneyController extends Controller
         $validator = Validator::make($request->all(),[
             'currency'  => 'required',
             'amount'    => 'required',
+            'sender_wallet'  =>'required',
         ]);
+        dd($request->all());
         if($validator->fails()){
             return back()->withErrors($validator->errors())->withInput();
         }
@@ -80,9 +84,8 @@ class AddMoneyController extends Controller
                     ],
                 ]
             ];
-            dd($temporay_data);
+            
         }catch(Exception $e){
-            dd($e->getMessage());
             return back()->with(['error' => ['Something went wrong! Please try again']]);
         }
         return back()->with(['success'  => ['Add Money Inserted']]);
