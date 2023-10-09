@@ -69,11 +69,11 @@ class RemitanceController extends Controller
         $user = auth()->user();
         if($basic_setting->kyc_verification){
             if( $user->kyc_verified == 0){
-                return redirect()->route('user.profile.index')->with(['error' => ['Please submit kyc information']]);
+                return redirect()->route('agent.profile.index')->with(['error' => ['Please submit kyc information']]);
             }elseif($user->kyc_verified == 2){
-                return redirect()->route('user.profile.index')->with(['error' => ['Please wait before admin approved your kyc information']]);
+                return redirect()->route('agent.profile.index')->with(['error' => ['Please wait before admin approved your kyc information']]);
             }elseif($user->kyc_verified == 3){
-                return redirect()->route('user.profile.index')->with(['error' => ['Admin rejected your kyc information, Please re-submit again']]);
+                return redirect()->route('agent.profile.index')->with(['error' => ['Admin rejected your kyc information, Please re-submit again']]);
             }
         }
         $exchangeCharge = TransactionSetting::where('slug','remittance')->where('status',1)->first();
@@ -93,7 +93,7 @@ class RemitanceController extends Controller
         if(!$to_country){
             return back()->with(['error' => ['Receiver country not found']]);
         }
-        $receipient = Receipient::where('agent_id',auth()->user()->id)->where("id",$request->recipient)->first();
+        $receipient = Receipient::auth()->where("id",$request->recipient)->first();
         if(!$receipient){
             return back()->with(['error' => ['Receipient is invalid']]);
         }
@@ -185,7 +185,15 @@ class RemitanceController extends Controller
         $details =[
             'recipient_amount' => $receiver_will_get,
             'receiver' => $receipient,
-            'form_country' => $form_country,
+            'sender' => [
+                'first_name'        => $user->firstname,
+                'last_name'         => $user->lastname,
+            ],
+            'sender_currency'   => [
+                'code'          => $userWallet->currency->code,
+                'rate'          => $userWallet->currency->rate,
+                'country'       => $form_country,
+            ],
             'to_country' => $to_country,
             'remitance_type' => $transaction_type,
                 'sender' => $user,
@@ -199,8 +207,8 @@ class RemitanceController extends Controller
         DB::beginTransaction();
         try{
             $id = DB::table("transactions")->insertGetId([
-                'user_id'                       => $user->id,
-                'user_wallet_id'                => $authWallet->id,
+                'agent_id'                       => $user->id,
+                'agent_wallet_id'                => $authWallet->id,
                 'payment_gateway_currency_id'   => null,
                 'type'                          => PaymentGatewayConst::SENDREMITTANCE,
                 'trx_id'                        => $trx_id,
@@ -274,8 +282,8 @@ class RemitanceController extends Controller
         DB::beginTransaction();
         try{
             $id = DB::table("transactions")->insertGetId([
-                'user_id'                       => $receiver_user,
-                'user_wallet_id'                => $receiverWallet->id,
+                'agent_id'                       => $receiver_user,
+                'agent_wallet_id'                => $receiverWallet->id,
                 'payment_gateway_currency_id'   => null,
                 'type'                          => PaymentGatewayConst::SENDREMITTANCE,
                 'trx_id'                        => $trx_id,

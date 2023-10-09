@@ -1,14 +1,14 @@
-@extends('user.layouts.master')
+@extends('agent.layouts.master')
 
 @push('css')
 
 @endpush
 
 @section('breadcrumb')
-    @include('user.components.breadcrumb',['breadcrumbs' => [
+    @include('agent.components.breadcrumb',['breadcrumbs' => [
         [
             'name'  => __("Dashboard"),
-            'url'   => setRoute("user.dashboard"),
+            'url'   => setRoute("agent.dashboard"),
         ]
     ], 'active' => __(@$page_title)])
 @endsection
@@ -24,7 +24,7 @@
                         <h5 class="title">{{ @$page_title }}</h5>
                     </div>
                     <div class="dash-payment-body">
-                        <form class="card-form" action="{{ setRoute('user.receipient.update') }}" method="POST">
+                        <form class="card-form" action="{{ setRoute('agent.receipient.update') }}" method="POST">
                             @csrf
                             @method("PUT")
                             <input type="hidden" name="id" value="{{ $data->id }}">
@@ -43,11 +43,11 @@
                                         </select>
                                 </div>
                                 @if($data->type == "wallet-to-wallet-transfer")
-                                @include('user.components.recipient.trx-type-fields.edit.wallet-to-wallet',$data)
+                                @include('agent.components.recipient.trx-type-fields.edit.wallet-to-wallet',$data)
                                 @elseif( $data->type == "bank-transfer")
-                                @include('user.components.recipient.trx-type-fields.edit.bank-deposit',[$countries,$data,$banks])
+                                @include('agent.components.recipient.trx-type-fields.edit.bank-deposit',[$countries,$data,$banks])
                                 @elseif( $data->type == "cash-pickup")
-                                @include('user.components.recipient.trx-type-fields.edit.cash-pickup',[$countries,$data,$pickup_points])
+                                @include('agent.components.recipient.trx-type-fields.edit.cash-pickup',[$countries,$data,$pickup_points])
                                 @endif
 
 
@@ -67,53 +67,14 @@
 @push('script')
 
 <script>
-    // $("select.trx-type-select").change(function() {
-    //         getTrxFields($(this).val());
-    //     });
-    //     $(document).ready(function(){
-    //         var selectedVal = $("select[name=transaction_type] :selected").val();
-    //         if(selectedVal != ''){
-    //             getTrxFields(selectedVal);
-    //         }
 
-
-    //     });
-    // function getTrxFields(value) {
-    //         var value = value;
-    //         if(value == null || value == undefined || value == "") {
-    //             return false;
-    //         }
-    //         var data = {
-    //             _token: laravelCsrf(),
-    //             data:value,
-    //         };
-    //         $.post("{{ setRoute('user.receipient.edit.get.input') }}",data,function() {
-    //             // success
-    //         }).done(function(response){
-    //             $(".trx-input").remove();
-    //             $(response).insertAfter($(".transaction-type"));
-    //             $(".transaction-type").parent().find(".trx-input").slideDown(400);
-    //             $("select[name=country]").select2();
-    //             $("select[name=state]").select2({
-    //                 tags:true,
-    //             });
-    //             $("select[name=city]").select2({
-    //                 tags:true,
-    //             });
-    //             $("select[name=point]").select2();
-    //         }).fail(function(response) {
-    //             $(".trx-input").remove();
-    //             var response = JSON.parse(response.responseText);
-    //             throwMessage(response.type,response.message.error);
-    //         });
-    // }
     $(document).on("change",".country-select",function() {
         var phoneCode = $("select[name=country] :selected").attr("data-mobile-code");
         placePhoneCode(phoneCode);
     });
 
-    $(document).on("focusout",".mobile",function(){
-            getUser($(this).val(),"{{ setRoute('user.info') }}",$(this));
+    $(document).on("focusout",".email",function(){
+            getUser($(this).val(),"{{ setRoute('agent.info') }}",$(this));
         });
         function getUser(string,URL,errorPlace = null) {
             if(string.length < 3) {
@@ -136,6 +97,19 @@
                         // }else {
                         //     $(`<span class="text--danger get-user-error mt-2">User doesn't exists!</span>`).insertAfter($(errorPlace));
                         // }
+                        $(errorPlace).parents("form").find("input[name=address]").val("");
+                        $(errorPlace).parents("form").find("input[name=lastname]").val("");
+                        $(errorPlace).parents("form").find("input[name=firstname]").val("");
+                        $(errorPlace).parents("form").find("input[name=zip]").val("");
+                        $(errorPlace).parents("form").find("input[name=mobile_code]").val("");
+                        $(errorPlace).parents("form").find("input[name=mobile]").val("");
+                        $(errorPlace).parents("form").find("input[name=state]").val("");
+                        $(errorPlace).parents("form").find("input[name=city]").val("");
+                        $(errorPlace).parents("form").find(".phone-code").text("");
+                        $("select[name=country]").change(function(){
+                            var phoneCode = $("select[name=country] :selected").attr("data-mobile-code");
+                            placePhoneCode(phoneCode);
+                        });
                         throwMessage('error',["User doesn't  exists."]);
                     }
                 }else {
@@ -154,6 +128,8 @@
                         mobile_code: user.mobile_code,
                         mobile: user.mobile,
                         address: user.address.address ?? "",
+                        city: user.address.city ?? "",
+                        state: user.address.state ?? "",
                         zip: user.address.zip ?? "",
                     };
                     $.each(user_infos,function(index,item) {

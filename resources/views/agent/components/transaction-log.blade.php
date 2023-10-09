@@ -57,7 +57,7 @@
                             @elseif ($item->type == payment_gateway_const()::SENDREMITTANCE)
                                 @if ($item->isAuthUserAgent())
                                     @if ($item->attribute == payment_gateway_const()::SEND)
-                                        <h4 class="title">{{ __("Send Remitance to @" . $item->details->receiver_receiver->firstname.' '.@$item->details->receiver_receiver->lastname." (".@$item->details->receiver->mobile_code.@$item->details->receiver->mobile.")") }} </h4>
+                                        <h4 class="title">{{ __("Send Remitance to @" . $item->details->receiver->firstname.' '.@$item->details->receiver->lastname." (".@$item->details->receiver->mobile_code.@$item->details->receiver->mobile.")") }} </h4>
                                     @elseif ($item->attribute == payment_gateway_const()::RECEIVED)
                                         <h4 class="title">{{ __("Received Remitance from @" .@$item->details->sender->fullname." (".@$item->details->sender->full_mobile.")") }} </h4>
                                     @endif
@@ -541,7 +541,7 @@
                         </div>
                     </div>
                     <div class="preview-list-right">
-                        <span>{{ @$item->details->form_country }}</span>
+                        <span>{{ @$item->details->sender_currency->country ?? '' }}</span>
                     </div>
                 </div>
                 <div class="preview-list-item">
@@ -572,7 +572,7 @@
                         </div>
                     </div>
                     <div class="preview-list-right">
-                        <span>{{ @$item->details->receiver->firstname.' '.@$item->details->receiver->lastname}}</span>
+                        <span>{{ @$item->details->sender->firstname.' '.@$item->details->sender->lastname}}</span>
                     </div>
                 </div>
                 <div class="preview-list-item">
@@ -587,7 +587,7 @@
                         </div>
                     </div>
                     <div class="preview-list-right">
-                        <span>{{ @$item->details->receiver_receiver->firstname.' '.@$item->details->receiver_receiver->lastname}}</span>
+                        <span>{{ @$item->details->receiver->firstname.' '.@$item->details->receiver->lastname}}</span>
                     </div>
                 </div>
                 @endif

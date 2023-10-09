@@ -506,7 +506,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         var transacion_type = acceptVar().tranaction_type;
         $(".recipient").html('');
         $.ajax({
-                url: "{{route('user.remittance.get.recipient.country')}}",
+                url: "{{route('agent.remittance.get.recipient.country')}}",
                 type: "POST",
                 data: {
                     receiver_country: receiver_country,
@@ -665,7 +665,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         var receive_amount = $("input[name=receive_amount]").val();
 
         $.ajax({
-                url: "{{route('user.remittance.get.token')}}",
+                url: "{{route('agent.remittance.get.token')}}",
                 type: "POST",
                 data: {
                     receiver_country: receiver_country,
@@ -678,7 +678,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                 dataType: 'json',
                 success: function (res) {
                     setTimeout(function () {
-                    window.location="{{ setRoute('user.receipient.index') }}";
+                    window.location="{{ setRoute('agent.receipient.index') }}";
                 }, 500);
 
                 }

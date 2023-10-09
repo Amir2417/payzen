@@ -62,7 +62,7 @@
             ])
         </div>
 
-        <div class="col-xl-4 col-lg-4 col-md-6 form-group">
+        <div class="col-xl-3 col-lg-3 col-md-6 form-group">
             @include('admin.components.form.input',[
                 'label'         => "Zip Code",
                 'label_after'   => "<span>*</span>",
@@ -72,7 +72,7 @@
                 'value'     => @$data->zip_code,
             ])
         </div>
-        <div class="col-xl-4 col-lg-4 col-md-6 form-group">
+        <div class="col-xl-3 col-lg-3 col-md-6 form-group">
         <label>{{ __("Phone Number") }}<span>*</span></label>
           <div class="input-group">
             <div class="input-group-text phone-code">+{{ @$data->mobile_code }}</div>
@@ -80,8 +80,14 @@
             <input type="text" class="form--control" placeholder="Enter Mobile..." name="mobile" value="{{ @$data->mobile }}">
           </div>
         </div>
+        <div class="col-xl-3 col-lg-3 col-md-6 form-group">
+            <label>{{ __("Email Address") }}<span>*</span></label>
+              <div class="input-group">
+                <input type="email" class="form--control" placeholder="Enter Email Address..." name="email" value="{{ @$data->email }}">
+              </div>
+        </div>
 
-        <div class="col-xl-4 col-lg-4 col-md-4 form-group">
+        <div class="col-xl-3 col-lg-3 col-md-6 form-group">
             <label>{{ __("Pickup Point") }} <span>*</span></label>
             <select name="cash_pickup" class="form--control select2-basic" data-placeholder="Select Pickup Point">
                 <option selected disabled>Select Pickup Point</option>

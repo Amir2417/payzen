@@ -28,9 +28,12 @@ class ReceipientController extends Controller
         $page_title = "All Recipient";
         $token = (object)session()->get('remittance_token');
         $user = auth()->user();
+      
         if(@$token ->transacion_type != null && @$token ->receiver_country == null){
+            
             $receipients = Receipient::auth()->where('type',$token->transacion_type)->orderByDesc("id")->paginate(12);
         }elseif(@$token ->transacion_type != null && @$token ->receiver_country != null){
+            
             $receipients = Receipient::auth()->where('type',$token->transacion_type)->where('country',@$token->receiver_country)->orderByDesc("id")->paginate(12);
         }else{
             $receipients = Receipient::auth()->orderByDesc("id")->paginate(12);

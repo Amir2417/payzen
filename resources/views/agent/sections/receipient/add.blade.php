@@ -1,4 +1,4 @@
-@extends('user.layouts.master')
+@extends('agent.layouts.master')
 
 @push('css')
 
@@ -8,10 +8,10 @@
 @endphp
 
 @section('breadcrumb')
-    @include('user.components.breadcrumb',['breadcrumbs' => [
+    @include('agent.components.breadcrumb',['breadcrumbs' => [
         [
             'name'  => __("Dashboard"),
-            'url'   => setRoute("user.dashboard"),
+            'url'   => setRoute("agent.dashboard"),
         ]
     ], 'active' => __(@$page_title)])
 @endsection
@@ -82,7 +82,7 @@
                 _token: laravelCsrf(),
                 data:value,
             };
-            $.post("{{ setRoute('user.receipient.create.get.input') }}",data,function() {
+            $.post("{{ setRoute('agent.receipient.create.get.input') }}",data,function() {
                 // success
             }).done(function(response){
                 $(".trx-input").remove();
@@ -102,10 +102,10 @@
                 throwMessage(response.type,response.message.error);
             });
     }
-    $(document).on("focusout",".mobile",function(){
-            getUser($(this).val(),"{{ setRoute('user.info') }}",$(this));
-        });
-        function getUser(string,URL,errorPlace = null) {
+    $(document).on("focusout",".email",function(){
+            getUser($(this).val(),"{{ setRoute('agent.info') }}",$(this));
+    });
+    function getUser(string,URL,errorPlace = null) {
             if(string.length < 3) {
                 return false;
             }
@@ -117,6 +117,7 @@
             $.post(URL,data,function() {
                 // success
             }).done(function(response){
+
                 if(response.data == null) {
                     if(errorPlace != null) {
                         // $(errorPlace).css('border','none');
@@ -126,6 +127,19 @@
                         // }else {
                         //     $(`<span class="text--danger get-user-error mt-2">User doesn't exists!</span>`).insertAfter($(errorPlace));
                         // }
+                        $(errorPlace).parents("form").find("input[name=address]").val("");
+                        $(errorPlace).parents("form").find("input[name=lastname]").val("");
+                        $(errorPlace).parents("form").find("input[name=firstname]").val("");
+                        $(errorPlace).parents("form").find("input[name=zip]").val("");
+                        $(errorPlace).parents("form").find("input[name=mobile_code]").val("");
+                        $(errorPlace).parents("form").find("input[name=mobile]").val("");
+                        $(errorPlace).parents("form").find("input[name=state]").val("");
+                        $(errorPlace).parents("form").find("input[name=city]").val("");
+                        $(errorPlace).parents("form").find(".phone-code").text("");
+                        $("select[name=country]").change(function(){
+                            var phoneCode = $("select[name=country] :selected").attr("data-mobile-code");
+                            placePhoneCode(phoneCode);
+                        });
                         throwMessage('error',["User doesn't  exists."]);
                     }
                 }else {
@@ -142,8 +156,11 @@
                         lastname: user.lastname,
                         middlename: user.middlename,
                         mobile_code: user.mobile_code,
+                        email: user.email,
                         mobile: user.mobile,
                         address: user.address.address ?? "",
+                        city: user.address.city ?? "",
+                        state: user.address.state ?? "",
                         zip: user.address.zip ?? "",
                     };
                     $.each(user_infos,function(index,item) {

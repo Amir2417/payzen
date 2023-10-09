@@ -32,11 +32,24 @@
 
                         </a>
                     </li>
-                    <li class="sidebar-menu-item">
-                        <a href="{{ setRoute('agent.remittance.index') }}">
+                   
+                    <li class="sidebar-menu-item sidebar-dropdown">
+                        <a href="javascript:void(0)">
                             <i class="menu-icon fas fa-coins"></i>
                             <span class="menu-title">{{ __("Remittance") }}</span>
                         </a>
+                        <ul class="sidebar-submenu">
+                            <li class="sidebar-menu-item">
+                                <a href="{{ setRoute('agent.remittance.index') }}" class="nav-link">
+                                    <i class="menu-icon las la-ellipsis-h"></i>
+                                    <span class="menu-title">{{ __("Send Remittance") }}</span>
+                                </a>
+                                <a href="{{ setRoute('agent.receipient.index') }}" class="nav-link">
+                                    <i class="menu-icon las la-ellipsis-h"></i>
+                                    <span class="menu-title">{{ __("Saved Recipient") }}</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     <li class="sidebar-menu-item">
                         <a href="{{ setRoute('agent.add.money.index') }}">
@@ -69,7 +82,7 @@
                             <span class="menu-title">{{ __("Transactions") }}</span>
                         </a>
                     </li>
-                    <li class="sidebar-menu-item">
+                    {{-- <li class="sidebar-menu-item">
                         <a href="{{ setRoute('agent.sender.recipient.index') }}">
                             <i class="menu-icon fas fa-user-edit"></i>
                             <span class="menu-title">{{ __("Saved My Sender") }}</span>
@@ -80,7 +93,8 @@
                             <i class="menu-icon fas fa-user-check"></i>
                             <span class="menu-title">{{ __("Saved My Receiver") }}</span>
                         </a>
-                    </li>
+                    </li> --}}
+
                     <li class="sidebar-menu-item">
                         <a href="{{ setRoute('agent.security.google.2fa') }}">
                             <i class="menu-icon fas fa-qrcode"></i>

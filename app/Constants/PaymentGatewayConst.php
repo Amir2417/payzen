@@ -22,6 +22,7 @@ class PaymentGatewayConst {
     const TYPEMONEYEXCHANGE = "MONEY-EXCHANGE";
     const BILLPAY = "BILL-PAY";
     const MOBILETOPUP = "MOBILE-TOPUP";
+    const AGENTMONEYOUT = "AGENT-MONEYOUT";
     const REQUESTMONEY = "REQUEST-MONEY";
     const VOUCHER = "VOUCHER";
     const INVOICE = "INVOICE";

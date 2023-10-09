@@ -1,14 +1,14 @@
-@extends('user.layouts.master')
+@extends('agent.layouts.master')
 
 @push('css')
 
 @endpush
 
 @section('breadcrumb')
-    @include('user.components.breadcrumb',['breadcrumbs' => [
+    @include('agent.components.breadcrumb',['breadcrumbs' => [
         [
             'name'  => __("Dashboard"),
-            'url'   => setRoute("user.dashboard"),
+            'url'   => setRoute("agent.dashboard"),
         ]
     ], 'active' => __(@$page_title)])
 @endsection
@@ -18,7 +18,7 @@
     <div class="dashboard-area mt-10">
         <div class="dashboard-header-wrapper">
             <h3 class="title">{{ __($page_title) }}</h3>
-            <a href="{{ setRoute('user.receipient.add') }}" class="btn--base">Add <i class="fas fa-plus-circle ms-2"></i></a>
+            <a href="{{ setRoute('agent.receipient.add') }}" class="btn--base">{{ __("Add") }} <i class="fas fa-plus-circle ms-2"></i></a>
         </div>
     </div>
     <div class="dashboard-list-area mt-20">
@@ -38,27 +38,24 @@
                                     <span class="text-success">( {{ ucwords(str_replace('-', ' ', @$data->type))}} )</span>
 
                                 @endif </h4>
-                                <span class="sub-title text--warning">{{ @$data->mobile_code }}{{ @$data->mobile }}</span>
-
+                                <span class="sub-title text--warning">{{ @$data->email }}</span>
                             </div>
                         </div>
                     </div>
                     <div class="dashboard-list-right">
                         <div class="dashboard-list-right-btn-area">
-                            <a href="{{ setRoute('user.receipient.send.remittance',$data->id) }}" class="btn--base"><i class="fas fa-paper-plane"></i></a>
-                            <a href="{{ setRoute('user.receipient.edit',$data->id) }}" class="btn--base"><i class="fas fa-edit"></i></a>
+                            <a href="{{ setRoute('agent.receipient.send.remittance',$data->id) }}" class="btn--base"><i class="fas fa-paper-plane"></i></a>
+                            <a href="{{ setRoute('agent.receipient.edit',$data->id) }}" class="btn--base"><i class="fas fa-edit"></i></a>
                             <button type="button" class="btn--base delete-btn " data-id="{{ $data->id }}" data-name="{{ $data->fullname }}"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
                 </div>
-
             </div>
             @empty
             <div class="alert alert-primary text-center">
                 {{ __("No Receipient Found!") }}
             </div>
             @endforelse
-
         </div>
     </div>
     <nav>
@@ -72,7 +69,7 @@
 @push('script')
 <script>
      $(".delete-btn").click(function(){
-            var actionRoute =  "{{ setRoute('user.receipient.delete') }}";
+            var actionRoute =  "{{ setRoute('agent.receipient.delete') }}";
             var target      = $(this).data('id');
             var btnText = "Delete";
             var name = $(this).data('name');

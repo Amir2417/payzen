@@ -16,6 +16,7 @@ use App\Http\Controllers\Agent\DashboardController;
 use App\Http\Controllers\Agent\RemitanceController;
 use App\Http\Controllers\Agent\SendMoneyController;
 use App\Http\Controllers\Agent\MobileTopupController;
+use App\Http\Controllers\Agent\ReceipientController;
 use App\Http\Controllers\Agent\TransactionController;
 use App\Http\Controllers\Agent\ReceiveMoneyController;
 use App\Http\Controllers\Agent\SupportTicketController;
@@ -117,9 +118,23 @@ Route::prefix("agent")->name("agent.")->middleware(['checkStatus'])->group(funct
         Route::post('get/edit-input','getTrxTypeInputsEdit')->name('edit.get.input');
         Route::get('send/remittance/{id}','sendRemittance')->name('send.remittance');
     });
+    //Recipient
+    Route::controller(ReceipientController::class)->prefix('recipient')->name('receipient.')->group(function(){
+        Route::get('/','index')->name('index');
+        Route::get('/add','addReceipient')->name('add');
+        Route::post('/add','storeReceipient');
+        Route::get('edit/{id}','editReceipient')->name('edit');
+        Route::put('update','updateReceipient')->name('update');
+        Route::delete('delete','deleteReceipient')->name('delete');
+        Route::post('find/user','checkUser')->name('check.user');
+        Route::post('get/create-input','getTrxTypeInputs')->name('create.get.input');
+        Route::post('get/edit-input','getTrxTypeInputsEdit')->name('edit.get.input');
+        Route::get('send/remittance/{id}','sendRemittance')->name('send.remittance');
+    });
     //Remittance
     Route::controller(RemitanceController::class)->prefix('remittance')->name('remittance.')->group(function(){
         Route::get('/','index')->name('index');
+        Route::post('get/token','getToken')->name('get.token');
         Route::post('get/token/sender','getTokenForSender')->name('get.token.sender');
         Route::post('get/token/receiver','getTokenForReceiver')->name('get.token.receiver');
         Route::post('confirmed','confirmed')->name('confirmed');

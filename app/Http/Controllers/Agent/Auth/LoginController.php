@@ -46,7 +46,7 @@ class LoginController extends Controller
     {
         $this->request_data = $request;
         $request->validate([
-            'credentials'   => 'required|string',
+            'credentials'   => 'required|email',
             'password'      => 'required|string',
         ]);
     }
@@ -61,7 +61,7 @@ class LoginController extends Controller
     protected function credentials(Request $request)
     {
         $request->merge(['status' => true]);
-        $request->merge([$this->username() => (int)$request->credentials]);
+        $request->merge([$this->username() => $request->credentials]);
         return $request->only($this->username(), 'password','status');
     }
 

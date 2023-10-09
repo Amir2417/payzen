@@ -1,5 +1,5 @@
 @php
-    $token = (object)session()->get('sender_remittance_token');
+    $token = (object)session()->get('remittance_token');
     $country= App\Models\Admin\ReceiverCounty::where('id',@$token->receiver_country)->first();
 @endphp
 <div class="trx-input" style="display: none;">
@@ -61,7 +61,7 @@
             ])
         </div>
 
-        <div class="col-xl-4 col-lg-4 col-md-6 form-group">
+        <div class="col-xl-3 col-lg-3 col-md-6 form-group">
             @include('admin.components.form.input',[
                 'label'         => "Zip Code",
                 'label_after'   => "<span>*</span>",
@@ -70,8 +70,7 @@
                 'placeholder'   => "Zip Code",
             ])
         </div>
-        <div class="col-xl-4 col-lg-4 col-md-6 form-group">
-
+        <div class="col-xl-3 col-lg-3 col-md-6 form-group">
         <label>{{ __("Phone Number") }}<span>*</span></label>
           <div class="input-group">
             <div class="input-group-text phone-code">+{{ @$country->mobile_code }}</div>
@@ -79,8 +78,14 @@
             <input type="text" class="form--control" placeholder="Enter Mobile..." name="mobile">
           </div>
         </div>
+        <div class="col-xl-3 col-lg-3 col-md-6 form-group">
+        <label>{{ __("Email Address") }}<span>*</span></label>
+          <div class="input-group">
+            <input type="email" class="form--control" placeholder="Enter Email Address..." name="email">
+          </div>
+        </div>
 
-        <div class="col-xl-4 col-lg-4 col-md-4 form-group">
+        <div class="col-xl-3 col-lg-3 col-md-4 form-group">
             <label>{{ __("Select Bank") }} <span>*</span></label>
             <select name="bank" class="form--control select2-basic" data-placeholder="Select Bank Name">
                 <option selected disabled>{{ __("Select Bank Name") }}</option>

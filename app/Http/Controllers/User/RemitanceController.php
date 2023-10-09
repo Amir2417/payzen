@@ -184,7 +184,11 @@ class RemitanceController extends Controller
         $details =[
             'recipient_amount' => $receiver_will_get,
             'receiver' => $receipient,
-            'form_country' => $form_country,
+            'form_country' => [
+                'sender_currency'   => $userWallet->currency->code,
+                'sender_rate'       => $userWallet->currency->rate,
+                'country'           => $form_country,
+            ],
             'to_country' => $to_country,
             'remitance_type' => $transaction_type,
                 'sender' => $user,
