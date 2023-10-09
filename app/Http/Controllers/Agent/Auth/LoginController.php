@@ -78,7 +78,7 @@ class LoginController extends Controller
         if(filter_var($credentials,FILTER_VALIDATE_EMAIL)) {
             return "email";
         }
-        return "mobile";
+        return "username";
     }
 
     /**

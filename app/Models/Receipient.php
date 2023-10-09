@@ -9,20 +9,21 @@ use Illuminate\Database\Eloquent\Model;
 class Receipient extends Model
 {
     use HasFactory;
-    protected $guarded = ['id'];
-    protected $casts = [
-        'user_id' => 'integer',
-        'country' => 'integer',
-        'type' => 'string',
-        'firstname' => 'string',
-        'lastname' => 'string',
-        'mobile_code' => 'string',
-        'mobile' => 'string',
-        'city' => 'string',
-        'state' => 'string',
-        'address' => 'string',
-        'zip_code' => 'string',
-        'details' => 'object',
+    protected $guarded  = ['id'];
+    protected $casts    = [
+        'user_id'       => 'integer',
+        'agent_id'      => 'integer',
+        'country'       => 'integer',
+        'type'          => 'string',
+        'firstname'     => 'string',
+        'lastname'      => 'string',
+        'mobile_code'   => 'string',
+        'mobile'        => 'string',
+        'city'          => 'string',
+        'state'         => 'string',
+        'address'       => 'string',
+        'zip_code'      => 'string',
+        'details'       => 'object',
     ];
     public function scopeAuth($query) {
         $query->where("user_id",auth()->user()->id);

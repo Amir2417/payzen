@@ -106,7 +106,7 @@
                                                     @foreach ($receiver_wallets as $item)
                                                         <li class="custom-option" data-item='{{ json_encode($item) }}'>
                                                             <img src="{{ get_image($item->flag,'currency-flag') }}" alt="flag" class="custom-flag">
-                                                            <span class="custom-country" b>{{ $item->name }}</span>
+                                                            <span class="custom-country">{{ $item->name }}</span>
                                                             <span class="custom-currency">{{ $item->code }}</span>
                                                         </li>
                                                     @endforeach

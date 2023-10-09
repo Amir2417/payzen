@@ -8,7 +8,7 @@
         "php": "^8.0.2",
         "buglinjo/laravel-webp": "^2.3",
         "flutterwavedev/flutterwave-v3": "^1.0",
-        "guzzlehttp/guzzle": "^7.2",
+        "guzzlehttp/guzzle": "^7.8",
         "intervention/image": "^2.7",
         "jenssegers/agent": "^2.6",
         "kingflamez/laravelrave": "dev-master",

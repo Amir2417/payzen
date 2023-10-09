@@ -37,14 +37,12 @@
                                 @endif
                             @elseif ($item->type == payment_gateway_const()::TYPEMAKEPAYMENT)
                                 @if ($item->isAuthUser())
-
                                     @if ($item->attribute == payment_gateway_const()::SEND)
                                         <h4 class="title">{{ __("Make Payment to @" . @$item->details->receiver->username." (".@$item->details->receiver->email.")") }} </h4>
                                     @elseif ($item->attribute == payment_gateway_const()::RECEIVED)
                                         <h4 class="title">{{ __("Make Payment from @" .@$item->details->sender->username." (".@$item->details->sender->email.")") }} </h4>
                                     @endif
                                 @endif
-
                             @elseif ($item->type == payment_gateway_const()::SENDREMITTANCE)
                                 @if ($item->isAuthUser())
                                     @if ($item->attribute == payment_gateway_const()::SEND)
@@ -89,10 +87,10 @@
                         <h6 class="exchange-money">{{ get_amount($item->available_balance,$item->user_wallet->currency->code) }}</h6>
                     @elseif ($item->type == payment_gateway_const()::TYPETRANSFERMONEY)
                         @if ($item->attribute == payment_gateway_const()::SEND)
-                        <h6 class="exchange-money text--warning ">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h6>
-                        <h4 class="main-money fw-bold">{{ get_amount($item->payable,get_default_currency_code()) }}</h4>
+                        <h6 class="exchange-money text--warning ">{{ get_amount($item->request_amount,$item->details->charges->sender_currency) }}</h6>
+                        <h4 class="main-money fw-bold">{{ get_amount($item->payable,$item->details->charges->sender_currency) }}</h4>
                         @elseif ($item->attribute == payment_gateway_const()::RECEIVED)
-                        <h6 class="exchange-money fw-bold">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h6>
+                        <h6 class="exchange-money fw-bold">{{ get_amount($item->request_amount,$item->details->charges->receiver_currency) }}</h6>
                         @endif
                     @elseif ($item->type == payment_gateway_const()::TYPEMAKEPAYMENT)
                         @if ($item->attribute == payment_gateway_const()::SEND)
@@ -309,7 +307,7 @@
                                 </div>
                             </div>
                             <div class="preview-list-right">
-                                <span>{{ get_amount($item->details->charges->receiver_amount,get_default_currency_code()) }}</span>
+                                <span>{{ get_amount($item->details->charges->receiver_amount,$item->details->charges->receiver_currency) }}</span>
                             </div>
                         </div>
                         {{-- <div class="preview-list-item">
@@ -339,7 +337,7 @@
                                 </div>
                             </div>
                             <div class="preview-list-right">
-                                <span class="text--base">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
+                                <span class="text--base">{{ get_amount($item->available_balance,$item->details->charges->sender_currency) }}</span>
                             </div>
                         </div>
                     @else
@@ -355,7 +353,7 @@
                             </div>
                         </div>
                         <div class="preview-list-right">
-                            <span class="text--base">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
+                            <span class="text--base">{{ get_amount($item->available_balance,$item->user_wallet->currency->code) }}</span>
                         </div>
                     </div>
                     @endif

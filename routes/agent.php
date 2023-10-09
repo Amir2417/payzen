@@ -1,25 +1,26 @@
 <?php
 
-use App\Http\Controllers\Agent\DashboardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GlobalController;
+use App\Providers\Admin\BasicSettingsProvider;
+use App\Http\Controllers\Agent\WalletController;
 use Pusher\PushNotifications\PushNotifications;
 use App\Http\Controllers\Agent\BillPayController;
 use App\Http\Controllers\Agent\ProfileController;
-use App\Http\Controllers\Agent\ReceiveMoneyController;
-use App\Http\Controllers\Agent\SendMoneyController;
 use App\Http\Controllers\Agent\AddMoneyController;
 use App\Http\Controllers\Agent\MoneyOutController;
 use App\Http\Controllers\Agent\SecurityController;
+use App\Http\Controllers\Agent\DashboardController;
 use App\Http\Controllers\Agent\RemitanceController;
+use App\Http\Controllers\Agent\SendMoneyController;
 use App\Http\Controllers\Agent\MobileTopupController;
-use App\Http\Controllers\Agent\ReceiverRecipientController;
-use App\Http\Controllers\Agent\SenderRecipientController;
 use App\Http\Controllers\Agent\TransactionController;
+use App\Http\Controllers\Agent\ReceiveMoneyController;
 use App\Http\Controllers\Agent\SupportTicketController;
-use App\Providers\Admin\BasicSettingsProvider;
+use App\Http\Controllers\Agent\SenderRecipientController;
+use App\Http\Controllers\Agent\ReceiverRecipientController;
 
 Route::prefix("agent")->name("agent.")->middleware(['checkStatus'])->group(function(){
     Route::post("info",[GlobalController::class,'agentInfo'])->name('info');
@@ -35,12 +36,13 @@ Route::prefix("agent")->name("agent.")->middleware(['checkStatus'])->group(funct
         Route::put('update','update')->name('update')->middleware('app.mode');
         Route::delete('delete/account','deleteAccount')->name('delete.account')->middleware('app.mode');
     });
-     //Send Money
-     Route::controller(SendMoneyController::class)->prefix('send-money')->name('send.money.')->group(function(){
+    //Send Money
+    Route::controller(SendMoneyController::class)->prefix('send-money')->name('send.money.')->group(function(){
         Route::get('/','index')->name('index');
         Route::post('confirmed','confirmed')->name('confirmed');
         Route::post('user/exist','checkUser')->name('check.exist');
     });
+    
      //Receive Money
      Route::controller(ReceiveMoneyController::class)->prefix('receive-money')->name('receive.money.')->group(function(){
         Route::get('/','index')->name('index');

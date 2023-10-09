@@ -1,17 +1,19 @@
 <?php
 namespace App\Http\Controllers\Agent;
 
-use App\Constants\PaymentGatewayConst;
-use App\Http\Controllers\Controller;
-use App\Models\Admin\Currency;
-use App\Models\Merchants\Merchant;
-use App\Models\Merchants\MerchantQrCode;
-use App\Models\Transaction;
 use App\Models\User;
 use App\Models\UserQrCode;
+use App\Models\AgentWallet;
+use App\Models\Transaction;
 use App\Models\VirtualCard;
 use Illuminate\Http\Request;
+use App\Constants\GlobalConst;
+use App\Models\Admin\Currency;
+use App\Models\Merchants\Merchant;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use App\Constants\PaymentGatewayConst;
+use App\Models\Merchants\MerchantQrCode;
 
 class DashboardController extends Controller
 {
@@ -20,6 +22,14 @@ class DashboardController extends Controller
         $page_title = "Agent Dashboard";
         $baseCurrency = Currency::default();
         $transactions = Transaction::agentAuth()->latest()->take(5)->get();
+        $fiat_wallets = AgentWallet::auth()->whereHas("currency",function($q) {
+            return $q->where("type",GlobalConst::FIAT);
+        })->with('currency','agent')->orderByDesc("balance")->limit(8)->get();
+
+        $crypto_wallets = AgentWallet::auth()->whereHas("currency",function($q) {
+            return $q->where("type",GlobalConst::CRYPTO);
+        })->with('currency','agent')->orderByDesc("balance")->limit(8)->get();
+        
         $data['totalReceiveRemittance'] =Transaction::agentAuth()->remitance()->where('attribute',"RECEIVED")->sum('request_amount');
         $data['totalSendRemittance'] =Transaction::agentAuth()->remitance()->where('attribute',"SEND")->sum('request_amount');
         $data['billPay'] = Transaction::agentAuth()->billPay()->sum('request_amount');
@@ -107,7 +117,8 @@ class DashboardController extends Controller
             'chart_two_data'   => $chart_two_data,
             'month_day'        => $month_day,
         ];
-        return view('agent.dashboard',compact("page_title","baseCurrency",'transactions','data','chartData'));
+        return view('agent.dashboard',compact("page_title","baseCurrency",'transactions','data','chartData',"fiat_wallets",
+        "crypto_wallets"));
     }
 
     public function logout(Request $request) {

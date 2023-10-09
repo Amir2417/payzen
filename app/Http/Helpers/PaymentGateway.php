@@ -92,6 +92,7 @@ class PaymentGateway {
 
         $gateway_currency = $output['currency'];
         $requested_amount = $output['amount']->requested_amount;
+       
         if($requested_amount < ($gateway_currency->min_limit/$gateway_currency->rate) || $requested_amount > ($gateway_currency->max_limit/$gateway_currency->rate)) {
             throw ValidationException::withMessages([
                 $this->amount_input = "Please follow the transaction limit",

@@ -29,11 +29,11 @@
                             @elseif ($item->type == payment_gateway_const()::TYPETRANSFERMONEY)
                                 @if ($item->isAuthUserAgent())
 
-                                    @if ($item->attribute == payment_gateway_const()::SEND)
-                                        <h4 class="title">{{ __("Send Money to @" . @$item->details->receiver->fullname." (".@$item->details->receiver->full_mobile.")") }} </h4>
-                                    @elseif ($item->attribute == payment_gateway_const()::RECEIVED)
-                                        <h4 class="title">{{ __("Received Money from @" .@$item->details->sender->fullname." (".@$item->details->sender->full_mobile.")") }} </h4>
-                                    @endif
+                                @if ($item->attribute == payment_gateway_const()::SEND)
+                                    <h4 class="title">{{ __("Send Money to @" . @$item->details->receiver_username." (".@$item->details->receiver_email.")") }} </h4>
+                                @elseif ($item->attribute == payment_gateway_const()::RECEIVED)
+                                    <h4 class="title">{{ __("Received Money from @" .@$item->details->sender_username." (".@$item->details->sender_email.")") }} </h4>
+                                @endif
                                 @endif
                             @elseif ($item->type == payment_gateway_const()::TYPEMAKEPAYMENT)
                                 @if ($item->isAuthUserAgent())
@@ -91,10 +91,10 @@
                         <h6 class="exchange-money">{{ get_amount($item->available_balance,$item->creator_wallet->currency->code) }}</h6>
                     @elseif ($item->type == payment_gateway_const()::TYPETRANSFERMONEY)
                         @if ($item->attribute == payment_gateway_const()::SEND)
-                        <h6 class="exchange-money text--warning ">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h6>
-                        <h4 class="main-money fw-bold">{{ get_amount($item->payable,get_default_currency_code()) }}</h4>
+                        <h6 class="exchange-money text--warning ">{{ get_amount($item->request_amount,$item->details->charges->sender_currency) }}</h6>
+                        <h4 class="main-money fw-bold">{{ get_amount($item->payable,$item->details->charges->sender_currency) }}</h4>
                         @elseif ($item->attribute == payment_gateway_const()::RECEIVED)
-                        <h6 class="exchange-money fw-bold">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h6>
+                        <h6 class="exchange-money fw-bold">{{ get_amount($item->request_amount,$item->details->charges->receiver_currency) }}</h6>
                         @endif
                     @elseif ($item->type == payment_gateway_const()::TYPEMAKEPAYMENT)
                         @if ($item->attribute == payment_gateway_const()::SEND)
@@ -291,7 +291,7 @@
                                 </div>
                             </div>
                             <div class="preview-list-right">
-                                <span>{{ get_amount($item->details->recipient_amount,get_default_currency_code()) }}</span>
+                                <span>{{ get_amount($item->details->charges->sender_amount,$item->details->charges->receiver_currency) }}</span>
                             </div>
                         </div>
 
@@ -307,7 +307,7 @@
                                 </div>
                             </div>
                             <div class="preview-list-right">
-                                <span class="text--base">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
+                                <span class="text--base">{{ get_amount($item->available_balance,$item->details->charges->sender_currency) }}</span>
                             </div>
                         </div>
                     @else
@@ -323,7 +323,7 @@
                             </div>
                         </div>
                         <div class="preview-list-right">
-                            <span class="text--base">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
+                            <span class="text--base">{{ get_amount($item->available_balance,$item->user_wallet->currency->code) }}</span>
                         </div>
                     </div>
                     @endif

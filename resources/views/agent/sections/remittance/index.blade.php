@@ -36,16 +36,21 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                             <div class="row">
                                 <div class="col-xl-6 col-lg-6 form-group">
                                     <label>{{ __("From Country") }} <span class="text--base">*</span></label>
-                                    <select class="form--control select2-auto-tokenize"  name="form_country" required data-minimum-results-for-search="Infinity">
-                                        <option value="{{ get_default_currency_code() }}" >{{ get_default_currency_name() }}</option>
+                                    <select class="form--control select2-basic"  name="form_country" required data-minimum-results-for-search="Infinity">
+                                        @foreach ($sender_wallets as $item)
+                                            <option value="{{ $item->currency->id }}"
+                                                data-code="{{ $item->currency->code }}"
+                                                data-symbol="{{ $item->currency->symbol }}"
+                                                data-rate="{{ $item->currency->rate }}"
+                                                data-balance="{{ $item->balance }}"
+                                                data-wallet="{{ $item->id }}"
+                                                data-name="{{ $item->currency->country }}"><img src="{{ get_image($item->currency->flag ,'currency-flag') }}" alt="">{{ $item->currency->country }}</option>
+                                        @endforeach
                                     </select>
-
                                 </div>
-                                @if($sender_token)
                                 <div class="col-xl-6 col-lg-6 form-group">
                                     <label>{{ __("To Country ") }}<span class="text--base">*</span></label>
                                     <select name="to_country" class="form--control select2-basic" required data-placeholder="Select To Country" >
-                                        {{-- <option disabled selected value="">Select To Country</option> --}}
                                         @foreach ($receiverCountries as $country)
                                             <option value="{{ $country->id }}" {{ @$token->receiver_country ==  $country->id ? 'selected':''}}
                                                 data-code="{{ $country->code }}"
@@ -56,106 +61,41 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                         @endforeach
                                     </select>
                                 </div>
-                                @elseif($receiver_token)
-                                <div class="col-xl-6 col-lg-6 form-group">
-                                    <label>{{ __("To Country ") }}<span class="text--base">*</span></label>
-                                    <select name="to_country" class="form--control select2-basic" required data-placeholder="Select To Country" >
-                                        {{-- <option disabled selected value="">Select To Country</option> --}}
-                                        @foreach ($receiverCountries as $country)
-                                            <option value="{{ $country->id }}" {{ @$rtoken->receiver_country ==  $country->id ? 'selected':''}}
-                                                data-code="{{ $country->code }}"
-                                                data-symbol="{{ $country->symbol }}"
-                                                data-rate="{{ $country->rate }}"
-                                                data-name="{{ $country->country }}"
-                                                >{{ $country->country }} ({{ $country->code }})</option>
-                                        @endforeach
+                                <div class="col-xl-10 col-lg-10 form-group">
+                                    <label>{{__("Receipient")}} <span class="text--base">*</span></label>
+                                    <select name="recipient" class="form--control  select2-basic  recipient" required data-placeholder="Select Receipient" >
                                     </select>
                                 </div>
-                                @else
-                                <div class="col-xl-6 col-lg-6 form-group">
-                                    <label>{{ __("To Country ") }}<span class="text--base">*</span></label>
-                                    <select name="to_country" class="form--control select2-basic" required data-placeholder="Select To Country" >
-                                        {{-- <option disabled selected value="">Select To Country</option> --}}
-                                        @foreach ($receiverCountries as $country)
-                                            <option value="{{ $country->id }}"
-                                                data-code="{{ $country->code }}"
-                                                data-symbol="{{ $country->symbol }}"
-                                                data-rate="{{ $country->rate }}"
-                                                data-name="{{ $country->country }}"
-                                                >{{ $country->country }} ({{ $country->code }})</option>
-                                        @endforeach
-                                    </select>
+                                <div class="col-xl-2 col-lg-2 form-group mt-4">
+                                    <div class="remittance-add-btn-area mt-2">
+                                        <a href="javascript:void(0)" class="btn--base w-100 add-recipient">{{ __('Add') }} <i class="fas fa-plus-circle ms-1"></i></a>
+                                    </div>
                                 </div>
-                                @endif
-                                @if($sender_token)
                                 <div class="col-xl-12 col-lg-12 form-group">
-                                    <label>{{ __("Transaction Type") }}<span>*</span></label>
-                                    <select  name="transaction_type" required  class="form--control select2-auto-tokenize" data-placeholder="Select Transaction Type" data-minimum-results-for-search="Infinity">
-                                        {{-- <option disabled selected value="">{{ __("Select Transaction Type") }}</option> --}}
+                                    <label>{{ __("Payment Method") }}<span>*</span></label>
+                                    <select  name="transaction_type" required  class="form--control nice-select" data-placeholder="Select Transaction Type" data-minimum-results-for-search="Infinity">
                                         <option value="bank-transfer" {{ @$token->transacion_type == 'bank-transfer' ? 'selected':''}} data-name="Bank Transfer">{{__("Bank Transfer")}}</option>
                                         <option value="wallet-to-wallet-transfer" {{ @$token->transacion_type == 'wallet-to-wallet-transfer' ? 'selected':''}} data-name="wallet-to-wallet-transfer">{{ @$basic_settings->site_name }} {{__("Wallet")}}</option>
                                         <option value="cash-pickup" {{ @$token->transacion_type ==  'cash-pickup' ? 'selected':''}} data-name="Cash Pickup">{{__("Cash Pickup")}}</option>
 
                                 </select>
                                 </div>
-                                @elseif($receiver_token)
-                                <div class="col-xl-12 col-lg-12 form-group">
-                                    <label>{{ __("Transaction Type") }}<span>*</span></label>
-                                    <select  name="transaction_type" required  class="form--control select2-auto-tokenize" data-placeholder="Select Transaction Type" data-minimum-results-for-search="Infinity">
-                                        {{-- <option disabled selected value="">{{ __("Select Transaction Type") }}</option> --}}
-                                        <option value="bank-transfer" {{ @$rtoken->transacion_type == 'bank-transfer' ? 'selected':''}} data-name="Bank Transfer">{{__("Bank Transfer")}}</option>
-                                        <option value="wallet-to-wallet-transfer" {{ @$token->transacion_type == 'wallet-to-wallet-transfer' ? 'selected':''}} data-name="wallet-to-wallet-transfer">{{ @$basic_settings->site_name }} {{__("Wallet")}}</option>
-                                        <option value="cash-pickup" {{ @$token->transacion_type ==  'cash-pickup' ? 'selected':''}} data-name="Cash Pickup">{{__("Cash Pickup")}}</option>
-
-                                </select>
-                                </div>
-                                @else
-                                <div class="col-xl-12 col-lg-12 form-group">
-                                    <label>{{ __("Transaction Type") }}<span>*</span></label>
-                                    <select  name="transaction_type" required  class="form--control select2-auto-tokenize" data-placeholder="Select Transaction Type" data-minimum-results-for-search="Infinity">
-                                        {{-- <option disabled selected value="">{{ __("Select Transaction Type") }}</option> --}}
-                                        <option value="bank-transfer"  data-name="Bank Transfer">{{__("Bank Transfer")}}</option>
-                                        <option value="wallet-to-wallet-transfer" data-name="wallet-to-wallet-transfer">{{ @$basic_settings->site_name }} {{__("Wallet")}}</option>
-                                        <option value="cash-pickup"  data-name="Cash Pickup">{{__("Cash Pickup")}}</option>
-
-                                </select>
-                                </div>
-                                @endif
-                                <div class="col-xl-10 col-lg-10 form-group">
-                                    <label>{{__("Sender Recipient")}} <span class="text--base">*</span></label>
-                                    <select name="sender_recipient" class="form--control  select2-basic  recipient" required data-placeholder="Select Sender Recipient" >
-                                    </select>
-                                </div>
-                                <div class="col-xl-2 col-lg-2 form-group mt-4">
-                                    <div class="remittance-add-btn-area mt-2">
-                                        <a href="javascript:void(0)" class="btn--base w-100 add-recipient">Add <i class="fas fa-plus-circle ms-1"></i></a>
-                                    </div>
-                                </div>
-                                <div class="col-xl-10 col-lg-10 form-group">
-                                    <label>{{__("Receiver Recipient")}} <span class="text--base">*</span></label>
-                                    <select name="receiver_recipient" class="form--control  select2-basic  receiver_recipient" required data-placeholder="Select Receiver Recipient" >
-                                    </select>
-                                </div>
-                                <div class="col-xl-2 col-lg-2 form-group mt-4">
-                                    <div class="remittance-add-btn-area mt-2">
-                                        <a href="javascript:void(0)" class="btn--base w-100 add-recipient-receiver">Add <i class="fas fa-plus-circle ms-1"></i></a>
-                                    </div>
-                                </div>
-
                                 <div class="col-xl-6 col-lg-6 form-group">
                                     <label>{{ __("Sending Amount") }} <span class="text--base">*</span></label>
                                     <div class="input-group">
-                                        <input type="number" name="send_amount" class="form--control" placeholder="Enter Amount" value="{{ old('send_amount') }}" >
+                                        <input type="number" name="send_amount" class="form--control" step="0.01" placeholder="Enter Amount" value="{{ old('send_amount') }}" >
                                         <div class="input-group-append">
-                                            <span class="input-group-text copytext">{{ get_default_currency_code() }}</span>
+                                            <input type="hidden" name="sender_wallet" class="sender-wallet">
+                                            <span class="input-group-text copytext send_cur_code">{{ get_default_currency_code() }}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-xl-6 col-lg-6 form-group">
-                                    <label>{{ __("Recipient Amount") }} <span class="text--base">*</span></label>
+                                    <label>{{ __("Recipient Get") }} <span class="text--base">*</span></label>
                                     <div class="input-group">
-                                        <input type="number" name="receive_amount" class="form--control" placeholder="Enter Amount" value="{{ old('receive_amount') }}" >
+                                        <input type="number" name="receive_amount" class="form--control" step="0.01" placeholder="Enter Amount" value="{{ old('receive_amount') }}" >
                                         <div class="input-group-append">
+                                            
                                             <span class="input-group-text reciver_curr_code">{{ get_default_currency_code() }}</span>
                                         </div>
                                     </div>
@@ -168,11 +108,11 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                 </div>
                                 <div class="col-xl-12 col-lg-12 form-group">
                                     <div class="note-area">
-                                        <code class="d-block">{{ __("Available Balance ") }}: {{ authWalletBalance() }} {{ get_default_currency_code() }}</code>
+                                        <code class="d-block available-balance">{{ __("Available Balance ") }}: {{ authWalletBalance() }} {{ get_default_currency_code() }}</code>
                                     </div>
                                 </div>
                                 <div class="withdraw-btn mt-20">
-                                    <button type="submit" class="btn--base w-100 btn-loading confirmed">Send Now <i class="fas fa-paper-plane ms-1"></i></button>
+                                    <button type="submit" class="btn--base w-100 btn-loading confirmed">{{ __("Send Now ") }}<i class="fas fa-paper-plane ms-1"></i></button>
                                 </div>
                             </div>
                         </form>
@@ -196,7 +136,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                             <i class="las la-flag"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span>Sending Country</span>
+                                            <span>{{ __("Sending Country") }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -211,7 +151,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                             <i class="lab la-font-awesome-flag"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span>Receiving Country</span>
+                                            <span>{{ __("Receiving Country") }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -226,7 +166,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                             <i class="las la-user-tag"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span>Sender Recipient</span>
+                                            <span>{{ __("Receipient") }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -238,25 +178,10 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                 <div class="preview-list-left">
                                     <div class="preview-list-user-wrapper">
                                         <div class="preview-list-user-icon">
-                                            <i class="las la-user-tag"></i>
-                                        </div>
-                                        <div class="preview-list-user-content">
-                                            <span>Receiver Recipient</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="preview-list-right">
-                                    <span class="receiver-recipient-name">--</span>
-                                </div>
-                            </div>
-                            <div class="preview-list-item">
-                                <div class="preview-list-left">
-                                    <div class="preview-list-user-wrapper">
-                                        <div class="preview-list-user-icon">
                                             <i class="las la-cash-register"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span>Transaction Type</span>
+                                            <span>{{ __("Transaction Type") }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -271,7 +196,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                             <i class="las la-paper-plane"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span>Sending Amount</span>
+                                            <span>{{ __("Sending Amount") }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -286,7 +211,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                             <i class="las la-arrow-right"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span>Transfer Fee</span>
+                                            <span>{{ __("Transfer Fee") }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -301,7 +226,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                             <i class="las la-exchange-alt"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span>Exchange Rate</span>
+                                            <span>{{ __("Exchange Rate") }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -316,7 +241,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                             <i class="las la-money-check-alt"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span>Recipient Get</span>
+                                            <span>{{ __("Receipient Get") }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -331,7 +256,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                             <i class="las la-money-check-alt"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span>Total Payable</span>
+                                            <span>{{ __("Total Payable") }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -368,27 +293,30 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
     var defualCurrencyRate = "{{ get_default_currency_rate() }}";
     var senderCountry = "{{ get_default_currency_name() }}";
     var walletTransactionName ="{{ @$basic_settings->site_name }}" +' '+ 'Wallet';
-    var selectedRecipientByToken = "{{ @$token->sender_recipient }}"
-    var selectedRecipientByTokenReceiver = "{{ @$rtoken->receiver_recipient }}"
+    var selectedRecipientByToken = "{{ @$token->recipient }}"
 
 
 
    $(document).ready(function(){
-    recipientFilterByCountry();
-    recipientFilterByTransactionType();
-    recipientFilterByCountryReceiver();
-    recipientFilterByTransactionTypeReceiver();
-    set_currency_code();
-    getLimit();
-    getFees();
-    getExchangeRate();
-    getPreview();
-    // readOnly();
-
+        recipientFilterByCountry();
+        recipientFilterByTransactionType();
+        set_currency_code();
+        getLimit();
+        getFees();
+        getExchangeRate();
+        getPreview();
+    });
+    $("select[name=form_country]").change(function(){
+        set_from_currency_code();
+        getPreview();
+        getLimit();
+        getFees();
+        getReceiverAmount();
+        getSenderAmount();
+        getExchangeRate();
     });
     $("select[name=to_country]").change(function(){
         recipientFilterByCountry();
-        recipientFilterByCountryReceiver();
         set_currency_code();
         getLimit();
         getFees();
@@ -396,41 +324,26 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         getReceiverAmount();
         getSenderAmount();
         getPreview();
-        // readOnly();
-
     });
     $("select[name=transaction_type]").change(function(){
         recipientFilterByTransactionType();
-        recipientFilterByTransactionTypeReceiver();
         set_currency_code();
         getLimit();
         getFees();
         getExchangeRate();
         getPreview();
-        // readOnly();
-
     });
-    $("select[name=sender_recipient]").change(function(){
+    $("select[name=recipient]").change(function(){
         set_currency_code();
         getLimit();
         getFees();
         getExchangeRate();
         getPreview();
-        // readOnly();
-    });
-    $("select[name=receiver_recipient]").change(function(){
-        set_currency_code();
-        getLimit();
-        getFees();
-        getExchangeRate();
-        getPreview();
-        // readOnly();
     });
     $("input[name=send_amount]").keyup(function(){
         getFees();
         getReceiverAmount();
         getPreview();
-
     });
     $("input[name=receive_amount]").keyup(function(){
         getSenderAmount();
@@ -444,16 +357,15 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             enterLimit();
     });
 
-
     function getLimit() {
             var sender_currency = acceptVar().sCurrency;
             var sender_currency_rate = acceptVar().sCurrency_rate;
             var min_limit = acceptVar().currencyMinAmount;
             var max_limit =acceptVar().currencyMaxAmount;
             if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
-                var min_limit_calc = parseFloat(min_limit/sender_currency_rate).toFixed(2);
-                var max_limit_clac = parseFloat(max_limit/sender_currency_rate).toFixed(2);
-                $('.limit-show').html("Limit " + min_limit_calc + " " + defualCurrency + " - " + max_limit_clac + " " + defualCurrency);
+                var min_limit_calc = parseFloat(min_limit*sender_currency_rate).toFixed(2);
+                var max_limit_clac = parseFloat(max_limit*sender_currency_rate).toFixed(2);
+                $('.limit-show').html("Limit " + min_limit_calc + " " + sender_currency + " - " + max_limit_clac + " " + sender_currency);
                 return {
                     minLimit:min_limit_calc,
                     maxLimit:max_limit_clac,
@@ -470,13 +382,17 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             var element = event;
             var currencyCode = acceptVar().receiverCurrency;
             var currencyRate = acceptVar().receiverCurrency_rate;
-            // var currencyMinAmount = acceptVar().currencyMinAmount;
-            // var currencyMaxAmount = acceptVar().currencyMaxAmount;
-            $('.rate-show').html("1 " + defualCurrency + " = " + parseFloat(currencyRate).toFixed(2) + " " + currencyCode);
+            var sender_currency = acceptVar().sCurrency;
+            var sender_currency_rate = acceptVar().sCurrency_rate;
+            var walletBalance   = acceptVar().walletBalance;
+            var walletId   = acceptVar().walletId;
+            $('.rate-show').html(sender_currency_rate + " " + sender_currency + " = " + parseFloat(currencyRate).toFixed(2) + " " + currencyCode);
+            $('.available-balance').html("Available Balance :" + " " + walletBalance + " " + sender_currency);
+            $('.sender-wallet').val(walletId);
     }
     function acceptVar() {
-           var senderCurrency = defualCurrency;
-           var senderCurrency_rate = defualCurrencyRate;
+           var senderCurrency = $("select[name=form_country] :selected").data('code');
+           var senderCurrency_rate = $("select[name=form_country] :selected").data('rate');
            var receiver_conctry = $("select[name=to_country] :selected").val();
            var receiver_conctry_name = $("select[name=to_country] :selected").data('name');
            var receiverCurrency = $("select[name=to_country] :selected").data('code');
@@ -487,10 +403,10 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
            var currencyMaxAmount = "{{getAmount($exchangeCharge->max_limit)}}";
            var currencyFixedCharge = "{{getAmount($exchangeCharge->fixed_charge)}}";
            var currencyPercentCharge = "{{getAmount($exchangeCharge->percent_charge)}}";
-           var recipient =  $("select[name=sender_recipient] :selected").val();
-           var recipientName =  $("select[name=sender_recipient] :selected").data('name');
-           var receiver_recipient =  $("select[name=receiver_recipient] :selected").val();
-           var receiver_recipientName =  $("select[name=receiver_recipient] :selected").data('name');
+           var recipient =  $("select[name=recipient] :selected").val();
+           var recipientName =  $("select[name=recipient] :selected").data('name');
+           var walletBalance    = $("select[name=form_country] :selected").data('balance');
+           var walletId    = $("select[name=form_country] :selected").data('wallet');
 
            return {
             sCurrency:senderCurrency,
@@ -507,8 +423,8 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             currencyPercentCharge:currencyPercentCharge,
             recipient:recipient,
             recipientName:recipientName,
-            receiver_recipient:receiver_recipient,
-            receiver_recipientName:receiver_recipientName,
+            walletBalance:walletBalance,
+            walletId:walletId
         };
     }
     function feesCalculation() {
@@ -590,7 +506,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         var transacion_type = acceptVar().tranaction_type;
         $(".recipient").html('');
         $.ajax({
-                url: "{{route('agent.remittance.get.recipient.country')}}",
+                url: "{{route('user.remittance.get.recipient.country')}}",
                 type: "POST",
                 data: {
                     receiver_country: receiver_country,
@@ -619,7 +535,6 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
     function  recipientFilterByTransactionType(){
         var receiver_country = acceptVar().receiver_conctry;
         var transacion_type = acceptVar().tranaction_type;
-
         $(".recipient").html('');
         $.ajax({
                 url: "{{route('agent.remittance.get.recipient.transtype')}}",
@@ -631,83 +546,15 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                 },
                 dataType: 'json',
                 success: function (res) {
-                    console.log(res);
                     var recipients = res.recipient;
-
                     if( recipients == ''){
                         $('.recipient').html('<option value="">No Recipient Aviliable</option>');
                     }else{
                         $('.recipient').html('<option value="">Select Recipient</option>');
-
                     }
                     $.each(res.recipient, function (key, value) {
                             var selected = value.id == selectedRecipientByToken ? 'selected' : '';
                             $(".recipient").append('<option value="' + value.id + '" data-trx-type="' + value.type + '" data-name="' + value.firstname + ' ' + value.lastname +'" ' + selected + ' >' + value.firstname + ' ' + value.lastname + '</option>');
-                    });
-
-                }
-            });
-
-    }
-    //receiver filter
-    function  recipientFilterByCountryReceiver(){
-        var receiver_country = acceptVar().receiver_conctry;
-        var transacion_type = acceptVar().tranaction_type;
-        $(".receiver_recipient").html('');
-        $.ajax({
-                url: "{{route('agent.remittance.get.receiver.recipient.country')}}",
-                type: "POST",
-                data: {
-                    receiver_country: receiver_country,
-                    transacion_type: transacion_type,
-                    _token: '{{csrf_token()}}'
-                },
-                dataType: 'json',
-                success: function (res) {
-                    var recipients = res.recipient;
-                    if( recipients == ''){
-                        $('.receiver_recipient').html('<option value="">No Receiver Recipient Aviliable</option>');
-                    }else{
-                        $('.receiver_recipient').html('<option value="">Select Receiver Recipient</option>');
-
-                    }
-                     $.each(res.recipient, function (key, value) {
-                            var selected = value.id == selectedRecipientByTokenReceiver ? 'selected' : '';
-                            $(".receiver_recipient").append('<option value="' + value.id + '" data-trx-type="' + value.type + '" data-name="' + value.firstname + ' ' + value.lastname +'" ' + selected + ' >' + value.firstname + ' ' + value.lastname + '</option>');
-                    });
-
-
-                }
-            });
-
-    }
-    function  recipientFilterByTransactionTypeReceiver(){
-        var receiver_country = acceptVar().receiver_conctry;
-        var transacion_type = acceptVar().tranaction_type;
-
-        $(".receiver_recipient").html('');
-        $.ajax({
-                url: "{{route('agent.remittance.get.receiver.recipient.transtype')}}",
-                type: "POST",
-                data: {
-                    receiver_country: receiver_country,
-                    transacion_type: transacion_type,
-                    _token: '{{csrf_token()}}'
-                },
-                dataType: 'json',
-                success: function (res) {
-                    console.log(res);
-                    var recipients = res.recipient;
-
-                    if( recipients == ''){
-                        $('.receiver_recipient').html('<option value="">No Receiver Recipient Aviliable</option>');
-                    }else{
-                        $('.receiver_recipient').html('<option value="">Select Receiver Recipient</option>');
-
-                    }
-                    $.each(res.recipient, function (key, value) {
-                            var selected = value.id == selectedRecipientByTokenReceiver ? 'selected' : '';
-                            $(".receiver_recipient").append('<option value="' + value.id + '" data-trx-type="' + value.type + '" data-name="' + value.firstname + ' ' + value.lastname +'" ' + selected + ' >' + value.firstname + ' ' + value.lastname + '</option>');
                     });
 
                 }
@@ -724,6 +571,14 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         }
 
     }
+    function set_from_currency_code(){
+        var senderCurrency = acceptVar().sCurrency;
+        var transacion_type = acceptVar().tranaction_type;
+        
+        $('.send_cur_code').text(senderCurrency)
+        
+
+    }
     function getPreview() {
             var senderAmount = $("input[name=send_amount]").val();
             var receiveAmount = $("input[name=receive_amount]").val();
@@ -732,15 +587,14 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             var receiverCurrency = acceptVar().receiverCurrency;
             var receiverCurrency_rate = acceptVar().receiverCurrency_rate;
             var receiver_conctry_name = acceptVar().receiver_conctry_name;
-            var sender_country = senderCountry;
+            var sender_country = $("select[name=form_country] :selected").data('name');
             var receipient = acceptVar().recipientName;
-            var receiverReceipient = acceptVar().receiver_recipientName;
             var tranaction_name = acceptVar().tranaction_name;
 
 
             senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
             // Sending Amount
-            $('.request-amount').text(senderAmount + " " + defualCurrency);
+            $('.request-amount').text(senderAmount + " " + sender_currency);
             receiveAmount == "" ? receiveAmount = 0 : receiveAmount = receiveAmount;
             // receiveAmount Amount
             $('.recipient-amount').text(receiveAmount + " " + receiverCurrency);
@@ -751,11 +605,6 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                 $('.recipient-name').text("Choose Recipient");
             }else{
                 $('.recipient-name').text(receipient);
-            }
-            if(receiverReceipient === undefined){
-                $('.receiver-recipient-name').text("Choose Recipient");
-            }else{
-                $('.receiver-recipient-name').text(receiverReceipient);
             }
             if(tranaction_name === undefined || tranaction_name === ''){
                 $('.trans-type').text("Choose One");
@@ -784,7 +633,8 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             }else{
                 pay_in_total =  parseFloat(totalPay) + parseFloat(charges.total);
             }
-            $('.payable-amount').text(parseFloat(pay_in_total).toFixed(2) + " " + sender_currency);
+            var payableAmount = parseFloat(senderAmount) + parseFloat(total_charge);
+            $('.payable-amount').text(parseFloat(payableAmount).toFixed(2) + " " + sender_currency);
 
        }
        function enterLimit(){
@@ -804,41 +654,23 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         }
 
        }
-    // function readOnly() {
-    //     var recipient = acceptVar().recipientName;
-
-    //     if ( recipient === '' || recipient === undefined) {
-    //         $("input[name=send_amount]").val('').attr("readonly", true);
-    //         $("input[name=receive_amount]").val('').attr("readonly", true);
-    //         $('.confirmed').attr('disabled',true)
-    //     }else{
-
-    //         $("input[name=send_amount]").val("").removeAttr("readonly");
-    //         $("input[name=receive_amount]").val("").removeAttr("readonly");
-    //         $('.confirmed').attr('disabled',false)
-    //     }
-
-    // }
     $(".add-recipient").click(function(){
         var receiver_country = acceptVar().receiver_conctry;
         var transacion_type = acceptVar().tranaction_type;
         var recipient = acceptVar().recipientName;
-        var receiver_recipient = acceptVar().receiver_recipientName;
-        if ( recipient === '' || recipient === undefined || receiver_recipient === '' || receiver_recipient === undefined) {
+        if ( recipient === '' || recipient === undefined) {
             recipient = '';
-            receiver_recipient = '';
         }
         var sender_amount = $("input[name=send_amount]").val();
         var receive_amount = $("input[name=receive_amount]").val();
 
         $.ajax({
-                url: "{{route('agent.remittance.get.token.sender')}}",
+                url: "{{route('user.remittance.get.token')}}",
                 type: "POST",
                 data: {
                     receiver_country: receiver_country,
                     transacion_type: transacion_type,
-                    sender_recipient: recipient,
-                    receiver_recipient: receiver_recipient,
+                    recipient: recipient,
                     sender_amount: sender_amount,
                     receive_amount: receive_amount,
                     _token: '{{csrf_token()}}'
@@ -846,41 +678,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                 dataType: 'json',
                 success: function (res) {
                     setTimeout(function () {
-                    window.location="{{ setRoute('agent.sender.recipient.index') }}";
-                }, 500);
-
-                }
-        });
-
-    });
-    $(".add-recipient-receiver").click(function(){
-        var receiver_country = acceptVar().receiver_conctry;
-        var transacion_type = acceptVar().tranaction_type;
-        var recipient = acceptVar().recipientName;
-        var receiver_recipient = acceptVar().receiver_recipientName;
-        if ( recipient === '' || recipient === undefined || receiver_recipient === '' || receiver_recipient === undefined) {
-            recipient = '';
-            receiver_recipient = '';
-        }
-        var sender_amount = $("input[name=send_amount]").val();
-        var receive_amount = $("input[name=receive_amount]").val();
-
-        $.ajax({
-                url: "{{route('agent.remittance.get.token.receiver')}}",
-                type: "POST",
-                data: {
-                    receiver_country: receiver_country,
-                    transacion_type: transacion_type,
-                    sender_recipient: recipient,
-                    receiver_recipient: receiver_recipient,
-                    sender_amount: sender_amount,
-                    receive_amount: receive_amount,
-                    _token: '{{csrf_token()}}'
-                },
-                dataType: 'json',
-                success: function (res) {
-                    setTimeout(function () {
-                    window.location="{{ setRoute('agent.receiver.recipient.index') }}";
+                    window.location="{{ setRoute('user.receipient.index') }}";
                 }, 500);
 
                 }

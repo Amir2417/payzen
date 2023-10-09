@@ -178,159 +178,160 @@ class RemitanceController extends Controller
       //start transaction helpers
         //serder transaction
     public function insertSender($trx_id,$user,$userWallet,$send_amount,$receiver_will_get,$payable,$receipient,$form_country,$to_country,$transaction_type) {
-            $trx_id = $trx_id;
-            $authWallet = $userWallet;
-            $afterCharge = ($authWallet->balance - $payable);
-            $details =[
-                'recipient_amount' => $receiver_will_get,
-                'receiver' => $receipient,
-                'form_country' => $form_country,
-                'to_country' => $to_country,
-                'remitance_type' => $transaction_type,
-                 'sender' => $user,
-            ];
-            if($transaction_type == Str::slug(GlobalConst::TRX_WALLET_TO_WALLET_TRANSFER)){
-                $status = 1;
-
-            }else{
-                $status = 2;
-            }
-            DB::beginTransaction();
-            try{
-                $id = DB::table("transactions")->insertGetId([
-                    'user_id'                       => $user->id,
-                    'user_wallet_id'                => $authWallet->id,
-                    'payment_gateway_currency_id'   => null,
-                    'type'                          => PaymentGatewayConst::SENDREMITTANCE,
-                    'trx_id'                        => $trx_id,
-                    'request_amount'                => $send_amount,
-                    'payable'                       => $payable,
-                    'available_balance'             => $afterCharge,
-                    'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::SENDREMITTANCE," ")) . " To " .$receipient->fullname,
-                    'details'                       => json_encode($details),
-                    'attribute'                      =>PaymentGatewayConst::SEND,
-                    'status'                        => $status,
-                    'created_at'                    => now(),
-                ]);
-                $this->updateSenderWalletBalance($authWallet,$afterCharge);
-
-                DB::commit();
-            }catch(Exception $e) {
-                DB::rollBack();
-                throw new Exception($e->getMessage());
-            }
-            return $id;
-        }
-        public function updateSenderWalletBalance($authWalle,$afterCharge) {
-            $authWalle->update([
-                'balance'   => $afterCharge,
-            ]);
-        }
-        public function insertSenderCharges($fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient) {
-            DB::beginTransaction();
-            try{
-                DB::table('transaction_charges')->insert([
-                    'transaction_id'    => $sender,
-                    'percent_charge'    => $percent_charge,
-                    'fixed_charge'      =>$fixedCharge,
-                    'total_charge'      =>$total_charge,
-                    'created_at'        => now(),
-                ]);
-                DB::commit();
-
-                //notification
-                $notification_content = [
-                    'title'         =>"Send Remitance",
-                    'message'       => "Send Remitance Request to ".$receipient->fullname.' ' .$send_amount.' '.get_default_currency_code()." successful",
-                    'image'         => files_asset_path('profile-default'),
-                ];
-
-                UserNotification::create([
-                    'type'      => NotificationConst::SEND_REMITTANCE,
-                    'user_id'  => $user->id,
-                    'message'   => $notification_content,
-                ]);
-                DB::commit();
-            }catch(Exception $e) {
-                DB::rollBack();
-                throw new Exception($e->getMessage());
-            }
-        }
-        //Receiver Transaction
-        public function insertReceiver($trx_id,$user,$userWallet,$send_amount,$receiver_will_get,$payable,$receipient,$form_country,$to_country,$transaction_type,$receiver_user,$receiver_wallet) {
-
-            $trx_id = $trx_id;
-            $receiverWallet = $receiver_wallet;
-            $recipient_amount = ($receiverWallet->balance + $receiver_will_get);
-            $details =[
-                'recipient_amount' => $receiver_will_get,
-                'receiver' => $receipient,
-                'form_country' => $form_country,
-                'to_country' => $to_country,
-                'remitance_type' => $transaction_type,
+        $trx_id = $trx_id;
+        $authWallet = $userWallet;
+        $afterCharge = ($authWallet->balance - $payable);
+        $details =[
+            'recipient_amount' => $receiver_will_get,
+            'receiver' => $receipient,
+            'form_country' => $form_country,
+            'to_country' => $to_country,
+            'remitance_type' => $transaction_type,
                 'sender' => $user,
-            ];
-            DB::beginTransaction();
-            try{
-                $id = DB::table("transactions")->insertGetId([
-                    'user_id'                       => $receiver_user,
-                    'user_wallet_id'                => $receiverWallet->id,
-                    'payment_gateway_currency_id'   => null,
-                    'type'                          => PaymentGatewayConst::SENDREMITTANCE,
-                    'trx_id'                        => $trx_id,
-                    'request_amount'                => $send_amount,
-                    'payable'                       => $payable,
-                    'available_balance'             => $recipient_amount,
-                    'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::RECEIVEREMITTANCE," ")) . " From " .$user->fullname,
-                    'details'                       => json_encode($details),
-                    'attribute'                      =>PaymentGatewayConst::RECEIVED,
-                    'status'                        => true,
-                    'created_at'                    => now(),
-                ]);
-                $this->updateReceiverWalletBalance($receiverWallet,$recipient_amount);
+        ];
+        if($transaction_type == Str::slug(GlobalConst::TRX_WALLET_TO_WALLET_TRANSFER)){
+            $status = 1;
 
-                DB::commit();
-            }catch(Exception $e) {
-                DB::rollBack();
-                throw new Exception($e->getMessage());
-            }
-            return $id;
+        }else{
+            $status = 2;
         }
-        public function updateReceiverWalletBalance($receiverWallet,$recipient_amount) {
-            $receiverWallet->update([
-                'balance'   => $recipient_amount,
+        DB::beginTransaction();
+        try{
+            $id = DB::table("transactions")->insertGetId([
+                'user_id'                       => $user->id,
+                'user_wallet_id'                => $authWallet->id,
+                'payment_gateway_currency_id'   => null,
+                'type'                          => PaymentGatewayConst::SENDREMITTANCE,
+                'trx_id'                        => $trx_id,
+                'request_amount'                => $send_amount,
+                'payable'                       => $payable,
+                'available_balance'             => $afterCharge,
+                'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::SENDREMITTANCE," ")) . " To " .$receipient->fullname,
+                'details'                       => json_encode($details),
+                'attribute'                      =>PaymentGatewayConst::SEND,
+                'status'                        => $status,
+                'created_at'                    => now(),
             ]);
-        }
-        public function insertReceiverCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$receiverTrans,$receipient,$receiver_user) {
-            DB::beginTransaction();
-            try{
-                DB::table('transaction_charges')->insert([
-                    'transaction_id'    => $receiverTrans,
-                    'percent_charge'    => $percent_charge,
-                    'fixed_charge'      =>$fixedCharge,
-                    'total_charge'      =>$total_charge,
-                    'created_at'        => now(),
-                ]);
-                DB::commit();
+            $this->updateSenderWalletBalance($authWallet,$afterCharge);
 
-                //notification
-                $notification_content = [
-                    'title'         =>"Send Remitance",
-                    'message'       => "Send Remitance  from ".$user->fullname.' ' .$send_amount.' '.get_default_currency_code()." successful",
-                    'image'         => files_asset_path('profile-default'),
-                ];
-
-                UserNotification::create([
-                    'type'      => NotificationConst::SEND_REMITTANCE,
-                    'user_id'  => $receiver_user,
-                    'message'   => $notification_content,
-                ]);
-                DB::commit();
-            }catch(Exception $e) {
-                DB::rollBack();
-                throw new Exception($e->getMessage());
-            }
+            DB::commit();
+        }catch(Exception $e) {
+            DB::rollBack();
+            throw new Exception($e->getMessage());
         }
+        return $id;
+    }
+    public function updateSenderWalletBalance($authWalle,$afterCharge) {
+        $authWalle->update([
+            'balance'   => $afterCharge,
+        ]);
+    }
+    public function insertSenderCharges($fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient) {
+        DB::beginTransaction();
+        try{
+            DB::table('transaction_charges')->insert([
+                'transaction_id'    => $sender,
+                'percent_charge'    => $percent_charge,
+                'fixed_charge'      =>$fixedCharge,
+                'total_charge'      =>$total_charge,
+                'created_at'        => now(),
+            ]);
+            DB::commit();
+
+            //notification
+            $notification_content = [
+                'title'         =>"Send Remitance",
+                'message'       => "Send Remitance Request to ".$receipient->fullname.' ' .$send_amount.' '.get_default_currency_code()." successful",
+                'image'         => files_asset_path('profile-default'),
+            ];
+
+            UserNotification::create([
+                'type'      => NotificationConst::SEND_REMITTANCE,
+                'user_id'  => $user->id,
+                'message'   => $notification_content,
+            ]);
+            DB::commit();
+        }catch(Exception $e) {
+            DB::rollBack();
+            throw new Exception($e->getMessage());
+        }
+    }
+    //Receiver Transaction
+    public function insertReceiver($trx_id,$user,$userWallet,$send_amount,$receiver_will_get,$payable,$receipient,$form_country,$to_country,$transaction_type,$receiver_user,$receiver_wallet) {
+
+        $trx_id = $trx_id;
+        $receiverWallet = $receiver_wallet;
+        $recipient_amount = ($receiverWallet->balance + $receiver_will_get);
+        $details =[
+            'recipient_amount' => $receiver_will_get,
+            'receiver' => $receipient,
+            'form_country' => $form_country,
+            'to_country' => $to_country,
+            'remitance_type' => $transaction_type,
+            'sender' => $user,
+        ];
+        DB::beginTransaction();
+        try{
+            $id = DB::table("transactions")->insertGetId([
+                'user_id'                       => $receiver_user,
+                'user_wallet_id'                => $receiverWallet->id,
+                'payment_gateway_currency_id'   => null,
+                'type'                          => PaymentGatewayConst::SENDREMITTANCE,
+                'trx_id'                        => $trx_id,
+                'request_amount'                => $send_amount,
+                'payable'                       => $payable,
+                'available_balance'             => $recipient_amount,
+                'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::RECEIVEREMITTANCE," ")) . " From " .$user->fullname,
+                'details'                       => json_encode($details),
+                'attribute'                      =>PaymentGatewayConst::RECEIVED,
+                'status'                        => true,
+                'created_at'                    => now(),
+            ]);
+            $this->updateReceiverWalletBalance($receiverWallet,$recipient_amount);
+
+            DB::commit();
+        }catch(Exception $e) {
+            DB::rollBack();
+            throw new Exception($e->getMessage());
+        }
+        return $id;
+    }
+    public function updateReceiverWalletBalance($receiverWallet,$recipient_amount) {
+        $receiverWallet->update([
+            'balance'   => $recipient_amount,
+        ]);
+    }
+    public function insertReceiverCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$receiverTrans,$receipient,$receiver_user) {
+        DB::beginTransaction();
+        try{
+            DB::table('transaction_charges')->insert([
+                'transaction_id'    => $receiverTrans,
+                'percent_charge'    => $percent_charge,
+                'fixed_charge'      =>$fixedCharge,
+                'total_charge'      =>$total_charge,
+                'created_at'        => now(),
+            ]);
+            DB::commit();
+
+            //notification
+            $notification_content = [
+                'title'         =>"Send Remitance",
+                'message'       => "Send Remitance  from ".$user->fullname.' ' .$send_amount.' '.get_default_currency_code()." successful",
+                'image'         => files_asset_path('profile-default'),
+            ];
+
+            UserNotification::create([
+                'type'      => NotificationConst::SEND_REMITTANCE,
+                'user_id'  => $receiver_user,
+                'message'   => $notification_content,
+            ]);
+            DB::commit();
+        }catch(Exception $e) {
+            DB::rollBack();
+            throw new Exception($e->getMessage());
+        }
+    }
+
     //end transaction helpers
     public function getToken() {
         $data = request()->all();
@@ -357,7 +358,7 @@ class RemitanceController extends Controller
     public function getRecipientByTransType(Request $request){
         $receiver_country = $request->receiver_country;
         $transacion_type = $request->transacion_type;
-          $data['recipient'] = Receipient::auth()->where('country', $receiver_country)->where('type',$transacion_type)->get();
+        $data['recipient'] = Receipient::auth()->where('country', $receiver_country)->where('type',$transacion_type)->get();
         return response()->json($data);
     }
 }

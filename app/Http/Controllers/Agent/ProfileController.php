@@ -24,7 +24,7 @@ class ProfileController extends Controller
     public function index()
     {
         $page_title = "Agent Profile";
-        $kyc_data = SetupKyc::userKyc()->first();
+        $kyc_data   = SetupKyc::agentKyc()->first();
         return view('agent.sections.profile.index',compact("page_title","kyc_data"));
     }
 

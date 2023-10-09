@@ -282,7 +282,7 @@
             if ($.isNumeric(percent_charge) && $.isNumeric(fixed_charge) && $.isNumeric(sender_amount)) {
                 // Process Calculation
                 var fixed_charge_calc = parseFloat(fixed_charge) * parseFloat(sender_currency_rate);
-                console.log(fixed_charge_calc);
+            
                 var percent_charge_calc = parseFloat(sender_currency_rate)*(parseFloat(sender_amount) / 100) * parseFloat(percent_charge);
                 var total_charge = parseFloat(fixed_charge_calc) + parseFloat(percent_charge_calc);
                 total_charge = parseFloat(total_charge).toFixed(2);
@@ -311,7 +311,7 @@
                 var senderAmount = $("input[name=amount]").val();
                 var sender_currency = acceptVar().selectedCurrency;
                 var sender_currency_rate = acceptVar().currencyRate;
-                // var receiver_currency = acceptVar().rCurrency;
+                
                 senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
 
                 // Sending Amount
@@ -319,11 +319,11 @@
 
                 // Fees
                 var charges = feesCalculation();
-                // console.log(total_charge + "--");
+                
                 $('.fees').text(charges.total + " " + sender_currency);
 
                 // will get amount
-                // var willGet = parseFloat(senderAmount) - parseFloat(charges.total);
+                
                 var willGet = parseFloat(senderAmount).toFixed(2);
                 $('.will-get').text(willGet + " " + sender_currency);
 

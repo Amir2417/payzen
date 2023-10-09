@@ -136,7 +136,7 @@ class SendMoneyController extends Controller
             DB::commit();
         }catch(Exception $e) {
             DB::rollBack();
-            dd($e->getMessage());
+           
             return redirect()->route('user.send.money.index')->with(['error' => ['Transaction failed! Something went wrong! Please try again']]);
         }
 

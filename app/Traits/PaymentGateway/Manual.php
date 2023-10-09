@@ -241,9 +241,6 @@ use ControlDynamicInputFields;
                 $error = ['error'=>[$e->getMessage()]];
                 return Helpers::error($error);
         }
-
-
-
     }
 
 }

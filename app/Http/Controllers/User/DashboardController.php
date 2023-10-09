@@ -125,7 +125,7 @@ class DashboardController extends Controller
 
          //
         return view('user.dashboard',compact("page_title","baseCurrency",'transactions','data','chartData',"fiat_wallets",
-        "crypto_wallets",));
+        "crypto_wallets"));
     }
 
     public function logout(Request $request) {

@@ -9,6 +9,7 @@ use App\Models\UserWallet;
 use App\Models\AgentWallet;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
+use App\Constants\GlobalConst;
 use App\Models\Admin\Currency;
 use App\Models\UserNotification;
 use App\Models\AgentNotification;
@@ -18,10 +19,13 @@ use App\Constants\NotificationConst;
 use App\Http\Controllers\Controller;
 use App\Constants\PaymentGatewayConst;
 use App\Models\Admin\TransactionSetting;
+use Illuminate\Support\Facades\Validator;
+use App\Traits\Transaction as TransactionTrait;
 use App\Notifications\User\SendMoney\ReceiverMail;
 
 class SendMoneyController extends Controller
 {
+    use TransactionTrait;
     protected  $trx_id;
     public function __construct()
     {
@@ -29,9 +33,15 @@ class SendMoneyController extends Controller
     }
     public function index() {
         $page_title = "Send Money";
+        $sender_wallets = AgentWallet::auth()->whereHas('currency',function($q) {
+            $q->where("sender",GlobalConst::ACTIVE)->where("status",GlobalConst::ACTIVE);
+        })->active()->get();
+
+        $receiver_wallets = Currency::receiver()->active()->get();
+
         $sendMoneyCharge = TransactionSetting::where('slug','transfer')->where('status',1)->first();
         $transactions = Transaction::agentAuth()->senMoney()->latest()->take(10)->get();
-        return view('agent.sections.send-money.index',compact("page_title",'sendMoneyCharge','transactions'));
+        return view('agent.sections.send-money.index',compact("page_title",'sendMoneyCharge','transactions',"sender_wallets","receiver_wallets"));
     }
     public function checkUser(Request $request){
         $email = $request->email;
@@ -43,236 +53,111 @@ class SendMoneyController extends Controller
         }
         return response($exist);
     }
-    public function confirmed(Request $request){
-        $request->validate([
-            'amount' => 'required|numeric|gt:0',
-            'email' => 'required'
-        ]);
-        $basic_setting = BasicSettings::first();
-        $agent = userGuard()['user'];
-        if($basic_setting->kyc_verification){
-            if( $agent->kyc_verified == 0){
-                return redirect()->route('agent.profile.index')->with(['error' => ['Please submit kyc information']]);
-            }elseif($agent->kyc_verified == 2){
-                return redirect()->route('agent.profile.index')->with(['error' => ['Please wait before admin approved your kyc information']]);
-            }elseif($agent->kyc_verified == 3){
-                return redirect()->route('agent.profile.index')->with(['error' => ['Admin rejected your kyc information, Please re-submit again']]);
-            }
-        }
-        $amount = $request->amount;
-        $sendMoneyCharge = TransactionSetting::where('slug','transfer')->where('status',1)->first();
-        $agentWallet = AgentWallet::where('agent_id',$agent->id)->first();
-        if(!$agentWallet){
-            return back()->with(['error' => ['Sender wallet not found']]);
+    public function confirmed(Request $request) {
+        $validated = Validator::make($request->all(),[
+            'sender_amount'     => "required|numeric|gt:0",
+            'sender_currency'   => "required|string|exists:currencies,code",
+            'receiver_amount'   => "required|numeric|gt:0",
+            'receiver_currency' => "required|string|exists:currencies,code",
+            'email'          => "required|string",
+        ])->validate();
+        $sender_wallet = AgentWallet::auth()->whereHas("currency",function($q) use ($validated) {
+            $q->where("code",$validated['sender_currency'])->active();
+        })->active()->first();
+        if(!$sender_wallet) return back()->with(['error' => ['Your wallet isn\'t available with currency ('.$validated['sender_currency'].')']]);
+
+        $receiver_currency = Currency::receiver()->active()->where('code',$validated['receiver_currency'])->first();
+        if(!$receiver_currency) return back()->with(['error' => ['Currency ('.$validated['receiver_currency'].') isn\'t available for receive any remittance']]);
+
+        $trx_charges =  userGroupTransactionsCharges(GlobalConst::TRANSFER);
+        $charges = $this->transferCharges($validated['sender_amount'],$trx_charges,$sender_wallet,$receiver_currency);
+
+        $sender_currency_rate = $sender_wallet->currency->rate;
+        $min_amount = $trx_charges->min_limit * $sender_currency_rate;
+        $max_amount = $trx_charges->max_limit * $sender_currency_rate;
+
+        if($charges['sender_amount'] < $min_amount || $charges['sender_amount'] > $max_amount) {
+            return back()->with(['error' => ['Please follow the transaction limit. (Min '.$min_amount . ' ' . $sender_wallet->currency->code .' - Max '.$max_amount. ' ' . $sender_wallet->currency->code . ')']]);
         }
 
-        $baseCurrency = Currency::default();
-        $rate = $baseCurrency->rate;
-        if(!$baseCurrency){
-            return back()->with(['error' => ['Default currency not found']]);
-        }
-        $receiver = Agent::where('email',$request->email)->first();
-        if(!$receiver){
-            return back()->with(['error' => ['Receiver not exist']]);
-        }
-        $receiverWallet = AgentWallet::where('agent_id',$receiver->id)->first();
-        if(!$receiverWallet){
-            return back()->with(['error' => ['Receiver wallet not found']]);
+        $field_name = "username";
+        if(check_email($validated['email'])) {
+            $field_name = "email";
         }
 
-        $minLimit =  $sendMoneyCharge->min_limit *  $rate;
-        $maxLimit =  $sendMoneyCharge->max_limit *  $rate;
-        if($amount < $minLimit || $amount > $maxLimit) {
-            return back()->with(['error' => ['Please follow the transaction limit']]);
-        }
-        //charge calculations
-        $fixedCharge = $sendMoneyCharge->fixed_charge *  $rate;
-        $percent_charge = ($request->amount / 100) * $sendMoneyCharge->percent_charge;
-        $total_charge = $fixedCharge + $percent_charge;
-        $payable = $total_charge + $amount;
-        $recipient = $amount;
-        if($payable > $agentWallet->balance ){
-            return back()->with(['error' => ['Sorry, insufficient balance']]);
-        }
+        $receiver = Agent::notAuth()->where($field_name,$validated['email'])->active()->first();
+        if(!$receiver) return back()->with(['error' => ['Receiver doesn\'t exists or Receiver is temporary banned']]);
 
-        try{
-            $trx_id = $this->trx_id;
-            $sender = $this->insertSender( $trx_id,$agent,$agentWallet,$amount,$recipient,$payable,$receiver);
-            if($sender){
-                 $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$agent,$sender,$receiver);
-                 if( $basic_setting->email_notification == true){
-                    $notifyDataSender = [
-                        'trx_id'  => $trx_id,
-                        'title'  => "Send Money to @" . @$receiver->username." (".@$receiver->email.")",
-                        'request_amount'  => getAmount($amount,4).' '.get_default_currency_code(),
-                        'payable'   =>  getAmount($payable,4).' ' .get_default_currency_code(),
-                        'charges'   => getAmount( $total_charge, 2).' ' .get_default_currency_code(),
-                        'received_amount'  => getAmount( $recipient, 2).' ' .get_default_currency_code(),
-                        'status'  => "Success",
-                    ];
-                    //sender notifications
-                    $agent->notify(new SenderMail($agent,(object)$notifyDataSender));
-                }
-            }
-            $receiverTrans = $this->insertReceiver( $trx_id,$agent,$agentWallet,$amount,$recipient,$payable,$receiver,$receiverWallet);
-            if($receiverTrans){
-                 $this->insertReceiverCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$agent,$receiverTrans,$receiver);
-                 if( $basic_setting->email_notification == true){
-                    $notifyDataReceiver = [
-                        'trx_id'  => $trx_id,
-                        'title'  => "Received Money from @" .@$agent->username." (".@$agent->email.")",
-                        'received_amount'  => getAmount( $recipient, 2).' ' .get_default_currency_code(),
-                        'status'  => "Success",
-                    ];
-                    //send notifications
-                    $receiver->notify(new ReceiverMail($receiver,(object)$notifyDataReceiver));
-                }
-            }
+        $receiver_wallet = AgentWallet::where("agent_id",$receiver->id)->whereHas("currency",function($q) use ($receiver_currency){
+            $q->receiver()->where("code",$receiver_currency->code);
+        })->first();
+        if(!$receiver_wallet) return back()->with(['error' => ['Receiver wallet not available']]);
 
-            return redirect()->route("agent.send.money.index")->with(['success' => ['Send Money successful to '.$receiver->fullname]]);
-        }catch(Exception $e) {
-            return back()->with(['error' => [$e->getMessage()]]);
-        }
+        if($charges['payable'] > $sender_wallet->balance) return back()->with(['error' => ['Your wallet balance is insufficient']]);
 
-    }
-    //sender transaction
-    public function insertSender($trx_id,$agent,$agentWallet,$amount,$recipient,$payable,$receiver) {
-        $trx_id = $trx_id;
-        $authWallet = $agentWallet;
-        $afterCharge = ($authWallet->balance - $payable);
-        $details =[
-            'recipient_amount' => $recipient,
-            'receiver' => $receiver,
-        ];
         DB::beginTransaction();
         try{
-            $id = DB::table("transactions")->insertGetId([
-                'agent_id'                       => $agent->id,
-                'agent_wallet_id'                => $authWallet->id,
-                'payment_gateway_currency_id'   => null,
-                'type'                          => PaymentGatewayConst::TYPETRANSFERMONEY,
-                'trx_id'                        => $trx_id,
-                'request_amount'                => $amount,
-                'payable'                       => $payable,
-                'available_balance'             => $afterCharge,
-                'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPETRANSFERMONEY," ")) . " To " .$receiver->fullname,
-                'details'                       => json_encode($details),
-                'attribute'                      =>PaymentGatewayConst::SEND,
-                'status'                        => true,
-                'created_at'                    => now(),
-            ]);
-            $this->updateSenderWalletBalance($authWallet,$afterCharge);
-
-            DB::commit();
-        }catch(Exception $e) {
-            DB::rollBack();
-            throw new Exception($e->getMessage());
-        }
-        return $id;
-    }
-    public function updateSenderWalletBalance($authWalle,$afterCharge) {
-        $authWalle->update([
-            'balance'   => $afterCharge,
-        ]);
-    }
-    public function insertSenderCharges($fixedCharge,$percent_charge, $total_charge, $amount,$agent,$id,$receiver) {
-        DB::beginTransaction();
-        try{
-            DB::table('transaction_charges')->insert([
-                'transaction_id'    => $id,
-                'percent_charge'    => $percent_charge,
-                'fixed_charge'      =>$fixedCharge,
-                'total_charge'      =>$total_charge,
+            $trx_id = 'SM'.getTrxNum();
+            // Sender TRX
+            $inserted_id = DB::table("transactions")->insertGetId([
+                'agent_id'          => $sender_wallet->agent->id,
+                'agent_wallet_id'    => $sender_wallet->id,
+                'type'              => PaymentGatewayConst::TYPETRANSFERMONEY,
+                'trx_id'            => $trx_id,
+                'request_amount'    => $charges['sender_amount'],
+                'payable'           => $charges['payable'],
+                'available_balance' => $sender_wallet->balance - $charges['payable'],
+                'attribute'         => PaymentGatewayConst::SEND,
+                'details'           => json_encode(['receiver_username'=> $receiver_wallet->agent->username,'receiver_email'=> $receiver_wallet->agent->email,'sender_username'=> $sender_wallet->agent->username,'sender_email'=> $sender_wallet->agent->email,'charges' => $charges]),
+                'status'            => GlobalConst::SUCCESS,
                 'created_at'        => now(),
             ]);
-            DB::commit();
 
-            //notification
-            $notification_content = [
-                'title'         =>"Transfer Money",
-                'message'       => "Transfer Money to  ".$receiver->fullname.' ' .$amount.' '.get_default_currency_code()." successful",
-                'image'         => files_asset_path('profile-default'),
-            ];
-
-            AgentNotification::create([
-                'type'      => NotificationConst::TRANSFER_MONEY,
-                'agent_id'  => $agent->id,
-                'message'   => $notification_content,
-            ]);
-            DB::commit();
-        }catch(Exception $e) {
-            DB::rollBack();
-            throw new Exception($e->getMessage());
-        }
-    }
-    //Receiver Transaction
-    public function insertReceiver($trx_id,$agent,$agentWallet,$amount,$recipient,$payable,$receiver,$receiverWallet) {
-        $trx_id = $trx_id;
-        $receiverWallet = $receiverWallet;
-        $recipient_amount = ($receiverWallet->balance + $recipient);
-        $details =[
-            'sender_amount' => $amount,
-            'sender' => $agent,
-        ];
-        DB::beginTransaction();
-        try{
-            $id = DB::table("transactions")->insertGetId([
-                'agent_id'                       => $receiver->id,
-                'agent_wallet_id'                => $receiverWallet->id,
-                'payment_gateway_currency_id'   => null,
-                'type'                          => PaymentGatewayConst::TYPETRANSFERMONEY,
-                'trx_id'                        => $trx_id,
-                'request_amount'                => $amount,
-                'payable'                       => $payable,
-                'available_balance'             => $recipient_amount,
-                'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPETRANSFERMONEY," ")) . " From " .$agent->fullname,
-                'details'                       => json_encode($details),
-                'attribute'                      =>PaymentGatewayConst::RECEIVED,
-                'status'                        => true,
-                'created_at'                    => now(),
-            ]);
-            $this->updateReceiverWalletBalance($receiverWallet,$recipient_amount);
-
-            DB::commit();
-        }catch(Exception $e) {
-            DB::rollBack();
-            throw new Exception($e->getMessage());
-        }
-        return $id;
-    }
-    public function updateReceiverWalletBalance($receiverWallet,$recipient_amount) {
-        $receiverWallet->update([
-            'balance'   => $recipient_amount,
-        ]);
-    }
-    public function insertReceiverCharges($fixedCharge,$percent_charge, $total_charge, $amount,$agent,$id,$receiver) {
-        DB::beginTransaction();
-        try{
-            DB::table('transaction_charges')->insert([
-                'transaction_id'    => $id,
-                'percent_charge'    => $percent_charge,
-                'fixed_charge'      =>$fixedCharge,
-                'total_charge'      =>$total_charge,
+            // Receiver TRX
+            DB::table("transactions")->insert([
+                'agent_id'           => $receiver_wallet->agent->id,
+                'agent_wallet_id'    => $receiver_wallet->id,
+                'type'              => PaymentGatewayConst::TYPETRANSFERMONEY,
+                'trx_id'            => $trx_id,
+                'request_amount'    => $charges['receiver_amount'],
+                'payable'           => $charges['receiver_amount'],
+                'available_balance' => $receiver_wallet->balance + $charges['receiver_amount'],
+                'attribute'         => PaymentGatewayConst::RECEIVED,
+                'remark'            => "Transfer Money To " . $receiver_wallet->agent->username,
+                'details'           => json_encode(['receiver_username'=> $receiver_wallet->agent->username,'receiver_email'=> $receiver_wallet->agent->email,'sender_username'=> $sender_wallet->agent->username,'sender_email'=> $sender_wallet->agent->email,'charges' => $charges]),
+                'status'            => GlobalConst::SUCCESS,
                 'created_at'        => now(),
             ]);
-            DB::commit();
 
-            //notification
-            $notification_content = [
-                'title'         =>"Transfer Money",
-                'message'       => "Transfer Money from  ".$agent->fullname.' ' .$amount.' '.get_default_currency_code()." successful",
-                'image'         => files_asset_path('profile-default'),
-            ];
+            $this->createTransactionChildRecords($inserted_id,(object) $charges);
 
-            AgentNotification::create([
-                'type'      => NotificationConst::TRANSFER_MONEY,
-                'agent_id'  => $receiver->id,
-                'message'   => $notification_content,
-            ]);
+            $sender_wallet->balance -= $charges['payable'];
+            $sender_wallet->save();
+
+            $receiver_wallet->balance += $charges['receiver_amount'];
+            $receiver_wallet->save();
             DB::commit();
         }catch(Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage());
+            return redirect()->route('agent.send.money.index')->with(['error' => ['Transaction failed! Something went wrong! Please try again']]);
         }
+
+        return redirect()->route('agent.send.money.index')->with(['success' => ['Transaction success']]);
+    }
+
+    public function transferCharges($sender_amount,$charges,$sender_wallet,$receiver_currency) {
+        $exchange_rate = $receiver_currency->rate / $sender_wallet->currency->rate;
+
+        $data['exchange_rate']          = $exchange_rate;
+        $data['sender_amount']          = $sender_amount;
+        $data['sender_currency']        = $sender_wallet->currency->code;
+        $data['receiver_amount']        = $sender_amount * $exchange_rate;
+        $data['receiver_currency']      = $receiver_currency->code;
+        $data['percent_charge']         = ($sender_amount / 100) * $charges->percent_charge ?? 0;
+        $data['fixed_charge']           = $sender_wallet->currency->rate * $charges->fixed_charge ?? 0;
+        $data['total_charge']           = $data['percent_charge'] + $data['fixed_charge'];
+        $data['sender_wallet_balance']  = $sender_wallet->balance;
+        $data['payable']                = $sender_amount + $data['total_charge'];
+        return $data;
     }
 }

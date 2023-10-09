@@ -359,9 +359,9 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             var min_limit = acceptVar().currencyMinAmount;
             var max_limit =acceptVar().currencyMaxAmount;
             if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
-                var min_limit_calc = parseFloat(min_limit/sender_currency_rate).toFixed(2);
-                var max_limit_clac = parseFloat(max_limit/sender_currency_rate).toFixed(2);
-                $('.limit-show').html("Limit " + min_limit_calc + " " + defualCurrency + " - " + max_limit_clac + " " + defualCurrency);
+                var min_limit_calc = parseFloat(min_limit*sender_currency_rate).toFixed(2);
+                var max_limit_clac = parseFloat(max_limit*sender_currency_rate).toFixed(2);
+                $('.limit-show').html("Limit " + min_limit_calc + " " + sender_currency + " - " + max_limit_clac + " " + sender_currency);
                 return {
                     minLimit:min_limit_calc,
                     maxLimit:max_limit_clac,
@@ -379,9 +379,10 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             var currencyCode = acceptVar().receiverCurrency;
             var currencyRate = acceptVar().receiverCurrency_rate;
             var sender_currency = acceptVar().sCurrency;
+            var sender_currency_rate = acceptVar().sCurrency_rate;
             var walletBalance   = acceptVar().walletBalance;
             var walletId   = acceptVar().walletId;
-            $('.rate-show').html("1 " + sender_currency + " = " + parseFloat(currencyRate).toFixed(2) + " " + currencyCode);
+            $('.rate-show').html(sender_currency_rate + " " + sender_currency + " = " + parseFloat(currencyRate).toFixed(2) + " " + currencyCode);
             $('.available-balance').html("Available Balance :" + " " + walletBalance + " " + sender_currency);
             $('.sender-wallet').val(walletId);
     }
@@ -485,7 +486,6 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             var sender_amount = $("input[name=send_amount]").val();
             var receiver_amount = $("input[name=receive_amount]");
             if($.isNumeric(sender_amount)) {
-                console.log(sender_amount);
                 var rate = parseFloat(receiver_currency_rate) / parseFloat(sender_currency_rate);
                 var receiver_will_get = parseFloat(rate) * parseFloat(sender_amount);
                 receiver_will_get = parseFloat(receiver_will_get).toFixed(2);

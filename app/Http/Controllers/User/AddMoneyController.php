@@ -171,7 +171,7 @@ class AddMoneyController extends Controller
             $token = $requestData;
 
             $checkTempData = TemporaryData::where("type",'flutterwave')->where("identifier",$token)->first();
-
+            dd($checkTempData);
             if(!$checkTempData) return redirect()->route('user.add.money.index')->with(['error' => ['Transaction Failed. Record didn\'t saved properly. Please try again.']]);
 
             $checkTempData = $checkTempData->toArray();

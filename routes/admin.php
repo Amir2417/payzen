@@ -1,44 +1,45 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\CurrencyController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\TrxSettingsController;
-use App\Http\Controllers\Admin\AddMoneyController;
-use App\Http\Controllers\Admin\AdminCareController;
-use App\Http\Controllers\Admin\AppOnboardScreensController;
-use App\Http\Controllers\Admin\AppSettingsController;
-use App\Http\Controllers\Admin\BroadcastingController;
-use App\Http\Controllers\Admin\ContactMessageController;
+use Illuminate\Support\Facades\Artisan;
+use App\Providers\Admin\BasicSettingsProvider;
+use Pusher\PushNotifications\PushNotifications;
 use App\Http\Controllers\Admin\CookieController;
-use App\Http\Controllers\Admin\ExtensionsController;
-use App\Http\Controllers\Admin\LanguageController;
-use App\Http\Controllers\Admin\MerchantCareController;
-use App\Http\Controllers\Admin\ModuleSettingController;
-use App\Http\Controllers\Admin\MoneyOutController;
-use App\Http\Controllers\Admin\NewsletterController;
-use App\Http\Controllers\Admin\PaymentGatewayCurrencyController;
-use App\Http\Controllers\Admin\PaymentGatewaysController;
 use App\Http\Controllers\Admin\ProfileController;
-use App\Http\Controllers\Admin\PushNotificationController;
-use App\Http\Controllers\Admin\RemitanceController;
-use App\Http\Controllers\Admin\ServerInfoController;
-use App\Http\Controllers\Admin\SetupBillPayController;
-use App\Http\Controllers\Admin\SetupEmailController;
+use App\Http\Controllers\Admin\AddMoneyController;
+use App\Http\Controllers\Admin\CurrencyController;
+use App\Http\Controllers\Admin\LanguageController;
+use App\Http\Controllers\Admin\MoneyOutController;
 use App\Http\Controllers\Admin\SetupKycController;
-use App\Http\Controllers\Admin\SetupMobileTopupController;
+use App\Http\Controllers\Admin\UserCareController;
+use App\Http\Controllers\Admin\AdminCareController;
+use App\Http\Controllers\Admin\AgentCareController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\RemitanceController;
+use App\Http\Controllers\Admin\ExtensionsController;
+use App\Http\Controllers\Admin\NewsletterController;
+use App\Http\Controllers\Admin\ServerInfoController;
+use App\Http\Controllers\Admin\SetupEmailController;
 use App\Http\Controllers\Admin\SetupPagesController;
+use App\Http\Controllers\Admin\UsefulLInkController;
+use App\Http\Controllers\Admin\AppSettingsController;
+use App\Http\Controllers\Admin\TrxSettingsController;
+use App\Http\Controllers\Admin\VirtualCardController;
+use App\Http\Controllers\Admin\WebSettingsController;
+use App\Http\Controllers\Admin\BroadcastingController;
+use App\Http\Controllers\Admin\MerchantCareController;
+use App\Http\Controllers\Admin\SetupBillPayController;
+use App\Http\Controllers\Admin\ModuleSettingController;
 use App\Http\Controllers\Admin\SetupSectionsController;
 use App\Http\Controllers\Admin\SupportTicketController;
-use App\Http\Controllers\Admin\UsefulLInkController;
-use App\Http\Controllers\Admin\UserCareController;
-use App\Http\Controllers\Admin\WebSettingsController;
-use App\Http\Controllers\Admin\VirtualCardController;
-use Illuminate\Support\Facades\Artisan;
-use Pusher\PushNotifications\PushNotifications;
-use Illuminate\Http\Request;
-use App\Providers\Admin\BasicSettingsProvider;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Admin\ContactMessageController;
+use App\Http\Controllers\Admin\PaymentGatewaysController;
+use App\Http\Controllers\Admin\PushNotificationController;
+use App\Http\Controllers\Admin\SetupMobileTopupController;
+use App\Http\Controllers\Admin\AppOnboardScreensController;
+use App\Http\Controllers\Admin\PaymentGatewayCurrencyController;
 
 // All Admin Route Is Here
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -196,7 +197,28 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('search','search')->name('search');
         Route::post('wallet/balance/update/{username}','walletBalanceUpdate')->name('wallet.balance.update');
     });
-
+    // Agent Care Section
+    Route::controller(AgentCareController::class)->prefix('agents')->name('agents.')->group(function () {
+        Route::get('index', 'index')->name('index');
+        Route::get('active', 'active')->name('active');
+        Route::get('banned', 'banned')->name('banned');
+        Route::get('email/unverified', 'emailUnverified')->name('email.unverified');
+        Route::get('sms/unverified', 'SmsUnverified')->name('sms.unverified');
+        Route::get('kyc/unverified', 'KycUnverified')->name('kyc.unverified');
+        Route::get('kyc/details/{username}', 'kycDetails')->name('kyc.details');
+        Route::get('email-agents', 'emailAllUsers')->name('email.agents');
+        Route::post('email-agents/send', 'sendMailUsers')->name('email.agents.send')->middleware("mail");
+        Route::get('details/{username}', 'userDetails')->name('details');
+        Route::post('details/update/{username}', 'userDetailsUpdate')->name('details.update');
+        Route::get('login/logs/{username}', 'loginLogs')->name('login.logs');
+        Route::get('mail/logs/{username}', 'mailLogs')->name('mail.logs');
+        Route::post('send/mail/{username}', 'sendMail')->name('send.mail')->middleware("mail");
+        Route::post('login-as-member/{username?}','loginAsMember')->name('login.as.member');
+        Route::post('kyc/approve/{username}','kycApprove')->name('kyc.approve');
+        Route::post('kyc/reject/{username}','kycReject')->name('kyc.reject');
+        Route::post('search','search')->name('search');
+        Route::post('wallet/balance/update/{username}','walletBalanceUpdate')->name('wallet.balance.update');
+    });
     // Merchant Care Section
     Route::controller(MerchantCareController::class)->prefix('merchants')->name('merchants.')->group(function () {
         Route::get('index', 'index')->name('index');

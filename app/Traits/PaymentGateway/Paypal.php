@@ -295,7 +295,7 @@ trait Paypal
                 'remark'                        => ucwords(remove_speacial_char($output['type']," ")) . " With " . $output['gateway']->name,
                 'details'                       => json_encode($output['capture']),
                 'status'                        => true,
-                'attribute'                      =>PaymentGatewayConst::SEND,
+                'attribute'                     => PaymentGatewayConst::SEND,
                 'created_at'                    => now(),
             ]);
             
