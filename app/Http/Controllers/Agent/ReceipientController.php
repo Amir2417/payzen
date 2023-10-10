@@ -44,7 +44,9 @@ class ReceipientController extends Controller
         return response($exist);
     }
     public function sendRemittance($id){
-        $recipient = Receipient::auth()->where("id",$id)->first();
+        
+        $recipient = Receipient::where('agent_id',auth()->user()->id)->where("id",$id)->first();
+        
         $token = session()->get('remittance_token');
         $in['receiver_country'] = $recipient->country;
         $in['transacion_type'] = $recipient->type;
@@ -146,7 +148,7 @@ class ReceipientController extends Controller
         $countries = ReceiverCounty::active()->get();
         $banks = RemitanceBankDeposit::active()->latest()->get();
         $pickup_points = RemitanceCashPickup::active()->latest()->get();
-        $data =  Receipient::auth()->with('user','receiver_country')->where('id',$id)->first();
+        $data =  Receipient::where('agent_id',auth()->user()->id)->where('id',$id)->first();
 
         if( !$data){
             return back()->with(['error' => ['Sorry, invalid request']]);
@@ -155,7 +157,7 @@ class ReceipientController extends Controller
     }
     public function updateReceipient(Request $request){
         $user = auth()->user();
-        $data =  Receipient::auth()->with('user','receiver_country')->where('id',$request->id)->first();
+        $data =  Receipient::where('agent_id',auth()->user()->id)->where('id',$request->id)->first();
         if($request->transaction_type == 'bank-transfer') {
             $bankRules = 'required|string';
         }else {

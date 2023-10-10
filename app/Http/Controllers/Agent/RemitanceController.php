@@ -63,7 +63,7 @@ class RemitanceController extends Controller
             'sender_wallet'              =>'required',
 
         ])->validate();
-        // dd($request->all());
+        
         
         $basic_setting = BasicSettings::first();
         $user = auth()->user();
@@ -93,7 +93,7 @@ class RemitanceController extends Controller
         if(!$to_country){
             return back()->with(['error' => ['Receiver country not found']]);
         }
-        $receipient = Receipient::auth()->where("id",$request->recipient)->first();
+        $receipient = Receipient::where('agent_id',auth()->user()->id)->where("id",$request->recipient)->first();
         if(!$receipient){
             return back()->with(['error' => ['Receipient is invalid']]);
         }
@@ -118,7 +118,7 @@ class RemitanceController extends Controller
         //receiver amount
         $receiver_rate = (float) $receiver_rate / (float)$base_rate;
         $receiver_amount = $receiver_rate * $send_amount;
-        $receiver_will_get = $receiver_amount;
+        $receiver_will_get = $receive_amount;
         if($payable > $userWallet->balance ){
             return back()->with(['error' => ['Sorry, insufficient balance']]);
         }
@@ -134,11 +134,11 @@ class RemitanceController extends Controller
                 $trx_id = $this->trx_id;
                 $sender = $this->insertSender( $trx_id,$user,$userWallet,$send_amount,$receiver_will_get,$payable,$receipient,$form_country,$to_country,$transaction_type);
                 if($sender){
-                     $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient,$receiver_user);
+                     $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient,$receiver_user,$userWallet);
                 }
                 $receiverTrans = $this->insertReceiver( $trx_id,$user,$userWallet,$send_amount,$receiver_will_get,$payable,$receipient,$form_country,$to_country,$transaction_type,$receiver_user,$receiver_wallet);
                 if($receiverTrans){
-                     $this->insertReceiverCharges(  $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$receiverTrans,$receipient,$receiver_user);
+                     $this->insertReceiverCharges(  $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$receiverTrans,$receipient,$receiver_user,$userWallet);
                 }
                 session()->forget('remittance_token');
 
@@ -146,7 +146,7 @@ class RemitanceController extends Controller
                 $trx_id = $this->trx_id;
                 $sender = $this->insertSender( $trx_id,$user,$userWallet,$send_amount,$receiver_will_get,$payable,$receipient,$form_country,$to_country,$transaction_type);
                 if($sender){
-                     $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient);
+                     $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient,$userWallet);
                      session()->forget('remittance_token');
                 }
                 if( $basic_setting->email_notification == true){
@@ -235,14 +235,17 @@ class RemitanceController extends Controller
             'balance'   => $afterCharge,
         ]);
     }
-    public function insertSenderCharges($fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient) {
+    public function insertSenderCharges($fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient,$userWallet) {
+        $fixedCharge = (float) $fixedCharge * (float) $userWallet->currency->rate;
+        $percent_charge = (float) $percent_charge * (float) $userWallet->currency->rate;
+        $total_charge   = (float) $total_charge * (float) $userWallet->currency->rate;
         DB::beginTransaction();
         try{
             DB::table('transaction_charges')->insert([
                 'transaction_id'    => $sender,
                 'percent_charge'    => $percent_charge,
-                'fixed_charge'      =>$fixedCharge,
-                'total_charge'      =>$total_charge,
+                'fixed_charge'      => $fixedCharge,
+                'total_charge'      => $total_charge,
                 'created_at'        => now(),
             ]);
             DB::commit();
@@ -310,14 +313,17 @@ class RemitanceController extends Controller
             'balance'   => $recipient_amount,
         ]);
     }
-    public function insertReceiverCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$receiverTrans,$receipient,$receiver_user) {
+    public function insertReceiverCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$receiverTrans,$receipient,$receiver_user,$userWallet) {
+        $fixedCharge = (float) $fixedCharge * (float) $userWallet->currency->rate;
+        $percent_charge = (float) $percent_charge * (float) $userWallet->currency->rate;
+        $total_charge   = (float) $total_charge * (float) $userWallet->currency->rate;
         DB::beginTransaction();
         try{
             DB::table('transaction_charges')->insert([
                 'transaction_id'    => $receiverTrans,
                 'percent_charge'    => $percent_charge,
-                'fixed_charge'      =>$fixedCharge,
-                'total_charge'      =>$total_charge,
+                'fixed_charge'      => $fixedCharge,
+                'total_charge'      => $total_charge,
                 'created_at'        => now(),
             ]);
             DB::commit();
@@ -357,17 +363,18 @@ class RemitanceController extends Controller
         $receiver_country = $request->receiver_country;
         $transacion_type = $request->transacion_type;
         if( $transacion_type != null || $transacion_type != ''){
-            $data['recipient'] = Receipient::auth()->where('country', $receiver_country)->where('type',$transacion_type)->get();
+            $data['recipient'] = Receipient::where('agent_id',auth()->user()->id)->where('country', $receiver_country)->where('type',$transacion_type)->get();
 
         }else{
-            $data['recipient'] = Receipient::auth()->where('country', $receiver_country)->get();
+            $data['recipient'] = Receipient::where('agent_id',auth()->user()->id)->where('country', $receiver_country)->get();
         }
+        
         return response()->json($data);
     }
     public function getRecipientByTransType(Request $request){
         $receiver_country = $request->receiver_country;
         $transacion_type = $request->transacion_type;
-        $data['recipient'] = Receipient::auth()->where('country', $receiver_country)->where('type',$transacion_type)->get();
+        $data['recipient'] = Receipient::where('agent_id',auth()->user()->id)->where('country', $receiver_country)->where('type',$transacion_type)->get();
         return response()->json($data);
     }
 }

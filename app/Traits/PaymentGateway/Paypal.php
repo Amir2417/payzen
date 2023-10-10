@@ -2,21 +2,22 @@
 
 namespace App\Traits\PaymentGateway;
 
-use App\Constants\NotificationConst;
-use App\Constants\PaymentGatewayConst;
-use App\Http\Controllers\User\AddMoneyController;
-use App\Models\Admin\BasicSettings;
-use App\Models\TemporaryData;
-use App\Models\Transaction;
-use App\Models\UserNotification;
-use App\Notifications\User\AddMoney\ApprovedMail;
 use Exception;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use Srmklive\PayPal\Services\PayPal as PayPalClient;
+use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Jenssegers\Agent\Agent;
+use Illuminate\Http\Request;
+use App\Models\TemporaryData;
+use Illuminate\Support\Carbon;
+use App\Models\UserNotification;
+use Illuminate\Support\Facades\DB;
+use App\Models\Admin\BasicSettings;
+use App\Constants\NotificationConst;
+use Illuminate\Support\Facades\Auth;
+use App\Constants\PaymentGatewayConst;
+use App\Http\Controllers\User\AddMoneyController;
+use App\Notifications\User\AddMoney\ApprovedMail;
+use Srmklive\PayPal\Services\PayPal as PayPalClient;
 
 trait Paypal
 {
@@ -28,22 +29,32 @@ trait Paypal
         $paypalProvider = new PayPalClient;
         $paypalProvider->setApiCredentials($config);
         $paypalProvider->getAccessToken();
+        $payable_amount   = $output['amount']->total_amount;
+        if(get_auth_guard() == 'web'){
+            $return_url = route('user.add.money.payment.success',PaymentGatewayConst::PAYPAL);
+            $cancel_url = route('user.add.money.payment.cancel',PaymentGatewayConst::PAYPAL);
+        }else{
+            $return_url = route('agent.add.money.payment.success',PaymentGatewayConst::PAYPAL);
+            $cancel_url = route('agent.add.money.payment.cancel',PaymentGatewayConst::PAYPAL);
+        }
 
         $response = $paypalProvider->createOrder([
             "intent" => "CAPTURE",
             "application_context" => [
-                "return_url" => route('user.add.money.payment.success',PaymentGatewayConst::PAYPAL),
-                "cancel_url" => route('user.add.money.payment.cancel',PaymentGatewayConst::PAYPAL),
+                "return_url" => $return_url,
+                "cancel_url" => $cancel_url, 
             ],
             "purchase_units" => [
                 0 => [
                     "amount" => [
                         "currency_code" => $output['amount']->sender_cur_code ?? '',
-                        "value" => $output['amount']->total_amount ? number_format($output['amount']->total_amount,2,'.','') : 0,
+                        "value" => $payable_amount ? number_format($payable_amount,2,'.','') : 0,
                     ]
                 ]
             ]
         ]);
+        
+        
 
         if(isset($response['id']) && $response['id'] != "" && isset($response['status']) && $response['status'] == "CREATED" && isset($response['links']) && is_array($response['links'])) {
             foreach($response['links'] as $item) {
@@ -69,6 +80,10 @@ trait Paypal
         $paypalProvider = new PayPalClient;
         $paypalProvider->setApiCredentials($config);
         $paypalProvider->getAccessToken();
+        $total_charge = $output['amount']->total_charge * $output['sender_currency']->rate;
+        $requested_amount   = $output['amount']->requested_amount + $total_charge;
+        $payable_amount     = ($requested_amount / $output['sender_currency']->rate) * $output['currency']->rate;
+        
 
         $response = $paypalProvider->createOrder([
             "intent" => "CAPTURE",
@@ -80,7 +95,7 @@ trait Paypal
                 0 => [
                     "amount" => [
                         "currency_code" => $output['amount']->sender_cur_code ?? '',
-                        "value" => $output['amount']->total_amount ? number_format($output['amount']->total_amount,2,'.','') : 0,
+                        "value" => $payable_amount ? number_format($payable_amount,2,'.','') : 0,
                     ]
                 ]
             ]
@@ -192,10 +207,13 @@ trait Paypal
     public function paypalJunkInsert($response) {
 
         $output = $this->output;
+        
+
 
         $data = [
             'gateway'   => $output['gateway']->id,
             'currency'  => $output['currency']->id,
+            'sender_currency'   => $output['sender_currency']->rate,
             'amount'    => json_decode(json_encode($output['amount']),true),
             'response'  => $response,
             'wallet_table'  => $output['wallet']->getTable(),
@@ -277,15 +295,24 @@ trait Paypal
         }
 
     }
-
+    
     public function insertRecord($output, $trx_id) {
+        if(get_auth_guard() == 'web'){
+            $user_id_column         = "user_id";
+            $user_wallet_id_column  = "user_wallet_id";
+        }else{
+            $user_id_column         = "agent_id";
+            $user_wallet_id_column  = "agent_wallet_id";
+        }
         $trx_id =  $trx_id;
+       
         $token = $this->output['tempData']['identifier'] ?? "";
         DB::beginTransaction();
         try{
+            
             $id = DB::table("transactions")->insertGetId([
-                'user_id'                       => auth()->user()->id,
-                'user_wallet_id'                => $output['wallet']->id,
+                $user_id_column                 => auth()->user()->id,
+                $user_wallet_id_column          => $output['wallet']->id,
                 'payment_gateway_currency_id'   => $output['currency']->id,
                 'type'                          => $output['type'],
                 'trx_id'                        => $trx_id,
@@ -306,6 +333,9 @@ trait Paypal
             throw new Exception($e->getMessage());
         }
         return $id;
+       
+           
+        
     }
 
     public function updateWalletBalance($output) {
@@ -317,6 +347,8 @@ trait Paypal
     }
 
     public function insertCharges($output,$id) {
+        
+
         DB::beginTransaction();
         try{
             DB::table('transaction_charges')->insert([

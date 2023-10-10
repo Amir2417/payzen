@@ -112,8 +112,8 @@
                         @endif
                     @elseif ($item->type == payment_gateway_const()::SENDREMITTANCE)
                         @if ($item->attribute == payment_gateway_const()::SEND)
-                        <h6 class="exchange-money text--warning ">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h6>
-                        <h4 class="main-money fw-bold">{{ get_amount($item->payable,get_default_currency_code()) }}</h4>
+                        <h6 class="exchange-money text--warning ">{{ get_amount($item->request_amount,@$item->details->sender_currency->code) }}</h6>
+                        <h4 class="main-money fw-bold">{{ get_amount($item->payable,@$item->details->sender_currency->code) }}</h4>
                         @elseif ($item->attribute == payment_gateway_const()::RECEIVED)
                         <h6 class="exchange-money fw-bold">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h6>
                         @endif
@@ -343,7 +343,7 @@
                         </div>
                         <div class="preview-list-right">
                             @if ($item->type == payment_gateway_const()::TYPEADDMONEY)
-                                <span>{{ get_amount($item->charge->total_charge,$item->currency->currency_code) }}</span>
+                                {{-- <span>{{ get_amount($item->charge->total_charge,$item->currency->currency_code) }}</span> --}}
                             @elseif ($item->type == payment_gateway_const()::TYPEMONEYOUT)
                                 <span>{{ get_amount($item->charge->total_charge,$item->currency->currency_code) }}</span>
                             @elseif ($item->type == payment_gateway_const()::SENDREMITTANCE)
@@ -509,7 +509,7 @@
                         </div>
                     </div>
                     <div class="preview-list-right">
-                        <span>1 {{ get_default_currency_code() }} = {{ get_amount($item->details->to_country->rate,$item->details->to_country->code) }}</span>
+                        <span>{{ @$item->details->sender_currency->rate }} {{ @$item->details->sender_currency->code }} = {{ get_amount($item->details->to_country->rate,$item->details->to_country->code) }}</span>
                     </div>
                 </div>
 
@@ -525,7 +525,7 @@
                         </div>
                     </div>
                     <div class="preview-list-right">
-                        <span>{{ get_amount($item->charge->total_charge,get_default_currency_code()) }}</span>
+                        <span>{{ get_amount($item->charge->total_charge,@$item->details->sender_currency->code) }}</span>
                     </div>
                 </div>
                 @endif
@@ -678,7 +678,7 @@
                     </div>
 
                     <div class="preview-list-right">
-                    <span class="text-base fw-bold"> {{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
+                    <span class="text-base fw-bold"> {{ get_amount($item->available_balance,$item->details->sender_currency->code) }}</span>
                     </div>
                 </div>
                 @endif

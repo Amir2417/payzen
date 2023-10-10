@@ -141,9 +141,7 @@ Route::prefix("agent")->name("agent.")->middleware(['checkStatus'])->group(funct
         //for filters sender
         Route::post('get/recipient/country','getRecipientByCountry')->name('get.recipient.country');
         Route::post('get/recipient/transaction/type','getRecipientByTransType')->name('get.recipient.transtype');
-        //for filters receiver
-        Route::post('get/receiver/recipient/country','getRecipientByCountryReceiver')->name('get.receiver.recipient.country');
-        Route::post('get/receiver/recipient/transaction/type','getRecipientByTransTypeReceiver')->name('get.receiver.recipient.transtype');
+        
     });
 
 

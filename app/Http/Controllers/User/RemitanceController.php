@@ -117,7 +117,7 @@ class RemitanceController extends Controller
         //receiver amount
         $receiver_rate = (float) $receiver_rate / (float)$base_rate;
         $receiver_amount = $receiver_rate * $send_amount;
-        $receiver_will_get = $receiver_amount;
+        $receiver_will_get = $receive_amount;
         if($payable > $userWallet->balance ){
             return back()->with(['error' => ['Sorry, insufficient balance']]);
         }
@@ -133,11 +133,11 @@ class RemitanceController extends Controller
                 $trx_id = $this->trx_id;
                 $sender = $this->insertSender( $trx_id,$user,$userWallet,$send_amount,$receiver_will_get,$payable,$receipient,$form_country,$to_country,$transaction_type);
                 if($sender){
-                     $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient,$receiver_user);
+                     $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient,$receiver_user,$userWallet);
                 }
                 $receiverTrans = $this->insertReceiver( $trx_id,$user,$userWallet,$send_amount,$receiver_will_get,$payable,$receipient,$form_country,$to_country,$transaction_type,$receiver_user,$receiver_wallet);
                 if($receiverTrans){
-                     $this->insertReceiverCharges(  $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$receiverTrans,$receipient,$receiver_user);
+                     $this->insertReceiverCharges(  $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$receiverTrans,$receipient,$receiver_user,$userWallet);
                 }
                 session()->forget('remittance_token');
 
@@ -145,7 +145,7 @@ class RemitanceController extends Controller
                 $trx_id = $this->trx_id;
                 $sender = $this->insertSender( $trx_id,$user,$userWallet,$send_amount,$receiver_will_get,$payable,$receipient,$form_country,$to_country,$transaction_type);
                 if($sender){
-                     $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient);
+                     $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient,$userWallet);
                      session()->forget('remittance_token');
                 }
                 if( $basic_setting->email_notification == true){
@@ -184,10 +184,14 @@ class RemitanceController extends Controller
         $details =[
             'recipient_amount' => $receiver_will_get,
             'receiver' => $receipient,
-            'form_country' => [
-                'sender_currency'   => $userWallet->currency->code,
-                'sender_rate'       => $userWallet->currency->rate,
-                'country'           => $form_country,
+            'sender' => [
+                'first_name'        => $user->firstname,
+                'last_name'         => $user->lastname,
+            ],
+            'sender_currency'   => [
+                'code'          => $userWallet->currency->code,
+                'rate'          => $userWallet->currency->rate,
+                'country'       => $form_country,
             ],
             'to_country' => $to_country,
             'remitance_type' => $transaction_type,
@@ -230,7 +234,10 @@ class RemitanceController extends Controller
             'balance'   => $afterCharge,
         ]);
     }
-    public function insertSenderCharges($fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient) {
+    public function insertSenderCharges($fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient,$userWallet) {
+        $fixedCharge = (float) $fixedCharge * (float) $userWallet->currency->rate;
+        $percent_charge = (float) $percent_charge * (float) $userWallet->currency->rate;
+        $total_charge   = (float) $total_charge * (float) $userWallet->currency->rate;
         DB::beginTransaction();
         try{
             DB::table('transaction_charges')->insert([
@@ -305,7 +312,10 @@ class RemitanceController extends Controller
             'balance'   => $recipient_amount,
         ]);
     }
-    public function insertReceiverCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$receiverTrans,$receipient,$receiver_user) {
+    public function insertReceiverCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$receiverTrans,$receipient,$receiver_user,$userWallet) {
+        $fixedCharge = (float) $fixedCharge * (float) $userWallet->currency->rate;
+        $percent_charge = (float) $percent_charge * (float) $userWallet->currency->rate;
+        $total_charge   = (float) $total_charge * (float) $userWallet->currency->rate;
         DB::beginTransaction();
         try{
             DB::table('transaction_charges')->insert([

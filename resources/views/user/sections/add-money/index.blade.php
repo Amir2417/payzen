@@ -329,7 +329,7 @@
 
                 // Pay In Total
                 var totalPay = parseFloat(senderAmount) * parseFloat(sender_currency_rate)
-                 var pay_in_total = parseFloat(charges.total) + parseFloat(totalPay);
+                var pay_in_total = parseFloat(charges.total) + parseFloat(totalPay);
                 $('.pay-in-total').text(parseFloat(pay_in_total).toFixed(2) + " " + sender_currency);
 
             }

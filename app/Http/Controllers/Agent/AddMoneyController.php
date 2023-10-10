@@ -2,38 +2,44 @@
 
 namespace App\Http\Controllers\Agent;
 
-use App\Constants\PaymentGatewayConst;
+use Exception;
+use App\Models\UserWallet;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\PaymentGateway as PaymentGatewayHelper;
-use App\Models\Admin\PaymentGateway;
+use App\Models\TemporaryData;
+use App\Constants\GlobalConst;
 use App\Http\Helpers\Response;
 use App\Models\Admin\Currency;
-use App\Models\Admin\PaymentGatewayCurrency;
-use App\Models\TemporaryData;
-use App\Models\Transaction;
-use Illuminate\Support\Facades\Validator;
-use App\Models\UserWallet;
-use Exception;
-use Illuminate\Support\Facades\Session;
-use App\Traits\PaymentGateway\Stripe;
-use App\Traits\PaymentGateway\Manual;
 use App\Models\Admin\BasicSettings;
+use App\Http\Controllers\Controller;
+use App\Models\Admin\PaymentGateway;
+use App\Traits\PaymentGateway\Manual;
+use App\Traits\PaymentGateway\Stripe;
+use App\Constants\PaymentGatewayConst;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Validator;
+use App\Models\Admin\PaymentGatewayCurrency;
 use App\Traits\PaymentGateway\FlutterwaveTrait;
 use KingFlamez\Rave\Facades\Rave as Flutterwave;
+use App\Http\Helpers\PaymentGateway as PaymentGatewayHelper;
+use App\Models\AgentWallet;
 
 class AddMoneyController extends Controller
 {
     use Stripe,Manual,FlutterwaveTrait;
     public function index() {
 
-        $page_title = "Add Money";
+        $page_title         = "Add Money";
+        $user_wallets       = AgentWallet::auth()->get();
+        $user_currencies    = AgentWallet::auth()->whereHas('currency',function($q) {
+            $q->where("status",GlobalConst::ACTIVE);
+        })->active()->get();
         $payment_gateways_currencies = PaymentGatewayCurrency::whereHas('gateway', function ($gateway) {
             $gateway->where('slug', PaymentGatewayConst::add_money_slug());
             $gateway->where('status', 1);
         })->get();
         $transactions = Transaction::agentAuth()->addMoney()->latest()->take(10)->get();
-        return view('agent.sections.add-money.index',compact("page_title","transactions","payment_gateways_currencies"));
+        return view('agent.sections.add-money.index',compact("page_title","transactions","payment_gateways_currencies","user_currencies"));
     }
     public function submit(Request $request) {
         $basic_setting = BasicSettings::first();

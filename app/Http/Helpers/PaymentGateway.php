@@ -4,6 +4,7 @@ namespace App\Http\Helpers;
 use App\Constants\PaymentGatewayConst;
 use App\Models\Admin\Currency;
 use App\Models\Admin\PaymentGatewayCurrency;
+use App\Models\AgentWallet;
 use App\Models\UserWallet;
 use App\Traits\PaymentGateway\Paypal;
 use App\Traits\PaymentGateway\Stripe;
@@ -39,10 +40,10 @@ class PaymentGateway {
 
     public function gateway() {
         $request_data = $this->request_data;
-        // dd($request_data);
+        
         if(empty($request_data)) throw new Exception("Gateway Information is not available. Please provide payment gateway currency alias");
         $validated = $this->validator($request_data)->validate();
-        // dd($validated['sender_wallet']);
+        
         $gateway_currency = PaymentGatewayCurrency::where("alias",$validated[$this->currency_input_name])->first();
 
         if(!$gateway_currency || !$gateway_currency->gateway) {
@@ -51,24 +52,33 @@ class PaymentGateway {
             ]);
         }
         $defualt_currency = Currency::where('id',$validated['sender_wallet'])->first();
-        // dd($defualt_currency);
-        $user_wallet = UserWallet::auth()->where('currency_id', $defualt_currency->id)->first();
-        // dd($user_wallet);
+        
+        if(get_auth_guard() == 'web'){
+
+            $user_wallet = UserWallet::auth()->where('currency_id', $defualt_currency->id)->first();
+        }else{
+          
+            $user_wallet = AgentWallet::auth()->where('currency_id', $defualt_currency->id)->first();
+        }
+        
+        
         if(!$user_wallet) {
             throw ValidationException::withMessages([
-                $this->currency_input_name = "User wallet not found!",
+                $this->currency_input_name = "wallet not found!",
             ]);
         }
 
         if($gateway_currency->gateway->isAutomatic()) {
             $this->output['gateway']    = $gateway_currency->gateway;
             $this->output['currency']   = $gateway_currency;
+            $this->output['sender_currency']   = $defualt_currency;
             $this->output['amount']     = $this->amount();
             $this->output['wallet']     = $user_wallet;
             $this->output['distribute'] = $this->gatewayDistribute($gateway_currency->gateway);
         }elseif($gateway_currency->gateway->isManual()){
             $this->output['gateway']    = $gateway_currency->gateway;
             $this->output['currency']   = $gateway_currency;
+            $this->output['sender_currency']   = $defualt_currency;
             $this->output['amount']     = $this->amount();
             $this->output['wallet']     = $user_wallet;
             $this->output['distribute'] = $this->gatewayDistribute($gateway_currency->gateway);
@@ -84,7 +94,7 @@ class PaymentGateway {
         return Validator::make($data,[
             $this->currency_input_name  => "required|exists:payment_gateway_currencies,alias",
             $this->amount_input         => "required|numeric",
-            $this->sender_wallet_name         => "required",
+            $this->sender_wallet_name   => "required",
         ]);
     }
 
@@ -122,16 +132,17 @@ class PaymentGateway {
 
     public function amount() {
         $currency = $this->output['currency'] ?? null;
+        $sender_currency = $this->output['sender_currency'] ?? null;
         if(!$currency) throw new Exception("Gateway currency not found");
-        return $this->chargeCalculate($currency);
+        return $this->chargeCalculate($currency,$sender_currency,null);
     }
 
-    public function chargeCalculate($currency,$receiver_currency = null) {
-
+    public function chargeCalculate($currency,$sender_currency,$receiver_currency = null) {
         $amount = $this->request_data[$this->amount_input];
+        $request_amount     = ($amount / $sender_currency->rate) * $currency->rate;
         $sender_currency_rate = $currency->rate;
         ($sender_currency_rate == "" || $sender_currency_rate == null) ? $sender_currency_rate = 0 : $sender_currency_rate;
-        ($amount == "" || $amount == null) ? $amount : $amount;
+        ($request_amount == "" || $request_amount == null) ? $request_amount : $request_amount;
 
         if($currency != null) {
             $fixed_charges = $currency->fixed_charge;
@@ -141,8 +152,8 @@ class PaymentGateway {
             $percent_charges = 0;
         }
 
-        $fixed_charge_calc = ( $fixed_charges);
-        $percent_charge_calc = $sender_currency_rate * (($amount / 100 ) * $percent_charges );
+        $fixed_charge_calc = ($fixed_charges) * $sender_currency_rate;
+        $percent_charge_calc = (($request_amount / 100 ) * $percent_charges );
 
         $total_charge = $fixed_charge_calc + $percent_charge_calc;
 
@@ -150,10 +161,10 @@ class PaymentGateway {
             $receiver_currency_rate = $receiver_currency->rate;
             ($receiver_currency_rate == "" || $receiver_currency_rate == null) ? $receiver_currency_rate = 0 : $receiver_currency_rate;
             $exchange_rate = ($receiver_currency_rate / $sender_currency_rate);
-            $will_get = ($amount * $exchange_rate);
+            $will_get = ($request_amount * $exchange_rate);
 
             $data = [
-                'requested_amount'          => $amount,
+                'requested_amount'          => $request_amount,
                 'sender_cur_code'           => $currency->currency_code,
                 'sender_cur_rate'           => $sender_currency_rate ?? 0,
                 'receiver_cur_code'         => $receiver_currency->currency_code,
@@ -161,7 +172,7 @@ class PaymentGateway {
                 'fixed_charge'              => $fixed_charge_calc,
                 'percent_charge'            => $percent_charge_calc,
                 'total_charge'              => $total_charge,
-                'total_amount'              => $amount + $total_charge,
+                'total_amount'              => $request_amount + $total_charge,
                 'exchange_rate'             => $exchange_rate,
                 'will_get'                  => $will_get,
                 'default_currency'          => get_default_currency_code(),
@@ -170,11 +181,11 @@ class PaymentGateway {
         }else {
             $defualt_currency = Currency::default();
             $exchange_rate =  $defualt_currency->rate;
-            $will_get = ($amount * $exchange_rate);
-            $total_Amount = ($amount * $sender_currency_rate) + $total_charge;
+            $will_get = $request_amount;
+            $total_Amount = $request_amount + $total_charge;
 
             $data = [
-                'requested_amount'          => $amount,
+                'requested_amount'          => $request_amount,
                 'sender_cur_code'           => $currency->currency_code,
                 'sender_cur_rate'           => $sender_currency_rate ?? 0,
                 'fixed_charge'              => $fixed_charge_calc,

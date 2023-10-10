@@ -560,7 +560,21 @@
         clearTimeout(timeOut);
         timeOut = setTimeout(getUser, 500,$(this).val(),"{{ setRoute('user.info') }}",$(this).parents(".input-group"));
     });
-
+    $(".ad-select .custom-select-search").keyup(function(){
+        var searchText = $(this).val().toLowerCase();
+        var itemList =  $(this).parents(".ad-select").find(".custom-option");
+        $.each(itemList,function(index,item){
+            var text = $(item).find(".custom-currency").text().toLowerCase();
+            var country = $(item).find(".custom-country").text().toLowerCase();
+            var match = text.match(searchText);
+            var countryMatch = country.match(searchText);
+            if(match == null && countryMatch == null) {
+                $(item).addClass("d-none");
+            }else {
+                $(item).removeClass("d-none");
+            }
+        });
+    });
     function getUser(string,URL,errorPlace = null) {
         if(string.length < 3) {
             return false;

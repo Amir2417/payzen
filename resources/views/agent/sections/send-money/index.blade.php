@@ -550,6 +550,21 @@ $("input[name=sender_amount]").keyup(function(){
 run(JSON.parse(adSelectActiveItem("input[name=sender_currency]")),JSON.parse(adSelectActiveItem("input[name=receiver_currency]")));
 });
 
+$(".ad-select .custom-select-search").keyup(function(){
+    var searchText = $(this).val().toLowerCase();
+    var itemList =  $(this).parents(".ad-select").find(".custom-option");
+    $.each(itemList,function(index,item){
+        var text = $(item).find(".custom-currency").text().toLowerCase();
+        var country = $(item).find(".custom-country").text().toLowerCase();
+        var match = text.match(searchText);
+        var countryMatch = country.match(searchText);
+        if(match == null && countryMatch == null) {
+            $(item).addClass("d-none");
+        }else {
+            $(item).removeClass("d-none");
+        }
+    });
+});
 var timeOut;
 $("input[name=receiver]").bind("keyup",function(){
 clearTimeout(timeOut);

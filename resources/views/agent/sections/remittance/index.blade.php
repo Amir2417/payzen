@@ -515,10 +515,13 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                 },
                 dataType: 'json',
                 success: function (res) {
+                    console.log(res);
                     var recipients = res.recipient;
                     if( recipients == ''){
+                        
                         $('.recipient').html('<option value="">No Recipient Aviliable</option>');
                     }else{
+                        
                         $('.recipient').html('<option value="">Select Recipient</option>');
 
                     }
