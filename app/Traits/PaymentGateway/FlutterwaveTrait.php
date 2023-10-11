@@ -12,6 +12,7 @@ use App\Constants\NotificationConst;
 use Illuminate\Support\Facades\Auth;
 use App\Constants\PaymentGatewayConst;
 use App\Models\Admin\BasicSettings;
+use App\Models\AgentNotification;
 use App\Notifications\User\AddMoney\ApprovedMail;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Artisan;
@@ -39,7 +40,12 @@ trait FlutterwaveTrait
             $user_phone = $user->full_mobile ?? '';
             $user_name = $user->firstname.' '.$user->lastname ?? '';
         }
-        $return_url = route('user.add.money.flutterwave.callback');
+        if(get_auth_guard() == 'web'){
+            $return_url = route('user.add.money.flutterwave.callback');
+        }else{
+            $return_url = route('agent.add.money.flutterwave.callback');
+        }
+        
 
         // Enter the details of the payment
         $data = [
@@ -84,10 +90,10 @@ trait FlutterwaveTrait
         $creator_id = auth()->guard(get_auth_guard())->user()->id;
         $wallet_table = $output['wallet']->getTable();
         $wallet_id = $output['wallet']->id;
-
             $data = [
                 'gateway'      => $output['gateway']->id,
                 'currency'     => $output['currency']->id,
+                'sender_currency'   => $output['sender_currency']->rate,
                 'amount'       => json_decode(json_encode($output['amount']),true),
                 'response'     => $response,
                 'wallet_table'  => $wallet_table,
@@ -234,6 +240,29 @@ trait FlutterwaveTrait
 
     public function insertRecordFlutterwave($output,$trx_id) {
         $token = $this->output['tempData']['identifier'] ?? "";
+        if(get_auth_guard() == 'web'){
+            $user_id_column         = "user_id";
+            $user_wallet_id_column  = "user_wallet_id";
+        }else{
+            $user_id_column         = "agent_id";
+            $user_wallet_id_column  = "agent_wallet_id";
+        }
+        $info = [
+            'sender_currency'           => [
+                'code'                  => $output['sender_currency']->code,
+                'rate'                  => $output['sender_currency']->rate,
+            ],
+            'payment_currency'          => [
+                'code'                  => $output['currency']->currency_code,
+                'rate'                  => $output['currency']->rate,
+            ],
+            'amount'                    => [
+                'request_amount'        => floatval($output['amount']->requested_amount),
+                'total_charge'          => $output['amount']->total_charge,
+                'total_amount'          => $output['amount']->total_amount,
+            ]
+
+        ];
         DB::beginTransaction();
         try{
             if(Auth::guard(get_auth_guard())->check()){
@@ -242,8 +271,8 @@ trait FlutterwaveTrait
 
                 // Add money
                 $id = DB::table("transactions")->insertGetId([
-                    'user_id'                       => $user_id,
-                    'user_wallet_id'                => $output['wallet']->id,
+                    $user_id_column                 => $user_id,
+                    $user_wallet_id_column          => $output['wallet']->id,
                     'payment_gateway_currency_id'   => $output['currency']->id,
                     'type'                          => $output['type'],
                     'trx_id'                        => $trx_id,
@@ -252,6 +281,7 @@ trait FlutterwaveTrait
                     'available_balance'             => $output['wallet']->balance + $output['amount']->requested_amount,
                     'remark'                        => ucwords(remove_speacial_char($output['type']," ")) . " With " . $output['gateway']->name,
                     'details'                       => 'Flutter Wave Payment Successfull',
+                    'info'                          => json_encode($info),
                     'status'                        => true,
                     'created_at'                    => now(),
                 ]);
@@ -287,11 +317,20 @@ trait FlutterwaveTrait
                 'time'          => Carbon::now()->diffForHumans(),
                 'image'         => files_asset_path('profile-default'),
             ];
-            UserNotification::create([
-                'type'      => NotificationConst::BALANCE_ADDED,
-                'user_id'  =>  $user_id,
-                'message'   => $notification_content,
-            ]);
+            if(get_auth_guard() == 'web'){
+                UserNotification::create([
+                    'type'      => NotificationConst::BALANCE_ADDED,
+                    'user_id'   =>  $user_id,
+                    'message'   => $notification_content,
+                ]);
+            }else{
+                AgentNotification::create([
+                    'type'      => NotificationConst::BALANCE_ADDED,
+                    'agent_id'  =>  $user_id,
+                    'message'   => $notification_content,
+                ]);
+            }
+            
           }
             DB::commit();
         }catch(Exception $e) {

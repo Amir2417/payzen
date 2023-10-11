@@ -33,6 +33,7 @@ use App\Constants\PaymentGatewayConst;
 use Buglinjo\LaravelWebp\Facades\Webp;
 use App\Models\Admin\AdminNotification;
 use App\Models\Admin\TransactionSetting;
+use App\Models\AgentNotification;
 use App\Models\Merchants\MerchantWallet;
 use App\Providers\Admin\CurrencyProvider;
 use function PHPUnit\Framework\returnSelf;
@@ -1646,6 +1647,10 @@ function get_user_notifications()
     } else if(auth()->guard('merchant')->check()){
         $user = auth()->user();
         $notifications = MerchantNotification::auth()->latest()->take(5)->get();
+        return $notifications;
+    } else if(auth()->guard('agent')->check()){
+        $user = auth()->user();
+        $notifications = AgentNotification::auth()->latest()->take(5)->get();
         return $notifications;
     }
 

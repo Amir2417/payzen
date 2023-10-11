@@ -75,6 +75,12 @@
                             <span class="menu-title">{{ __("Mobile ToUp") }}</span>
                         </a>
                     </li>
+                    <li class="sidebar-menu-item">
+                        <a href="{{ setRoute('agent.stripe.card.index') }}">
+                            <i class="menu-icon fas fa-mobile"></i>
+                            <span class="menu-title">{{ __("Stripe Card") }}</span>
+                        </a>
+                    </li>
 
                     <li class="sidebar-menu-item">
                         <a href="{{ setRoute('agent.transactions.index') }}">

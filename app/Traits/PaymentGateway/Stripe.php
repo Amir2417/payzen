@@ -28,8 +28,6 @@ use Stripe\Token;
 
 trait Stripe
 {
-
-
     public function stripeInit($output = null) {
         if(!$output) $output = $this->output;
         $gatewayAlias = $output['gateway']['alias'];
@@ -42,7 +40,6 @@ trait Stripe
         }elseif(userGuard()['type'] == "USER"){
             return redirect()->route('user.add.money.payment', $gatewayAlias);
         }
-
     }
 
     public function getStripeCredetials($output) {

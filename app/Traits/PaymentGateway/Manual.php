@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
 use Jenssegers\Agent\Agent;
 use App\Models\Admin\PaymentGateway as PaymentGatewayModel;
 use App\Models\Admin\PaymentGatewayCurrency;
+use App\Models\AgentNotification;
 use App\Notifications\User\AddMoney\ManualMail;
 use App\Traits\ControlDynamicInputFields;
 use Illuminate\Support\Facades\Validator;
@@ -35,19 +36,23 @@ use ControlDynamicInputFields;
         $this->manualJunkInsert($identifier);
         Session::put('identifier',$identifier);
         Session::put('output',$output);
-       return redirect()->route('user.add.money.manual.payment');
+        if(get_auth_guard() == 'web'){
+            return redirect()->route('user.add.money.manual.payment');
+        }else{
+            return redirect()->route('agent.add.money.manual.payment');
+        }
     }
 
     public function manualJunkInsert($response) {
 
         $output = $this->output;
 
-
         $data = [
-            'gateway'   => $output['gateway']->id,
-            'currency'  => $output['currency']->id,
-            'amount'    => json_decode(json_encode($output['amount']),true),
-            'response'  => $response,
+            'gateway'           => $output['gateway']->id,
+            'currency'          => $output['currency']->id,
+            'sender_currency'   => $output['sender_currency']->rate,
+            'amount'            => json_decode(json_encode($output['amount']),true),
+            'response'          => $response,
         ];
 
         return TemporaryData::create([
@@ -79,7 +84,11 @@ use ControlDynamicInputFields;
             if( $basic_setting->email_notification == true){
                 $user->notify(new ManualMail($user,$output,$trx_id));
             }
-            return redirect()->route("user.add.money.index")->with(['success' => ['Add Money request send to admin successfully']]);
+            if(get_auth_guard() == 'web'){
+                return redirect()->route("user.add.money.index")->with(['success' => ['Add Money request send to admin successfully']]);
+            }else{
+                return redirect()->route("agent.add.money.index")->with(['success' => ['Add Money request send to admin successfully']]);
+            }
         }catch(Exception $e) {
             return back()->with(['error' => [$e->getMessage()]]);
         }
@@ -93,10 +102,33 @@ use ControlDynamicInputFields;
         $trx_id = $trx_id;
         $token = $this->output['tempData']['identifier'] ?? "";
         DB::beginTransaction();
+        if (get_auth_guard() == 'web') {
+            $user_id_column         = "user_id";
+            $user_wallet_id_column  = "user_wallet_id";
+        }else{
+            $user_id_column         = "agent_id";
+            $user_wallet_id_column  = "agent_wallet_id";
+        }
+        $info = [
+            'sender_currency'           => [
+                'code'                  => $output['sender_currency']->code,
+                'rate'                  => $output['sender_currency']->rate,
+            ],
+            'payment_currency'          => [
+                'code'                  => $output['currency']->currency_code,
+                'rate'                  => $output['currency']->rate,
+            ],
+            'amount'                    => [
+                'request_amount'        => floatval($output['amount']->requested_amount),
+                'total_charge'          => $output['amount']->total_charge,
+                'total_amount'          => $output['amount']->total_amount,
+            ]
+
+        ];
         try{
             $id = DB::table("transactions")->insertGetId([
-                'user_id'                       => auth()->user()->id,
-                'user_wallet_id'                => $output['wallet']->id,
+                $user_id_column                 => auth()->user()->id,
+                $user_wallet_id_column          => $output['wallet']->id,
                 'payment_gateway_currency_id'   => $output['currency']->id,
                 'type'                          => PaymentGatewayConst::TYPEADDMONEY,
                 'trx_id'                        => $trx_id,
@@ -105,11 +137,12 @@ use ControlDynamicInputFields;
                 'available_balance'             => $output['wallet']->balance,
                 'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPEADDMONEY," ")) . " With " . $output['gateway']->name,
                 'details'                       => json_encode($get_values),
+                'info'                          => json_encode($info),
                 'status'                        => 2,
-                'attribute'                      =>PaymentGatewayConst::SEND,
+                'attribute'                     => PaymentGatewayConst::SEND,
                 'created_at'                    => now(),
             ]);
-
+            $this->updateWalletBalanceManual($output);
             DB::commit();
         }catch(Exception $e) {
             DB::rollBack();
@@ -118,7 +151,13 @@ use ControlDynamicInputFields;
         return $id;
     }
 
+    public function updateWalletBalanceManual($output) {
+        $update_amount = $output['wallet']->balance + $output['amount']->requested_amount;
 
+        $output['wallet']->update([
+            'balance'   => $update_amount,
+        ]);
+    }
     public function insertChargesManual($output,$id) {
         DB::beginTransaction();
         try{
@@ -138,12 +177,19 @@ use ControlDynamicInputFields;
                 'time'          => Carbon::now()->diffForHumans(),
                 'image'         => files_asset_path('profile-default'),
             ];
-
-            UserNotification::create([
-                'type'      => NotificationConst::BALANCE_ADDED,
-                'user_id'  =>  auth()->user()->id,
-                'message'   => $notification_content,
-            ]);
+            if(get_auth_guard() == 'web'){
+                UserNotification::create([
+                    'type'      => NotificationConst::BALANCE_ADDED,
+                    'user_id'  =>  auth()->user()->id,
+                    'message'   => $notification_content,
+                ]);
+            }else{
+                AgentNotification::create([
+                    'type'      => NotificationConst::BALANCE_ADDED,
+                    'agent_id'  =>  auth()->user()->id,
+                    'message'   => $notification_content,
+                ]);
+            }
             DB::commit();
         }catch(Exception $e) {
             DB::rollBack();

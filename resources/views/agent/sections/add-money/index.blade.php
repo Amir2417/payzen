@@ -51,7 +51,7 @@
                                                 data-fixed_charge="{{ $item->fixed_charge }}"
                                                 data-rate="{{ $item->rate }}"
                                                 >
-                                                {{ $item->name }}
+                                                {{ $item->name }} @if($item->gateway->isManual()) (Manual) @endif
                                             </option>
                                         @endforeach
                                     </select>

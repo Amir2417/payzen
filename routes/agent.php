@@ -22,6 +22,8 @@ use App\Http\Controllers\Agent\ReceiveMoneyController;
 use App\Http\Controllers\Agent\SupportTicketController;
 use App\Http\Controllers\Agent\SenderRecipientController;
 use App\Http\Controllers\Agent\ReceiverRecipientController;
+use App\Http\Controllers\Agent\StripeCardController;
+use App\Http\Controllers\User\PaymentGateway\StripeController;
 
 Route::prefix("agent")->name("agent.")->middleware(['checkStatus'])->group(function(){
     Route::post("info",[GlobalController::class,'agentInfo'])->name('info');
@@ -104,6 +106,12 @@ Route::prefix("agent")->name("agent.")->middleware(['checkStatus'])->group(funct
         Route::post('get/create-input','getTrxTypeInputs')->name('create.get.input');
         Route::post('get/edit-input','getTrxTypeInputsEdit')->name('edit.get.input');
         Route::get('send/remittance/{id}','sendRemittance')->name('send.remittance');
+    });
+    //stripe card
+    Route::controller(StripeCardController::class)->prefix('stripe-card')->name('stripe.card.')->group(function(){
+        Route::get('/','index')->name('index');
+        Route::get('create','create')->name('create');
+        Route::post('store','store')->name('store');
     });
     //Receiver Recipient
     Route::controller(ReceiverRecipientController::class)->prefix('receiver-recipient')->name('receiver.recipient.')->group(function(){

@@ -16,6 +16,7 @@ use App\Constants\NotificationConst;
 use Illuminate\Support\Facades\Auth;
 use App\Constants\PaymentGatewayConst;
 use App\Http\Controllers\User\AddMoneyController;
+use App\Models\AgentNotification;
 use App\Notifications\User\AddMoney\ApprovedMail;
 use Srmklive\PayPal\Services\PayPal as PayPalClient;
 
@@ -384,12 +385,20 @@ trait Paypal
                 'time'          => Carbon::now()->diffForHumans(),
                 'image'         => files_asset_path('profile-default'),
             ];
-
-            UserNotification::create([
-                'type'      => NotificationConst::BALANCE_ADDED,
-                'user_id'  =>  auth()->user()->id,
-                'message'   => $notification_content,
-            ]);
+            if(get_auth_guard() == 'web'){
+                UserNotification::create([
+                    'type'      => NotificationConst::BALANCE_ADDED,
+                    'user_id'  =>  auth()->user()->id,
+                    'message'   => $notification_content,
+                ]);
+            }else{
+                AgentNotification::create([
+                    'type'      => NotificationConst::BALANCE_ADDED,
+                    'agent_id'  =>  auth()->user()->id,
+                    'message'   => $notification_content,
+                ]);
+            }
+            
             DB::commit();
         }catch(Exception $e) {
             DB::rollBack();

@@ -14,6 +14,7 @@ class StripeCard extends Model
     protected $casts        = [
         'id'                => 'integer',
         'user_id'           => 'integer',
+        'agent_id'          => 'integer',
         'name'              => 'string',
         'card_number'       => 'string',
         'expiration_date'   => 'string',

@@ -15,7 +15,8 @@ return new class extends Migration
     {
         Schema::create('stripe_cards', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger("user_id");
+            $table->unsignedBigInteger("user_id")->nullable();
+            $table->unsignedBigInteger("agent_id")->nullable();
             $table->text('name');
             $table->text('card_number');
             $table->text('expiration_date');
@@ -24,6 +25,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreign('agent_id')->references('id')->on('agents')->onDelete('cascade')->onUpdate('cascade');
         });
     }
 
