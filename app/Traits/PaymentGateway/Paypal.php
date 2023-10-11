@@ -305,8 +305,24 @@ trait Paypal
             $user_wallet_id_column  = "agent_wallet_id";
         }
         $trx_id =  $trx_id;
-       
+      
         $token = $this->output['tempData']['identifier'] ?? "";
+        $info = [
+            'sender_currency'           => [
+                'code'                  => $output['sender_currency']->code,
+                'rate'                  => $output['sender_currency']->rate,
+            ],
+            'payment_currency'          => [
+                'code'                  => $output['currency']->currency_code,
+                'rate'                  => $output['currency']->rate,
+            ],
+            'amount'                    => [
+                'request_amount'        => floatval($output['amount']->requested_amount),
+                'total_charge'          => $output['amount']->total_charge,
+                'total_amount'          => $output['amount']->total_amount,
+            ]
+
+        ];
         DB::beginTransaction();
         try{
             
@@ -321,6 +337,7 @@ trait Paypal
                 'available_balance'             => $output['wallet']->balance + $output['amount']->requested_amount,
                 'remark'                        => ucwords(remove_speacial_char($output['type']," ")) . " With " . $output['gateway']->name,
                 'details'                       => json_encode($output['capture']),
+                'info'                          => json_encode($info),
                 'status'                        => true,
                 'attribute'                     => PaymentGatewayConst::SEND,
                 'created_at'                    => now(),
@@ -339,7 +356,7 @@ trait Paypal
     }
 
     public function updateWalletBalance($output) {
-        $update_amount = $output['wallet']->balance + $output['amount']->requested_amount;
+        $update_amount = $output['wallet']->balance + ($output['amount']->requested_amount);
 
         $output['wallet']->update([
             'balance'   => $update_amount,

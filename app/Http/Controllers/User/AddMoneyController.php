@@ -54,7 +54,6 @@ class AddMoneyController extends Controller
             'amount'    => 'required',
             'sender_wallet'  =>'required',
         ]);
-        dd($request->all());
         if($validator->fails()){
             return back()->withErrors($validator->errors())->withInput();
         }
@@ -117,7 +116,6 @@ class AddMoneyController extends Controller
         $checkTempData = TemporaryData::where("type",$gateway)->where("identifier",$token)->first();
         if(!$checkTempData) return redirect()->route('user.add.money.index')->with(['error' => ['Transaction Failed. Record didn\'t saved properly. Please try again.']]);
         $checkTempData = $checkTempData->toArray();
-
         try{
             PaymentGatewayHelper::init($checkTempData)->type(PaymentGatewayConst::TYPEADDMONEY)->responseReceive();
         }catch(Exception $e) {
@@ -133,7 +131,7 @@ class AddMoneyController extends Controller
             TemporaryData::where("identifier",$token)->delete();
         }
 
-        return redirect()->route('user.add.money.index');
+        return redirect()->route('agent.add.money.index');
     }
 
     public function payment($gateway){

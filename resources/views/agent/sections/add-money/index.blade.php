@@ -332,7 +332,7 @@
             var request_amount  = (parseFloat(senderAmount) / payment_gate_rate) * sender_currency_rate;
 
             // Sending Amount
-            $('.request-amount').text((request_amount).toFixed(2) + " " + selected_currency_code);
+            $('.request-amount').text((senderAmount) + " " + sender_currency);
 
             // Fees
             var charges = feesCalculation();

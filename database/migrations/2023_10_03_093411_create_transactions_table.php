@@ -49,6 +49,7 @@ return new class extends Migration
             $table->decimal('available_balance', 28, 8)->default(0);
             $table->string("remark")->nullable();
             $table->text("details")->nullable();
+            $table->text("info")->nullable();
             $table->text("reject_reason")->nullable();
             $table->tinyInteger("status")->default(0)->comment("0: Default, 1: Success, 2: Pending, 3: Hold, 4: Rejected");
             $table->enum("attribute",[

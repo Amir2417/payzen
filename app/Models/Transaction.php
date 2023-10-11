@@ -32,6 +32,7 @@ class Transaction extends Model
         'remark' => 'string',
         'status' => 'integer',
         'details' => 'object',
+        'info'=> 'object',
         'reject_reason' => 'string',
     ];
 

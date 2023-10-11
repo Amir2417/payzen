@@ -69,7 +69,7 @@
                 </div>
                 <div class="dashboard-list-right">
                     @if ($item->type == payment_gateway_const()::TYPEADDMONEY)
-                        <h4 class="main-money text--warning">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h4>
+                        <h4 class="main-money text--warning">{{ get_amount($item->request_amount,$item->info->sender_currency->code) }}</h4>
                         <h6 class="exchange-money fw-bold">{{ get_amount($item->payable,$item->currency->currency_code) }}</h6>
                     @elseif($item->type == payment_gateway_const()::TYPEMONEYOUT)
                         <h6 class="exchange-money text--warning fw-bold">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h6>
@@ -160,7 +160,7 @@
 
                     <div class="preview-list-right">
                         @if ($item->type == payment_gateway_const()::TYPEADDMONEY)
-                            <span>1 {{ get_default_currency_code() }} = {{ get_amount($item->currency->rate,$item->currency->currency_code) }}</span>
+                            <span>{{ $item->info->sender_currency->rate }}  {{ $item->info->sender_currency->code }} = {{ get_amount($item->info->payment_currency->rate,$item->info->payment_currency->code) }}</span>
                         @elseif ($item->type == payment_gateway_const()::SENDREMITTANCE)
                             <span>1 {{ get_default_currency_code() }} = {{ get_amount($item->details->to_country->rate,$item->details->to_country->code) }}</span>
                         @elseif ($item->type == payment_gateway_const()::TYPEMONEYOUT)
@@ -343,7 +343,7 @@
                         </div>
                         <div class="preview-list-right">
                             @if ($item->type == payment_gateway_const()::TYPEADDMONEY)
-                                {{-- <span>{{ get_amount($item->charge->total_charge,$item->currency->currency_code) }}</span> --}}
+                                <span>{{ get_amount($item->charge->total_charge,$item->currency->currency_code) }}</span>
                             @elseif ($item->type == payment_gateway_const()::TYPEMONEYOUT)
                                 <span>{{ get_amount($item->charge->total_charge,$item->currency->currency_code) }}</span>
                             @elseif ($item->type == payment_gateway_const()::SENDREMITTANCE)
@@ -396,7 +396,7 @@
                         </div>
                         <div class="preview-list-right">
                             @if ($item->type == payment_gateway_const()::TYPEADDMONEY)
-                                <span class="text-success">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
+                                <span class="text-success">{{ get_amount($item->available_balance,$item->info->sender_currency->code) }}</span>
                             @elseif ($item->type == payment_gateway_const()::AGENTMONEYOUT)
                                 <span class="text-success">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
                             @elseif ($item->type == payment_gateway_const()::TYPEMONEYOUT)

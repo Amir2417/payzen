@@ -101,11 +101,10 @@ class PaymentGateway {
     public function limitValidation($output) {
 
         $gateway_currency = $output['currency'];
-        $requested_amount = $output['amount']->requested_amount;
-       
+        $requested_amount = ($output['amount']->requested_amount / $output['sender_currency']->rate) * $output['currency']->rate;
         if($requested_amount < ($gateway_currency->min_limit/$gateway_currency->rate) || $requested_amount > ($gateway_currency->max_limit/$gateway_currency->rate)) {
             throw ValidationException::withMessages([
-                $this->amount_input = "Please follow the transaction limit",
+                $this->amount_input = " limit",
             ]);
         }
     }
@@ -139,7 +138,8 @@ class PaymentGateway {
 
     public function chargeCalculate($currency,$sender_currency,$receiver_currency = null) {
         $amount = $this->request_data[$this->amount_input];
-        $request_amount     = ($amount / $sender_currency->rate) * $currency->rate;
+        // $request_amount     = ($amount / $sender_currency->rate) * $currency->rate;
+        $request_amount     = $amount;
         $sender_currency_rate = $currency->rate;
         ($sender_currency_rate == "" || $sender_currency_rate == null) ? $sender_currency_rate = 0 : $sender_currency_rate;
         ($request_amount == "" || $request_amount == null) ? $request_amount : $request_amount;
@@ -153,7 +153,8 @@ class PaymentGateway {
         }
 
         $fixed_charge_calc = ($fixed_charges) * $sender_currency_rate;
-        $percent_charge_calc = (($request_amount / 100 ) * $percent_charges );
+        $gateway_request_amount     = ($amount / $sender_currency->rate) * $currency->rate;
+        $percent_charge_calc = (($gateway_request_amount / 100 ) * $percent_charges );
 
         $total_charge = $fixed_charge_calc + $percent_charge_calc;
 
@@ -179,10 +180,11 @@ class PaymentGateway {
             ];
 
         }else {
+          
             $defualt_currency = Currency::default();
             $exchange_rate =  $defualt_currency->rate;
             $will_get = $request_amount;
-            $total_Amount = $request_amount + $total_charge;
+            $total_Amount = ($amount / $sender_currency->rate) * $currency->rate + $total_charge;
 
             $data = [
                 'requested_amount'          => $request_amount,
@@ -196,6 +198,7 @@ class PaymentGateway {
                 'will_get'                  => $will_get,
                 'default_currency'          => get_default_currency_code(),
             ];
+           
         }
 
         return (object) $data;
@@ -248,6 +251,7 @@ class PaymentGateway {
             $this->amount_input         => $requested_amount,
             $this->sender_wallet_name   => $tempData['data']->wallet_id,
         ];
+        
         $this->request_data = $validator_data;
         $this->gateway();
         $this->output['tempData'] = $tempData;
