@@ -23,6 +23,7 @@ use App\Traits\PaymentGateway\FlutterwaveTrait;
 use KingFlamez\Rave\Facades\Rave as Flutterwave;
 use App\Http\Helpers\PaymentGateway as PaymentGatewayHelper;
 use App\Models\AgentWallet;
+use App\Models\StripeCard;
 
 class AddMoneyController extends Controller
 {
@@ -87,13 +88,15 @@ class AddMoneyController extends Controller
     }
 
     public function payment($gateway){
-        $page_title = "Stripe Payment";
-        $tempData = Session::get('identifier');
-        $hasData = TemporaryData::where('identifier', $tempData)->where('type',$gateway)->first();
+        $page_title     = "Stripe Payment";
+        $tempData       = Session::get('identifier');
+        $stripe_cards   = StripeCard::where('agent_id',auth()->user()->id)->orderByDESC('id')->paginate(10);
+        $hasData        = TemporaryData::where('identifier', $tempData)->where('type',$gateway)->first();
+        
         if(!$hasData){
             return redirect()->route('agent.add.money.index');
         }
-        return view('agent.sections.add-money.automatic.'.$gateway,compact("page_title","hasData"));
+        return view('agent.sections.add-money.automatic.'.$gateway,compact("page_title","hasData",'stripe_cards','gateway'));
     }
     public function manualPayment(){
         $tempData = Session::get('identifier');

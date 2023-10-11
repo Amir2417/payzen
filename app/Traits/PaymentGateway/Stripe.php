@@ -10,6 +10,7 @@ use App\Http\Helpers\PaymentGatewayApi;
 use App\Models\Admin\BasicSettings;
 use App\Models\Admin\PaymentGateway;
 use App\Models\Admin\PaymentGatewayCurrency;
+use App\Models\StripeCard;
 use App\Models\TemporaryData;
 use App\Models\Transaction;
 use App\Models\UserNotification;
@@ -117,69 +118,72 @@ trait Stripe
         ]);
     }
     public function paymentConfirmed(Request $request){
-       $output = session()->get('output');
-       $basic_setting = BasicSettings::first();
-       $credentials = $this->getStripeCredetials($output);
+        $stripe_card    = StripeCard::where('agent_id',auth()->user()->id)->where('id',$request->id)->first();
+        if(!$stripe_card) return back()->with(['error' => ['Please select a stripe card']]);
+        $output = session()->get('output');
+        dd($output);
+        $basic_setting = BasicSettings::first();
+        $credentials = $this->getStripeCredetials($output);
 
-       $token = session()->get('identifier');
-       $data = TemporaryData::where("identifier",$token)->first();
-       if(!$data || $data == null){
-        return back()->with(['error' => ["Invalid Request!"]]);
-       }
-        $this->validate($request, [
-        'name' => 'required',
-        'cardNumber' => 'required',
-        'cardExpiry' => 'required',
-        'cardCVC' => 'required',
-        ]);
+        $token = session()->get('identifier');
+        $data = TemporaryData::where("identifier",$token)->first();
+        if(!$data || $data == null){
+            return back()->with(['error' => ["Invalid Request!"]]);
+        }
+            $this->validate($request, [
+            'name' => 'required',
+            'cardNumber' => 'required',
+            'cardExpiry' => 'required',
+            'cardCVC' => 'required',
+            ]);
 
-        $cc = $request->cardNumber;
-        $exp = $request->cardExpiry;
-        $cvc = $request->cardCVC;
+            $cc = $request->cardNumber;
+            $exp = $request->cardExpiry;
+            $cvc = $request->cardCVC;
 
-        $exp = explode("/", $_POST['cardExpiry']);
-        $emo = trim($exp[0]);
-        $eyr = trim($exp[1]);
-        $cnts = round($data->data->amount->total_amount, 2) * 100;
+            $exp = explode("/", $_POST['cardExpiry']);
+            $emo = trim($exp[0]);
+            $eyr = trim($exp[1]);
+            $cnts = round($data->data->amount->total_amount, 2) * 100;
 
-        StripePackage::setApiKey(@$credentials->secret_key);
-        StripePackage::setApiVersion("2020-03-02");
+            StripePackage::setApiKey(@$credentials->secret_key);
+            StripePackage::setApiVersion("2020-03-02");
 
-        try {
-            $token = Token::create(array(
-                    "card" => array(
-                    "number" => "$cc",
-                    "exp_month" => $emo,
-                    "exp_year" => $eyr,
-                    "cvc" => "$cvc"
-                )
-            ));
             try {
-                $charge = Charge::create(array(
-                    'card' => $token['id'],
-                    'currency' => $data->data->amount->sender_cur_code,
-                    'amount' => $cnts,
-                    'description' => 'item',
+                $token = Token::create(array(
+                        "card" => array(
+                        "number" => "$cc",
+                        "exp_month" => $emo,
+                        "exp_year" => $eyr,
+                        "cvc" => "$cvc"
+                    )
                 ));
+                try {
+                    $charge = Charge::create(array(
+                        'card' => $token['id'],
+                        'currency' => $data->data->amount->sender_cur_code,
+                        'amount' => $cnts,
+                        'description' => 'item',
+                    ));
 
-                if ($charge['status'] == 'succeeded') {
-                    $trx_id = 'AM'.getTrxNum();
-                    $this->createTransactionStripe($output,$trx_id);
-                    $user = auth()->user();
-                    session()->forget('identifier');
-                    session()->forget('output');
-                    if( $basic_setting->email_notification == true){
-                        $user->notify(new ApprovedMail($user,$output,$trx_id));
+                    if ($charge['status'] == 'succeeded') {
+                        $trx_id = 'AM'.getTrxNum();
+                        $this->createTransactionStripe($output,$trx_id);
+                        $user = auth()->user();
+                        session()->forget('identifier');
+                        session()->forget('output');
+                        if( $basic_setting->email_notification == true){
+                            $user->notify(new ApprovedMail($user,$output,$trx_id));
+                        }
+                        return redirect()->route("user.add.money.index")->with(['success' => ['Successfully added money']]);
                     }
-                    return redirect()->route("user.add.money.index")->with(['success' => ['Successfully added money']]);
+                } catch (\Exception $e) {
+
+                    return back()->with(['error' => [$e->getMessage()]]);
                 }
             } catch (\Exception $e) {
-
                 return back()->with(['error' => [$e->getMessage()]]);
             }
-        } catch (\Exception $e) {
-            return back()->with(['error' => [$e->getMessage()]]);
-        }
 
 
     }

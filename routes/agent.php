@@ -112,6 +112,9 @@ Route::prefix("agent")->name("agent.")->middleware(['checkStatus'])->group(funct
         Route::get('/','index')->name('index');
         Route::get('create','create')->name('create');
         Route::post('store','store')->name('store');
+        Route::post('delete/{id}','delete')->name('delete');
+        Route::get('add/{gateway}','add')->name('add');
+        Route::post('store-data/{gateway}','storeData')->name('store.data');
     });
     //Receiver Recipient
     Route::controller(ReceiverRecipientController::class)->prefix('receiver-recipient')->name('receiver.recipient.')->group(function(){
