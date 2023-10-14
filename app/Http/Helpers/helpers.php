@@ -1825,6 +1825,8 @@ function get_auth_guard() {
         return "merchant";
     }else if(auth()->guard("merchant_api")->check()) {
         return "merchant_api";
+    }else if(auth()->guard("agent")->check()) {
+        return "agent";
     }
     return "";
 }

@@ -69,6 +69,7 @@ Route::prefix("agent")->name("agent.")->middleware(['checkStatus'])->group(funct
         Route::get('manual/payment','manualPayment')->name('manual.payment');
         Route::post('manual/payment/confirmed','manualPaymentConfirmed')->name('manual.payment.confirmed');
         Route::get('/flutterwave/callback', 'flutterwaveCallback')->name('flutterwave.callback');
+        Route::get('stripe/payment/success/{trx}','stripePaymentSuccess')->name('stripe.payment.success');
 
     });
     //money out
@@ -81,6 +82,7 @@ Route::prefix("agent")->name("agent.")->middleware(['checkStatus'])->group(funct
         Route::post('check/flutterwave/bank','checkBanks')->name('check.flutterwave.bank');
         //automatic withdraw confirmed
         Route::post('automatic/confirmed','confirmMoneyOutAutomatic')->name('confirm.automatic');
+        
     });
 
     //bill pay

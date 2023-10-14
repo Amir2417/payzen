@@ -2,30 +2,31 @@
 
 namespace App\Traits\PaymentGateway;
 
-use App\Constants\NotificationConst;
-use App\Constants\PaymentGatewayConst;
-use App\Http\Controllers\User\AddMoneyController;
-use App\Http\Helpers\Api\Helpers;
-use App\Http\Helpers\PaymentGatewayApi;
-use App\Models\Admin\BasicSettings;
-use App\Models\Admin\PaymentGateway;
-use App\Models\Admin\PaymentGatewayCurrency;
-use App\Models\StripeCard;
-use App\Models\TemporaryData;
-use App\Models\Transaction;
-use App\Models\UserNotification;
-use App\Notifications\User\AddMoney\ApprovedMail;
 use Exception;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Validator;
+use Stripe\Token;
+use Stripe\Charge;
+use App\Models\StripeCard;
+use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Jenssegers\Agent\Agent;
-use Stripe\Charge;
+use Illuminate\Http\Request;
+use App\Models\TemporaryData;
+use Illuminate\Support\Carbon;
+use App\Models\UserNotification;
+use App\Http\Helpers\Api\Helpers;
+use Illuminate\Support\Facades\DB;
+use App\Models\Admin\BasicSettings;
 use Stripe\Stripe as StripePackage;
-use Stripe\Token;
+use App\Constants\NotificationConst;
+use App\Models\Admin\PaymentGateway;
+use App\Constants\PaymentGatewayConst;
+use App\Http\Helpers\PaymentGatewayApi;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Validator;
+use App\Models\Admin\PaymentGatewayCurrency;
+use App\Providers\Admin\BasicSettingsProvider;
+use App\Http\Controllers\User\AddMoneyController;
+use App\Notifications\User\AddMoney\ApprovedMail;
 
 trait Stripe
 {
@@ -43,7 +44,7 @@ trait Stripe
         }
     }
 
-    public function getStripeCredetials($output) {
+    public function getStripeCredentials($output) {
         $gateway = $output['gateway'] ?? null;
         if(!$gateway) throw new Exception("Payment gateway not available");
         $client_id_sample = ['publishable_key','publishable key','publishable-key'];
@@ -117,74 +118,127 @@ trait Stripe
 
         ]);
     }
+    public function stripeJunkInserts($response,$output) {
+       
+        $output;
+        $user = auth()->guard(get_auth_guard())->user();
+        // dd($user);
+        $creator_table = $creator_id = $wallet_table = $wallet_id = null;
+
+        $creator_table = auth()->guard(get_auth_guard())->user()->getTable();
+        $creator_id = auth()->guard(get_auth_guard())->user()->id;
+        $wallet_table = $output['wallet']->getTable();
+        $wallet_id = $output['wallet']->id;
+
+        $data = [
+            'gateway'      => $output['gateway']->id,
+            'currency'     => $output['currency']->id,
+            'sender_currency'     => $output['sender_currency']->id,
+            'amount'       => json_decode(json_encode($output['amount']),true),
+            'response'     => $response,
+            'wallet_table'  => $wallet_table,
+            'wallet_id'     => $wallet_id,
+            'creator_table' => $creator_table,
+            'creator_id'    => $creator_id,
+            'creator_guard' => get_auth_guard(),
+        ];
+        return TemporaryData::create([
+            'type'          => PaymentGatewayConst::STRIPE,
+            'identifier'    => $response['tx_ref'],
+            'data'          => $data,
+        ]);
+    }
     public function paymentConfirmed(Request $request){
+        $basic_settings = BasicSettingsProvider::get();
         $stripe_card    = StripeCard::where('agent_id',auth()->user()->id)->where('id',$request->id)->first();
+        // dd(decrypt($stripe_card->card_number));
         if(!$stripe_card) return back()->with(['error' => ['Please select a stripe card']]);
         $output = session()->get('output');
-        dd($output);
-        $basic_setting = BasicSettings::first();
-        $credentials = $this->getStripeCredetials($output);
-
+        // dd($output);
+        $credentials = $this->getStripeCredentials($output);
+        $reference = generateTransactionReference();
         $token = session()->get('identifier');
         $data = TemporaryData::where("identifier",$token)->first();
         if(!$data || $data == null){
             return back()->with(['error' => ["Invalid Request!"]]);
         }
-            $this->validate($request, [
-            'name' => 'required',
-            'cardNumber' => 'required',
-            'cardExpiry' => 'required',
-            'cardCVC' => 'required',
+        $amount = $output['amount']->total_amount ? number_format($output['amount']->total_amount,2,'.','') : 0;
+        $currency = $output['currency']['currency_code']??"USD";
+        if(auth()->guard(get_auth_guard())->check()){
+            $user = auth()->guard(get_auth_guard())->user();
+            $user_email = $user->email;
+            $user_phone = $user->full_mobile ?? '';
+            $user_name = $user->firstname.' '.$user->lastname ?? '';
+        }
+        $return_url = route('agent.add.money.stripe.payment.success', $reference);
+
+         // Enter the details of the payment
+         $data = [
+            'payment_options' => 'card',
+            'amount'          => $amount,
+            'email'           => $user_email,
+            'tx_ref'          => $reference,
+            'currency'        =>  $currency,
+            'redirect_url'    => $return_url,
+            'customer'        => [
+                'email'        => $user_email,
+                "phone_number" => $user_phone,
+                "name"         => $user_name
+            ],
+            "customizations" => [
+                "title"       => "Add Money",
+                "description" => dateFormat('d M Y', Carbon::now()),
+            ]
+        ];
+
+       //start stripe pay link
+       $stripe = new \Stripe\StripeClient($credentials->secret_key);
+
+       //create product for Product Id
+       try{
+            $product_id = $stripe->products->create([
+                'name' => 'Add Money( '.$basic_settings->site_name.' )',
             ]);
+       }catch(Exception $e){
+            throw new Exception($e->getMessage());
+       }
+       //create price for Price Id
+       try{
+            $price_id =$stripe->prices->create([
+                'currency' =>  $currency,
+                'unit_amount' => $amount*100,
+                'product' => $product_id->id??""
+              ]);
+       }catch(Exception $e){
+            throw new Exception("Something Is Wrong, Please Contact With Owner");
+       }
+       //create payment live links
+       try{
+            $payment_link = $stripe->paymentLinks->create([
+                'line_items' => [
+                [
+                    'price' => $price_id->id,
+                    'quantity' => 1,
+                ],
+                ],
+                'after_completion' => [
+                'type' => 'redirect',
+                'redirect' => ['url' => $return_url],
+                ],
 
-            $cc = $request->cardNumber;
-            $exp = $request->cardExpiry;
-            $cvc = $request->cardCVC;
 
-            $exp = explode("/", $_POST['cardExpiry']);
-            $emo = trim($exp[0]);
-            $eyr = trim($exp[1]);
-            $cnts = round($data->data->amount->total_amount, 2) * 100;
-
-            StripePackage::setApiKey(@$credentials->secret_key);
-            StripePackage::setApiVersion("2020-03-02");
-
-            try {
-                $token = Token::create(array(
-                        "card" => array(
-                        "number" => "$cc",
-                        "exp_month" => $emo,
-                        "exp_year" => $eyr,
-                        "cvc" => "$cvc"
-                    )
-                ));
-                try {
-                    $charge = Charge::create(array(
-                        'card' => $token['id'],
-                        'currency' => $data->data->amount->sender_cur_code,
-                        'amount' => $cnts,
-                        'description' => 'item',
-                    ));
-
-                    if ($charge['status'] == 'succeeded') {
-                        $trx_id = 'AM'.getTrxNum();
-                        $this->createTransactionStripe($output,$trx_id);
-                        $user = auth()->user();
-                        session()->forget('identifier');
-                        session()->forget('output');
-                        if( $basic_setting->email_notification == true){
-                            $user->notify(new ApprovedMail($user,$output,$trx_id));
-                        }
-                        return redirect()->route("user.add.money.index")->with(['success' => ['Successfully added money']]);
-                    }
-                } catch (\Exception $e) {
-
-                    return back()->with(['error' => [$e->getMessage()]]);
-                }
-            } catch (\Exception $e) {
-                return back()->with(['error' => [$e->getMessage()]]);
-            }
-
+            ]);
+        }catch(Exception $e){
+            throw new Exception("Something Is Wrong, Please Contact With Owner");
+        }
+        $this->stripeJunkInserts($data,$output);
+            // "?prefilled_email=" . $user_email .
+        $this->stripeJunkInserts($data,$output);
+        $payment_url = $payment_link->url . "?prefilled_email=" . @$user->email .
+        "&prefilled_cvc=" . "123" .
+        "&prefilled_card_number=" . decrypt($stripe_card->card_number) .
+        "&prefilled_card_expire=" . decrypt($stripe_card->expiration_date);
+        return redirect($payment_url);
 
     }
 
