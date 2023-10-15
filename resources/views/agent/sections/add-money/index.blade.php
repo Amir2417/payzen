@@ -108,7 +108,7 @@
                                             <i class="las la-receipt"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span>{{ __("Entered Amount") }}</span>
+                                            <span>{{ __("Conversion Amount") }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -332,7 +332,7 @@
             var request_amount  = (parseFloat(senderAmount) / payment_gate_rate) * sender_currency_rate;
 
             // Sending Amount
-            $('.request-amount').text((senderAmount) + " " + sender_currency);
+            $('.request-amount').text((request_amount.toFixed(2)) + " " + selected_currency_code);
 
             // Fees
             var charges = feesCalculation();

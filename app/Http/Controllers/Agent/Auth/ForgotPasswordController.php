@@ -26,7 +26,7 @@ class ForgotPasswordController extends Controller
      */
     public function showForgotForm()
     {
-        $page_title = setPageTitle("Forgot Password");
+        $page_title = "Forgot Password";
         return view('agent.auth.forgot-password.forgot',compact('page_title'));
     }
 
@@ -64,9 +64,7 @@ class ForgotPasswordController extends Controller
                 'code'          => $code,
             ]);
             $user->notify(new PasswordResetEmail($user,$password_reset));
-            dd("test");
         }catch(Exception $e) {
-            dd($e->getMessage());
             return back()->with(['error' => ['Something went worng! Please try again.']]);
         }
         return redirect()->route('agent.password.forgot.code.verify.form',$token)->with(['success' => ['Varification code sended to your email address.']]);
@@ -74,15 +72,14 @@ class ForgotPasswordController extends Controller
 
 
     public function showVerifyForm($token) {
-        $page_title = setPageTitle("Verify Agent");
+        $page_title = "Verify Agent";
         $password_reset = AgentPasswordReset::where("token",$token)->first();
         if(!$password_reset) return redirect()->route('agent.password.forgot')->with(['error' => ['Password Reset Token Expired']]);
         $resend_time = 0;
         if(Carbon::now() <= $password_reset->created_at->addMinutes(GlobalConst::USER_PASS_RESEND_TIME_MINUTE)) {
             $resend_time = Carbon::now()->diffInSeconds($password_reset->created_at->addMinutes(GlobalConst::USER_PASS_RESEND_TIME_MINUTE));
         }
-        $user_email = $password_reset->merchant->email ?? "";
-        dd($user_email);
+        $user_email = $password_reset->agent->email ?? "";
         return view('agent.auth.forgot-password.verify',compact('page_title','token','user_email','resend_time'));
     }
 
@@ -96,25 +93,34 @@ class ForgotPasswordController extends Controller
     {
         $request->merge(['token' => $token]);
         $validated = Validator::make($request->all(),[
-            'token'         => "required|string|exists:merchant_password_resets,token",
-            'code'          => "required|numeric|exists:merchant_password_resets,code",
+            'token'     => "required|string|exists:agent_password_resets,token",
+            'code'      => "required|array",
+            'code.*'    => "required|numeric",
         ])->validate();
+
+        $code = $request->code;
+        $code = implode("",$code);
 
         $basic_settings = BasicSettingsProvider::get();
         $otp_exp_seconds = $basic_settings->otp_exp_seconds ?? 0;
 
         $password_reset = AgentPasswordReset::where("token",$token)->first();
 
-        if(Carbon::now() >= $password_reset->created_at->addSeconds($otp_exp_seconds)) {
-            foreach(AgentPasswordReset::get() as $item) {
-                if(Carbon::now() >= $item->created_at->addSeconds($otp_exp_seconds)) {
-                    $item->delete();
+        if(!$password_reset){
+            return back()->with(['error' => ['Verification code already used']]);
+        }
+        if($password_reset){
+            if(Carbon::now() >= $password_reset->created_at->addSeconds($otp_exp_seconds)) {
+                foreach(AgentPasswordReset::get() as $item) {
+                    if(Carbon::now() >= $item->created_at->addSeconds($otp_exp_seconds)) {
+                        $item->delete();
+                    }
                 }
+                return redirect()->route('agent.password.forgot')->with(['error' => ['Session expired. Please try again.']]);
             }
-            return redirect()->route('agent.password.forgot')->with(['error' => ['Session expired. Please try again.']]);
         }
 
-        if($password_reset->code != $validated['code']) {
+        if($password_reset->code != $code) {
             throw ValidationException::withMessages([
                 'code'      => "Verification Otp is Invalid",
             ]);
@@ -147,11 +153,12 @@ class ForgotPasswordController extends Controller
                 'token'         => $token,
             ];
             DB::table('agent_password_resets')->where('token',$token)->update($update_data);
-            $password_reset->merchant->notify(new PasswordResetEmail($password_reset->user,(object) $update_data));
+            $password_reset->agent->notify(new PasswordResetEmail($password_reset->user,(object) $update_data));
             DB::commit();
         }catch(Exception $e) {
+            dd($e->getMessage());
             DB::rollback();
-            return back()->with(['error' => ['Something went worng. please try again']]);
+            return back()->with(['error' => ['Something went wrong. please try again']]);
         }
         return redirect()->route('agent.password.forgot.code.verify.form',$token)->with(['success' => ['Varification code resend success!']]);
 
@@ -159,7 +166,7 @@ class ForgotPasswordController extends Controller
 
 
     public function showResetForm($token) {
-        $page_title = setPageTitle("Reset Password");
+        $page_title = "Reset Password";
         return view('agent.auth.forgot-password.reset',compact('page_title','token'));
     }
 

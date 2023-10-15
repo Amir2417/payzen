@@ -44,7 +44,7 @@ class PasswordResetEmail extends Notification
         $user = $this->user;
         $password_reset = $this->password_reset;
         return (new MailMessage)
-                    ->greeting("Hello ".$user->fullname." !")
+                    ->greeting("Hello ".$user->username." !")
                     ->subject("Verification Code (Password Reset)")
                     ->line('You trying to reset your password.')
                     ->line("Here is your OTP " . $password_reset->code)

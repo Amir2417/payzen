@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger("user_id")->nullable();
             $table->unsignedBigInteger("agent_id")->nullable();
             $table->text('name');
-            $table->text('card_number');
+            $table->text('card_number')->unique();
             $table->text('expiration_date');
             $table->text('cvc_code');
             $table->boolean('status')->default(true);

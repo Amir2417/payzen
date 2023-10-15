@@ -154,7 +154,7 @@ class ForgotPasswordController extends Controller
             DB::commit();
         }catch(Exception $e) {
             DB::rollback();
-            return back()->with(['error' => ['Something went worng. please try again']]);
+            return back()->with(['error' => ['Something went wrong. please try again']]);
         }
         return redirect()->route('user.password.forgot.code.verify.form',$token)->with(['success' => ['Varification code resend success!']]);
 

@@ -7,6 +7,7 @@ use App\Models\StripeCard;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class StripeCardController extends Controller
 {
@@ -47,6 +48,13 @@ class StripeCardController extends Controller
         ]);
         if($validator->fails()){
             return back()->withErrors($validator->errors())->withInput();
+        }
+        $stripe_cards = StripeCard::get('card_number');
+        foreach($stripe_cards as $data){
+            $card_number = decrypt($data->card_number);
+            if($card_number == $request->card_number){
+                return back()->with(['error' => ['Card Already Exists']]);
+            }
         }
         $validated                      = $validator->validate();
         $validated['agent_id']          = auth()->user()->id;
@@ -103,6 +111,8 @@ class StripeCardController extends Controller
         if($validator->fails()){
             return back()->withErrors($validator->errors())->withInput();
         }
+        $stripe_cards = StripeCard::get();
+        dd($stripe_cards);
         $validated                      = $validator->validate();
         $validated['agent_id']          = auth()->user()->id;
         $validated['name']              = encrypt($validated['name']);
