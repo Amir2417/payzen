@@ -225,7 +225,7 @@
             var paymentGatewayRate  = acceptVar().currencyRate;
             var paymentGatewayCode  = acceptVar().currencyCode;
 
-            $('.rate-show').html(selectedCurrencyRate + " " + selectedCurrencyCode + " = " + parseFloat(paymentGatewayRate).toFixed(2) + " " + paymentGatewayCode);
+            $('.rate-show').html(parseFloat(paymentGatewayRate).toFixed(2) + " " + paymentGatewayCode + " = " + selectedCurrencyRate + " " + selectedCurrencyCode);
             $('.balance-show').html("Available Balance :" + " " + walletBalance + " " + currencyCode);
             $('.sender-wallet').val(walletId);
         }

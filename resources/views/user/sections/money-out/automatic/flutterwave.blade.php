@@ -90,7 +90,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="request-amount">{{ number_format(@$moneyOutData->amount,2 )}} {{ get_default_currency_code() }}</span>
+                                    <span class="request-amount">{{ number_format(@$moneyOutData->amount,2 )}} {{@$moneyOutData->charges->wallet_cur_code}}</span>
                                 </div>
                             </div>
                             <div class="preview-list-item">
@@ -105,7 +105,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="request-amount">{{ __("1") }} {{ get_default_currency_code() }} =  {{ number_format(@$moneyOutData->gateway_rate,2 )}} {{ @$moneyOutData->gateway_currency }}</span>
+                                    <span class="request-amount">{{ __("1") }} {{ @$moneyOutData->charges->gateway_cur_code }} =  {{ number_format(@$moneyOutData->charges->exchange_rate,4 )}} {{ $moneyOutData->charges->wallet_cur_code }}</span>
                                 </div>
                             </div>
                             <div class="preview-list-item">
@@ -120,7 +120,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="conversion">{{ number_format(@$moneyOutData->conversion_amount,2 )}} {{ @$moneyOutData->gateway_currency }}</span>
+                                    <span class="conversion">{{ number_format(@$moneyOutData->charges->conversion_amount,2 )}} {{ @$moneyOutData->charges->gateway_cur_code }}</span>
                                 </div>
                             </div>
                             <div class="preview-list-item">
@@ -135,7 +135,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="fees">{{ number_format(@$moneyOutData->gateway_charge,2 )}} {{ @$moneyOutData->gateway_currency }}</span>
+                                    <span class="fees">{{ number_format(@$moneyOutData->charges->total_charge,2 )}} {{  @$moneyOutData->charges->gateway_cur_code }}</span>
                                 </div>
                             </div>
 
@@ -151,7 +151,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="text--success ">{{ number_format(@$moneyOutData->will_get,2 )}} {{ @$moneyOutData->gateway_currency }}</span>
+                                    <span class="text--success ">{{ number_format(@$moneyOutData->charges->will_get,2 )}} {{ @$moneyOutData->charges->gateway_cur_code }}</span>
                                 </div>
                             </div>
                             <div class="preview-list-item">
@@ -166,7 +166,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="text--warning last">{{ number_format(@$moneyOutData->payable,2 )}} {{ get_default_currency_code() }}</span>
+                                    <span class="text--warning last">{{ number_format(@$moneyOutData->charges->payable,2 )}} {{ @$moneyOutData->charges->wallet_cur_code }}</span>
                                 </div>
                             </div>
                         </div>
@@ -174,46 +174,11 @@
                 </div>
             </div>
         </div>
-
     </div>
 
 </div>
 @endsection
 
 @push('script')
-{{-- <script>
-      $('.check_bank').on('focusout',function(e){
-            var url = '{{ route('user.money.out.check.flutterwave.bank') }}';
-            var account_number = $(this).val();
-            var bank_code = $("select[name=bank_name] :selected").val();
-            var token = '{{ csrf_token() }}';
-            if ($(this).attr('name') == 'account_number') {
-                var data = {
-                             account_number:account_number,
-                             bank_code:bank_code,
-                             _token:token
-                        }
 
-            }
-            $.post(url,data,function(response) {
-                console.log(response.data);
-                if(response.data.status == "success"){
-                    var name = "Account Holder Name : <strong>"+response.data.data.account_name+"</strong>";
-                    if($('.exist').hasClass('text--danger')){
-                        $('.exist').removeClass('text--danger');
-                    }
-                    $('.exist').html(name).addClass('text-success');
-                    $('.withdraw').attr('disabled',false)
-                } else {
-                    if($('.exist').hasClass('text-success')){
-                        $('.exist').removeClass('text-success');
-                    }
-                    $('.exist').text('Bank account doesn\'t  exists.').addClass('text--danger');
-                    $('.withdraw').attr('disabled',true)
-                    return false
-                }
-
-            });
-        });
-</script> --}}
 @endpush

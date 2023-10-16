@@ -14,6 +14,7 @@ use App\Models\UserNotification;
 use App\Constants\AdminRoleConst;
 use App\Constants\ExtensionConst;
 use App\Http\Helpers\Api\Helpers;
+use App\Models\AgentNotification;
 use App\Models\UserAuthorization;
 use App\Models\UserSupportTicket;
 use Illuminate\Http\UploadedFile;
@@ -33,7 +34,6 @@ use App\Constants\PaymentGatewayConst;
 use Buglinjo\LaravelWebp\Facades\Webp;
 use App\Models\Admin\AdminNotification;
 use App\Models\Admin\TransactionSetting;
-use App\Models\AgentNotification;
 use App\Models\Merchants\MerchantWallet;
 use App\Providers\Admin\CurrencyProvider;
 use function PHPUnit\Framework\returnSelf;
@@ -41,8 +41,9 @@ use App\Models\Merchants\MerchantNotification;
 use App\Providers\Admin\BasicSettingsProvider;
 use Illuminate\Validation\ValidationException;
 use App\Models\Merchants\MerchantAuthorization;
-use App\Notifications\User\Auth\SendAuthorizationCode;
+use Pusher\PushNotifications\PushNotifications;
 
+use App\Notifications\User\Auth\SendAuthorizationCode;
 use App\Notifications\Merchant\Auth\SendAuthorizationCode as AuthSendAuthorizationCode;
 use App\Notifications\Agent\Auth\SendAuthorizationCode as AgentAuthSendAuthorizationCode;
 
@@ -1973,6 +1974,40 @@ function getPaymentCredentials($credentials,$label){
         }
     }
     return $data->value;
+}
+function send_push_notification(array $users,array $data) {
+    $basic_settings = BasicSettingsProvider::get();
+    if(!$basic_settings) {
+        return false;
+    }
+    $notification_config = $basic_settings->push_notification_config;
+    if(!$notification_config) {
+        return false;
+    }
+    $instance_id    = $notification_config->instance_id ?? null;
+    $primary_key    = $notification_config->primary_key ?? null;
+    if($instance_id == null || $primary_key == null) {
+        return false;
+    }
+    $notification = new PushNotifications(
+        array(
+            "instanceId" => $notification_config->instance_id,
+            "secretKey" => $notification_config->primary_key,
+        )
+    );
+
+    $notification_data = $data;
+
+    $response = $notification->publishToUsers(
+        $users,
+        [
+            "web"   => [
+                "notification"      => $notification_data,
+            ],
+        ],
+    );
+
+    return $response;
 }
 function flutterwaveBalance($secret_key = null){
     $cardApi = VirtualCardApi::first();

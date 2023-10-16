@@ -2,48 +2,59 @@
 
 namespace App\Http\Controllers\Agent;
 
-use App\Constants\NotificationConst;
-use App\Constants\PaymentGatewayConst;
-use App\Http\Controllers\Controller;
+use Exception;
+use App\Models\AgentWallet;
+use App\Models\Transaction;
+use Jenssegers\Agent\Agent;
 use Illuminate\Http\Request;
 use App\Models\Admin\Currency;
-use App\Models\Admin\PaymentGateway;
-use App\Models\Admin\PaymentGatewayCurrency;
-use App\Models\Transaction;
-use App\Models\UserNotification;
-use Illuminate\Support\Facades\Validator;
-use App\Traits\ControlDynamicInputFields;
-use Exception;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use Jenssegers\Agent\Agent;
-use App\Models\Admin\BasicSettings;
+use App\Models\UserNotification;
 use App\Models\AgentNotification;
-use App\Models\AgentWallet;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use App\Models\Admin\BasicSettings;
+use App\Constants\NotificationConst;
+use App\Http\Controllers\Controller;
+use App\Models\Admin\PaymentGateway;
+use Illuminate\Support\Facades\Auth;
+use App\Constants\PaymentGatewayConst;
+use App\Models\Admin\AdminNotification;
+use App\Traits\ControlDynamicInputFields;
+use Illuminate\Support\Facades\Validator;
+use App\Models\Admin\PaymentGatewayCurrency;
+use App\Notifications\User\Withdraw\WithdrawMail;
+use App\Events\Agent\NotificationEvent as AgentNotificationEvent;
 
 class MoneyOutController extends Controller
 {
     use ControlDynamicInputFields;
-    public function index()
-    {
-        $page_title = "Withdraw Money";
-        $user_wallets = AgentWallet::auth()->get();
-        $user_currencies = Currency::whereIn('id',$user_wallets->pluck('id')->toArray())->get();
-        $payment_gateways = PaymentGatewayCurrency::whereHas('gateway', function ($gateway) {
+    public function index(){
+        $page_title         = "Withdraw Money";
+        $currencies         = Currency::active()->get();
+        $payment_gateways   = PaymentGatewayCurrency::whereHas('gateway', function ($gateway) {
             $gateway->where('slug', PaymentGatewayConst::money_out_slug());
             $gateway->where('status', 1);
         })->get();
-        $transactions = Transaction::agentAuth()->moneyOut()->orderByDesc("id")->latest()->take(10)->get();
-        return view('agent.sections.withdraw.index',compact('page_title','payment_gateways','transactions','user_wallets'));
+        $transactions       = Transaction::where('agent_id',auth()->user()->id)->moneyOut()->orderByDesc("id")->latest()->take(10)->get();
+       
+        return view('agent.sections.withdraw.index',compact('page_title',
+            'payment_gateways',
+            'transactions',
+            'currencies'
+        ));
     }
 
-   public function paymentInsert(Request $request){
+    public function paymentInsert(Request $request){
         $request->validate([
-            'amount' => 'required|numeric|gt:0',
-            'gateway' => 'required'
+            'gateway'           => "required|exists:payment_gateway_currencies,alias",
+            'amount'            => "required|numeric|gt:0",
+            'wallet_currency'   => "required|exists:currencies,code",
         ]);
+        $amount = $request->amount;
+        $wallet_currency = $request->wallet_currency;
         $basic_setting = BasicSettings::first();
-        $user = userGuard()['user'];
+        $user = auth()->user();
         if($basic_setting->kyc_verification){
             if( $user->kyc_verified == 0){
                 return redirect()->route('agent.profile.index')->with(['error' => ['Please submit kyc information']]);
@@ -54,58 +65,88 @@ class MoneyOutController extends Controller
             }
         }
 
-        $userWallet = AgentWallet::where('agent_id',$user->id)->where('status',1)->first();
+
+        $userWallet = AgentWallet::auth()->whereHas("currency",function($q) use ($wallet_currency) {
+            $q->where("code",$wallet_currency)->active();
+        })->active()->first();
+
         $gate =PaymentGatewayCurrency::whereHas('gateway', function ($gateway) {
             $gateway->where('slug', PaymentGatewayConst::money_out_slug());
             $gateway->where('status', 1);
         })->where('alias',$request->gateway)->first();
-        $baseCurrency = Currency::default();
+
         if (!$gate) {
             return back()->with(['error' => ['Invalid Gateway']]);
         }
-        $amount = $request->amount;
 
-        $min_limit =  $gate->min_limit / $gate->rate;
-        $max_limit =  $gate->max_limit / $gate->rate;
-        if($amount < $min_limit || $amount > $max_limit) {
+        if($amount < (($gate->min_limit/$gate->rate) * $userWallet->currency->rate) || $amount > (($gate->max_limit/$gate->rate) * $userWallet->currency->rate)) {
             return back()->with(['error' => ['Please follow the transaction limit']]);
         }
-         //gateway charge
-         $fixedCharge = $gate->fixed_charge;
-         $percent_charge =  (((($request->amount * $gate->rate)/ 100) * $gate->percent_charge));
-         $charge = $fixedCharge + $percent_charge;
-         $conversion_amount = $request->amount * $gate->rate;
-         $will_get = $conversion_amount -  $charge;
-         //base_cur_charge
-         $baseFixedCharge = $gate->fixed_charge *  $baseCurrency->rate;
-         $basePercent_charge = ($request->amount / 100) * $gate->percent_charge;
-         $base_total_charge = $baseFixedCharge + $basePercent_charge;
-         $reduceAbleTotal = $amount;
-        if( $reduceAbleTotal > $userWallet->balance){
-            return back()->with(['error' => ['Insuficiant Balance']]);
-        }
+        $charges = $this->chargeCalculate( $gate,$userWallet,$amount);
 
-        $data['agent_id']= $user->id;
+        if( $charges->payable > $userWallet->balance){
+
+            return back()->with(['error' => ['Insufficient Balance']]);
+        }
+        $data['user_id']= $user->id;
         $data['gateway_name']= $gate->gateway->name;
         $data['gateway_type']= $gate->gateway->type;
         $data['wallet_id']= $userWallet->id;
-        $data['trx_id']= 'WD'.getTrxNum();
+        $data['trx_id']= 'MO'.getTrxNum();
         $data['amount'] =  $amount;
-        $data['base_cur_charge'] = $base_total_charge;
-        $data['base_cur_rate'] = $baseCurrency->rate;
         $data['gateway_id'] = $gate->gateway->id;
         $data['gateway_currency_id'] = $gate->id;
         $data['gateway_currency'] = strtoupper($gate->currency_code);
-        $data['gateway_percent_charge'] = $percent_charge;
-        $data['gateway_fixed_charge'] = $fixedCharge;
-        $data['gateway_charge'] = $charge;
-        $data['gateway_rate'] = $gate->rate;
-        $data['conversion_amount'] = $conversion_amount;
-        $data['will_get'] = $will_get;
-        $data['payable'] = $reduceAbleTotal;
+        $data['charges'] = $charges;
+
         session()->put('moneyoutData', $data);
         return redirect()->route('agent.withdraw.preview');
    }
+   public function chargeCalculate($currency,$receiver_currency,$amount) {
+
+    $amount = $amount;
+    $sender_currency_rate = $currency->rate;
+    ($sender_currency_rate == "" || $sender_currency_rate == null) ? $sender_currency_rate = 0 : $sender_currency_rate;
+    ($amount == "" || $amount == null) ? $amount : $amount;
+
+    if($currency != null) {
+        $fixed_charges = $currency->fixed_charge;
+        $percent_charges = $currency->percent_charge;
+    }else {
+        $fixed_charges = 0;
+        $percent_charges = 0;
+    }
+
+    $fixed_charge_calc =  $fixed_charges;
+    $percent_charge_calc = ($amount / 100 ) * $percent_charges;
+
+    $total_charge = $fixed_charge_calc + $percent_charge_calc;
+
+    $receiver_currency = $receiver_currency->currency;
+    $receiver_currency_rate = $receiver_currency->rate;
+    ($receiver_currency_rate == "" || $receiver_currency_rate == null) ? $receiver_currency_rate = 0 : $receiver_currency_rate;
+    $exchange_rate = ($receiver_currency_rate / $sender_currency_rate );
+    $conversion_amount =  $amount / $exchange_rate;
+    $will_get = $conversion_amount  - $total_charge;
+    $payable =  $amount;
+
+    $data = [
+        'requested_amount'          => $amount,
+        'gateway_cur_code'          => $currency->currency_code,
+        'gateway_cur_rate'          => $sender_currency_rate ?? 0,
+        'wallet_cur_code'           => $receiver_currency->code,
+        'wallet_cur_rate'           => $receiver_currency->rate ?? 0,
+        'fixed_charge'              => $fixed_charge_calc,
+        'percent_charge'            => $percent_charge_calc,
+        'total_charge'              => $total_charge,
+        'conversion_amount'         => $conversion_amount,
+        'payable'                   => $payable,
+        'exchange_rate'             => $exchange_rate,
+        'will_get'                  => $will_get,
+        'default_currency'          => get_default_currency_code(),
+    ];
+    return (object) $data;
+}
    public function preview(){
     $moneyOutData = (object)session()->get('moneyoutData');
     $moneyOutDataExist = session()->get('moneyoutData');
@@ -125,7 +166,13 @@ class MoneyOutController extends Controller
                     break;
                 }
             }
-            $allBanks = getFlutterwaveBanks($data->value);
+            $countries = get_all_countries();
+            $currency =  $moneyOutData->gateway_currency;
+            $country = Collection::make($countries)->first(function ($item) use ($currency) {
+                return $item->currency_code === $currency;
+            });
+
+            $allBanks = getFlutterwaveBanks($country->iso2);
             return view('agent.sections.withdraw.automatic.'.strtolower($gateway->name),compact('page_title','gateway','moneyOutData','allBanks'));
         }else{
             return back()->with(['error' => ["Something is wrong, please try again later"]]);
@@ -166,6 +213,7 @@ class MoneyOutController extends Controller
 
    }
    public function confirmMoneyOutAutomatic(Request $request){
+    $basic_setting = BasicSettings::first();
     if($request->gateway_name == 'flutterwave'){
         $request->validate([
             'bank_name' => 'required|numeric|gt:0',
@@ -179,18 +227,17 @@ class MoneyOutController extends Controller
         $secret_key = getPaymentCredentials($credentials,'Secret key');
         $base_url = getPaymentCredentials($credentials,'Base Url');
         $callback_url = getPaymentCredentials($credentials,'Callback Url');
-
         $ch = curl_init();
         $url =  $base_url.'/transfers';
         $data = [
             "account_bank" => $request->bank_name,
             "account_number" => $request->account_number,
-            "amount" => $moneyOutData->amount,
+            "amount" => $moneyOutData->charges->will_get,
             "narration" => "Withdraw from wallet",
-            "currency" => "NGN",
+            "currency" =>$moneyOutData->gateway_currency,
             "reference" => generateTransactionReference(),
             "callback_url" => $callback_url,
-            "debit_currency" => "NGN"
+            "debit_currency" => $moneyOutData->gateway_currency
         ];
         $headers = [
             'Authorization: Bearer '.$secret_key,
@@ -204,27 +251,26 @@ class MoneyOutController extends Controller
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
         $response = curl_exec($ch);
-
         if (curl_errno($ch)) {
             return back()->with(['error' => [curl_error($ch)]]);
         } else {
             $result = json_decode($response,true);
             if($result['status'] && $result['status'] == 'success'){
                 try{
+                    $get_values =[
+                        'user_data' => null,
+                        'charges' => $moneyOutData->charges,
 
-                    $inserted_id = $this->insertRecordManual($moneyOutData,$gateway,$get_values = null);
-                    $this->insertChargesManual($moneyOutData,$inserted_id);
+                    ];
+                    //send notifications
+                    $user = auth()->user();
+                    $inserted_id = $this->insertRecordManual($moneyOutData,$gateway,$get_values);
+                    $this->insertChargesAutomatic($moneyOutData,$inserted_id);
                     $this->insertDeviceManual($moneyOutData,$inserted_id);
-                    //sms notification
-                    sendSms(auth()->user(),'WITHDRAW_REQUEST',[
-                        'amount'=> get_amount($moneyOutData->amount,get_default_currency_code()),
-                        'method_name' => $moneyOutData->gateway_name,
-                        'trx' => $moneyOutData->trx_id,
-                        'time' =>  now()->format('Y-m-d h:i:s A'),
-                        'will_get' => get_amount($moneyOutData->will_get,$moneyOutData->gateway_currency),
-                        'currency' => $moneyOutData->gateway_currency,
-                    ]);
                     session()->forget('moneyoutData');
+                    if( $basic_setting->email_notification == true){
+                        $user->notify(new WithdrawMail($user,$moneyOutData));
+                    }
                     return redirect()->route("agent.withdraw.index")->with(['success' => ['Withdraw money request send successful']]);
                 }catch(Exception $e) {
                     return back()->with(['error' => [$e->getMessage()]]);
@@ -254,44 +300,95 @@ class MoneyOutController extends Controller
    }
 
     public function insertRecordManual($moneyOutData,$gateway,$get_values) {
-        if($moneyOutData->gateway_type == "AUTOMATIC"){
-            $status = 1;
-        }else{
-            $status = 2;
+    if($moneyOutData->gateway_type == "AUTOMATIC"){
+        $status = 1;
+    }else{
+        $status = 2;
+    }
+
+    $trx_id = $moneyOutData->trx_id ??'MO'.getTrxNum();
+    $authWallet = AgentWallet::where('id',$moneyOutData->wallet_id)->where('agent_id',$moneyOutData->user_id)->first();
+    $afterCharge = ($authWallet->balance - ($moneyOutData->charges->payable));
+    DB::beginTransaction();
+    try{
+        $id = DB::table("transactions")->insertGetId([
+            'agent_id'                       => auth()->user()->id,
+            'agent_wallet_id'                => $moneyOutData->wallet_id,
+            'payment_gateway_currency_id'   => $moneyOutData->gateway_currency_id,
+            'type'                          => PaymentGatewayConst::TYPEMONEYOUT,
+            'trx_id'                        => $trx_id,
+            'request_amount'                => $moneyOutData->charges->requested_amount,
+            'payable'                       => $moneyOutData->charges->will_get,
+            'available_balance'             => $afterCharge,
+            'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPEMONEYOUT," ")) . " by " .$gateway->name,
+            'details'                       => json_encode($get_values),
+            'status'                        => $status,
+            'created_at'                    => now(),
+        ]);
+        $this->updateWalletBalanceManual($authWallet,$afterCharge);
+
+        DB::commit();
+    }catch(Exception $e) {
+        DB::rollBack();
+        throw new Exception($e->getMessage());
+    }
+    return $id;
+    }
+
+    public function updateWalletBalanceManual($authWallet,$afterCharge) {
+        $authWallet->update([
+            'balance'   => $afterCharge,
+        ]);
+    }
+    public function insertChargesAutomatic($moneyOutData,$id) {
+
+        if(Auth::guard(get_auth_guard())->check()){
+            $user = auth()->guard(get_auth_guard())->user();
         }
-        $trx_id = $moneyOutData->trx_id ??'WD'.getTrxNum();
-        $authWallet = AgentWallet::where('id',$moneyOutData->wallet_id)->where('agent_id',$moneyOutData->agent_id)->first();
-        $afterCharge = ($authWallet->balance - ($moneyOutData->amount + $moneyOutData->base_cur_charge));
         DB::beginTransaction();
         try{
-            $id = DB::table("transactions")->insertGetId([
-                'agent_id'                   => $moneyOutData->agent_id,
-                'agent_wallet_id'            => $moneyOutData->wallet_id,
-                'payment_gateway_currency_id'   => $moneyOutData->gateway_currency_id,
-                'type'                          => PaymentGatewayConst::TYPEMONEYOUT,
-                'trx_id'                        => $trx_id,
-                'request_amount'                => $moneyOutData->amount,
-                'payable'                       => $moneyOutData->will_get,
-                'available_balance'             => $afterCharge,
-                'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPEMONEYOUT," ")) . " by " .$gateway->name,
-                'details'                       => json_encode($get_values),
-                'status'                        => $status,
-                'created_at'                    => now(),
+            DB::table('transaction_charges')->insert([
+                'transaction_id'    => $id,
+                'percent_charge'    => $moneyOutData->charges->percent_charge,
+                'fixed_charge'      => $moneyOutData->charges->fixed_charge,
+                'total_charge'      => $moneyOutData->charges->total_charge,
+                'created_at'        => now(),
             ]);
-            $this->updateWalletBalanceManual($authWallet,$afterCharge);
-
             DB::commit();
+
+            //notification
+            $notification_content = [
+                'title'         => "Withdraw",
+                'message'       => "Your Withdraw Request  " .$moneyOutData->amount.' '.$moneyOutData->charges->wallet_cur_code." Successful",
+                'image'         => get_image($user->image,'user-profile'),
+            ];
+
+            AgentNotification::create([
+                'type'      => NotificationConst::MONEY_OUT,
+                'agent_id'  =>  auth()->user()->id,
+                'message'   => $notification_content,
+            ]);
+            DB::commit();
+
+             //Push Notifications
+             event(new AgentNotificationEvent($notification_content,$user));
+             send_push_notification(["user-".$user->id],[
+                 'title'     => $notification_content['title'],
+                 'body'      => $notification_content['message'],
+                 'icon'      => $notification_content['image'],
+             ]);
+
+            //admin notification
+            $notification_content['title'] = 'Withdraw Request '.$moneyOutData->amount.' '.$moneyOutData->charges->wallet_cur_code.' By '.$moneyOutData->gateway_name.' '.$moneyOutData->gateway_currency.' Successful ('.$user->username.')';
+            AdminNotification::create([
+                'type'      => NotificationConst::MONEY_OUT,
+                'admin_id'  => 1,
+                'message'   => $notification_content,
+            ]);
         }catch(Exception $e) {
             DB::rollBack();
             throw new Exception($e->getMessage());
         }
-        return $id;
-    }
-
-    public function updateWalletBalanceManual($authWalle,$afterCharge) {
-        $authWalle->update([
-            'balance'   => $afterCharge,
-        ]);
     }
     public function insertChargesManual($moneyOutData,$id) {
         DB::beginTransaction();
@@ -328,10 +425,6 @@ class MoneyOutController extends Controller
         $client_ip = request()->ip() ?? false;
         $location = geoip()->getLocation($client_ip);
         $agent = new Agent();
-
-        // $mac = exec('getmac');
-        // $mac = explode(" ",$mac);
-        // $mac = array_shift($mac);
         $mac = "";
 
         DB::beginTransaction();
