@@ -240,4 +240,7 @@ class User extends Authenticatable
     public function scopeNotAuth($query) {
         $query->whereNot("id",auth()->user()->id);
     }
+    public function referUsers() {
+        return $this->hasMany(ReferredUser::class,'refer_user_id','id');
+    }
 }

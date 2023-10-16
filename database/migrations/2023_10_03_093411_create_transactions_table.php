@@ -36,6 +36,7 @@ return new class extends Migration
                 PaymentGatewayConst::TYPEWITHDRAW,
                 PaymentGatewayConst::TYPECOMMISSION,
                 PaymentGatewayConst::TYPEBONUS,
+                PaymentGatewayConst::TYPEREFERBONUS,
                 PaymentGatewayConst::TYPETRANSFERMONEY,
                 PaymentGatewayConst::TYPEMONEYEXCHANGE,
                 PaymentGatewayConst::TYPEADDSUBTRACTBALANCE,

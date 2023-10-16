@@ -52,6 +52,9 @@
                                         <input type="email" name="email" class="form--control" placeholder="Email" value="{{ old('email',@$email) }}" readonly>
                                     </div>
                                 </div>
+                                <div class="form-group col-xl-4 col-lg-4 col-md-4">
+                                    <input type="text" class="form-control form--control" name="refer" id="referralId" placeholder="Enter Referral Code" value="{{ old('refer', $refer) }}">
+                                </div>
                                 <div class="col-xl-4 col-lg-4 col-md-4 form-group">
                                     @include('admin.components.form.input',[
                                         'name'          => "city",
@@ -66,7 +69,7 @@
                                         'value'         => old('zip_code',auth()->user()->address->zip ?? "")
                                     ])
                                 </div>
-                                <div class="col-xl-12 col-lg-12 form-group">
+                                <div class="col-xl-8 col-lg-8 form-group">
                                     <div class="input-group">
                                         <div class="input-group-text phone-code">+</div>
                                         <input class="phone-code" type="hidden" name="phone_code" value="" />

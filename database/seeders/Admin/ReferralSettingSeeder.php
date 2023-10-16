@@ -18,6 +18,6 @@ class ReferralSettingSeeder extends Seeder
         $referral_settings = array(
             array('id' => '1','bonus' => '10.00000000','wallet_type' => 'p_balance','mail' => '0','status' => '1','created_at' => '2023-10-15 17:37:57','updated_at' => '2023-10-15 17:38:14')
         );
-        ReferralSetting::create($referral_settings);
+        ReferralSetting::insert($referral_settings);
     }
 }

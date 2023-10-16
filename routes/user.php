@@ -21,6 +21,7 @@ use App\Http\Controllers\User\MobileTopupController;
 use App\Http\Controllers\User\TransactionController;
 use App\Http\Controllers\User\VirtualcardController;
 use App\Http\Controllers\User\ReceiveMoneyController;
+use App\Http\Controllers\User\ReferralController;
 use App\Http\Controllers\User\SudoVirtualCardController;
 use App\Http\Controllers\User\SupportTicketController;
 
@@ -187,6 +188,12 @@ Route::prefix("user")->name("user.")->group(function(){
         Route::get('conversation/{encrypt_id}','conversation')->name('conversation');
         Route::post('message/send','messageSend')->name('messaage.send');
     });
+
+    //referral for user status
+    Route::controller(ReferralController::class)->prefix('status')->name('refer.')->group(function(){
+        Route::get('/','index')->name('index');
+    });
+
 
 });
 Route::get('user/pusher/beams-auth', function (Request $request) {

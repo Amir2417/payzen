@@ -55,7 +55,10 @@ class RegisterController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function showRegistrationForm() {
+    public function showRegistrationForm($refer = null) {
+        if($refer && !User::where('referral_id',$refer)->exists()) {
+            $refer = "";
+        }
         $client_ip = request()->ip() ?? false;
         $user_country = geoip()->getLocation($client_ip)['country'] ?? "";
 
@@ -63,6 +66,7 @@ class RegisterController extends Controller
         return view('user.auth.register',compact(
             'page_title',
             'user_country',
+            'refer'
         ));
     }
     //========================before registration======================================
@@ -109,6 +113,7 @@ class RegisterController extends Controller
             }
             DB::commit();
         }catch(Exception $e) {
+
             DB::rollBack();
             return back()->with(['error' => ['Something went wrong! Please try again']]);
         };
@@ -176,10 +181,13 @@ class RegisterController extends Controller
         }
         return redirect()->route('user.email.verify',$data['token'])->with(['success' => ['Verification code resend success!']]);
     }
-    public function registerKyc(Request $request){
+    public function registerKyc(Request $request,$refer = null){
         $email =   session()->get('register_email');
         if($email == null){
             return redirect()->route('user.register');
+        }
+        if($refer && !User::where('referral_id',$refer)->exists()) {
+            $refer = "";
         }
         $user_kyc = SetupKyc::userKyc()->first();
         if(!$user_kyc) return back();
@@ -191,7 +199,7 @@ class RegisterController extends Controller
 
         $page_title = "User Registration KYC";
         return view('user.auth.register-kyc',compact(
-            'page_title','email','kyc_fields'
+            'page_title','email','kyc_fields','refer'
 
         ));
     }
@@ -238,13 +246,14 @@ class RegisterController extends Controller
         $validated['kyc_verified']      = ($basic_settings->kyc_verification == true) ? false : true;
         $validated['password']          = Hash::make($validated['password']);
         $validated['username']          = make_username($validated['firstname'],$validated['lastname']);
+        $validated['referral_id']       = generate_unique_string('users','referral_id',8,'number');
         $validated['address']           = [
-                                            'country' => $validated['country'],
-                                            'city' => $validated['city'],
-                                            'zip' => $validated['zip_code'],
-                                            'state' => '',
-                                            'address' => '',
-                                        ];
+            'country' => $validated['country'],
+            'city' => $validated['city'],
+            'zip' => $validated['zip_code'],
+            'state' => '',
+            'address' => '',
+        ];
        $data = event(new Registered($user = $this->create($validated)));
        if( $data && $basic_settings->kyc_verification == true){
         $create = [
@@ -302,10 +311,11 @@ class RegisterController extends Controller
             'email'         => 'required|string|email|max:150|unique:users,email',
             'password'      => $passowrd_rule,
             'country'       => 'required|string|max:15',
-            'city'       => 'required|string|max:20',
+            'city'          => 'required|string|max:20',
             'phone_code'    => 'required|string|max:10',
             'phone'         => 'required|string|max:20',
-            'zip_code'         => 'required|string|max:6',
+            'zip_code'      => 'required|string|max:6',
+            'refer'         => 'nullable|string|exists:users,referral_id',
             'agree'         =>  $agree,
         ]);
     }
@@ -332,8 +342,16 @@ class RegisterController extends Controller
      */
     protected function registered(Request $request, $user)
     {
-        $user->createQr();
-        $this->createUserWallets($user);
+        try{
+            $this->createUserWallets($user);
+            $this->createAsReferUserIfExists($request, $user);
+            $this->createNewUserRegisterBonus($user);
+        }catch(Exception $e) {
+            dd($e->getMessage());
+            $this->guard()->logout();
+            $user->delete();
+            return redirect()->back()->with(['error' => ['Something went wrong! Please try again']]);
+        }
         return redirect()->intended(route('user.dashboard'));
     }
 }

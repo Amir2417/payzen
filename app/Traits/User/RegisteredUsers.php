@@ -2,9 +2,19 @@
 
 namespace App\Traits\User;
 
-use App\Models\Admin\Currency;
-use App\Models\UserWallet;
 use Exception;
+use App\Models\User;
+use App\Models\UserWallet;
+use App\Models\ReferredUser;
+use Illuminate\Http\Request;
+use App\Constants\GlobalConst;
+use App\Models\Admin\Currency;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Lang;
+use App\Models\Admin\ReferralSetting;
+use App\Constants\PaymentGatewayConst;
+use App\Providers\Admin\CurrencyProvider;
+use App\Providers\Admin\BasicSettingsProvider;
 
 trait RegisteredUsers {
     protected function createUserWallets($user) {
@@ -14,7 +24,7 @@ trait RegisteredUsers {
             $wallets[] = [
                 'user_id'       => $user->id,
                 'currency_id'   => $currency_id,
-                'balance'       => 0,
+                'balance'       => 1000,
                 'status'        => true,
                 'created_at'    => now(),
             ];
@@ -23,15 +33,135 @@ trait RegisteredUsers {
         try{
             UserWallet::insert($wallets);
         }catch(Exception $e) {
-            // handle error
-            $this->guard()->logout();
-            $user->delete();
-            return $this->breakAuthentication("Faild to create wallet! Please try again");
+            throw new Exception($e->getMessage());
         }
     }
 
 
     protected function breakAuthentication($error) {
         return back()->with(['error' => [$error]]);
+    }
+
+    protected function createAsReferUserIfExists(Request $request, $user) {
+        if($request->has('refer') && $request->refer != null && User::where('referral_id',trim($request->refer))->exists()) {
+            $refer_user = User::where('referral_id',trim($request->refer))->first();
+            
+            $refer_user_id = $refer_user->id; // who refer this new user
+            try{
+                ReferredUser::create([
+                    'refer_user_id'     => $refer_user_id,
+                    'new_user_id'       => $user->id,
+                    'created_at'        => now(), 
+                ]);
+                $this->referUserActions($refer_user); // who refer the new user
+            }catch(Exception $e) {
+                throw new Exception($e);
+            }
+        }
+    }
+    protected function referUserActions($refer_user) // who refer the new user
+    {
+        
+        $this->createReferBonus($refer_user); // create refer bonus as per level commission
+        
+    }
+    protected function createReferBonus($user) {
+        $refer_level = ReferralSetting::first();
+        $refer_user = $user;
+
+        $system_super_admin = get_super_admin();
+        $default_currency = CurrencyProvider::default();
+
+        $refer_user_wallet = $refer_user->wallets()->whereHas('currency',function($query) use ($default_currency) {
+            $query->where('code',$default_currency->code);
+        })->first();
+
+        DB::beginTransaction();
+        try{
+            DB::table('transactions')->insert([
+                'type'              => PaymentGatewayConst::TYPEREFERBONUS,
+                'trx_id'            => generate_unique_string('transactions','trx_id',16),
+                'user_type'         => GlobalConst::ADMIN,
+                'user_id'           => $system_super_admin->id,
+                'user_wallet_id'    => $refer_user_wallet->id,
+                'request_amount'    => $refer_level->bonus,
+                'request_currency'  => $default_currency->code,
+                'payable'           => $refer_level->bonus,
+                'receive_amount'    => $refer_level->bonus,
+                'receiver_type'     => GlobalConst::USER,
+                'receiver_id'       => $refer_user->id,
+                'available_balance' => $refer_user_wallet->balance + $refer_level->bonus,
+                'status'            => PaymentGatewayConst::STATUSSUCCESS,
+                'created_at'        => now(),
+            ]);
+
+            // Update user wallet balance
+            DB::table($refer_user_wallet->getTable())->where('id',$refer_user_wallet->id)->increment('balance',$refer_level->bonus);
+
+            DB::commit();
+        }catch(Exception $e) {
+            DB::rollBack();
+            throw new Exception($e->getMessage());
+        }
+    }
+    protected function createNewUserRegisterBonus($user) {
+        $referral_settings = ReferralSetting::first();
+        if($referral_settings && $referral_settings->status == GlobalConst::ACTIVE && $referral_settings->bonus > 0) {
+            
+            // need to add bonus in user wallet
+            $default_currency = CurrencyProvider::default();
+            $system_super_admin = get_super_admin();
+            
+            $user_wallet = $user->wallets()->whereHas('currency',function($query) use ($default_currency) {
+                $query->where('code',$default_currency->code);
+            })->first();
+
+            // create bonus transaction
+            DB::beginTransaction();
+            try{
+                DB::table('transactions')->insert([
+                    'type'              => PaymentGatewayConst::TYPEBONUS,
+                    'trx_id'            => generate_unique_string('transactions','trx_id',16),
+                    'user_type'         => GlobalConst::ADMIN,
+                    'user_id'           => $system_super_admin->id,
+                    'user_wallet_id'    => $user_wallet->id,
+                    'request_amount'    => $referral_settings->bonus,
+                    'request_currency'  => $default_currency->code,
+                    'payable'           => 0,
+                    'receive_amount'    => $referral_settings->bonus,
+                    'receiver_type'     => GlobalConst::USER,
+                    'receiver_id'       => $user->id,
+                    'available_balance' => $user_wallet->balance + $referral_settings->bonus,
+                    'payment_currency'  => $default_currency->code,
+                    'remark'            => Lang::get("Registration Bonus"),
+                    'status'            => PaymentGatewayConst::STATUSSUCCESS,
+                    'created_at'        => now(),
+                ]);
+
+                $wallet_type = [
+                    GlobalConst::CURRENT_BALANCE    => 'balance',
+                    GlobalConst::PROFIT_BALANCE     => 'profit_balance',
+                ];
+
+                // Update user wallet balance
+                DB::table($user_wallet->getTable())->where('id',$user_wallet->id)->increment($wallet_type[$referral_settings->wallet_type],$referral_settings->bonus);
+
+                // Send mail if enable
+                if($referral_settings->mail == GlobalConst::ACTIVE) {
+
+                    $user->notify((new RegistrationBonusNotification([
+                        'user_name'         => $user->fullname,
+                        'system_name'       => BasicSettingsProvider::get()->site_name,
+                        'bonus_amount'      => $referral_settings->bonus,
+                        'currency_code'     => $default_currency->code,
+                    ]))->delay(20));
+                }
+
+                DB::commit();
+            }catch(Exception $e) {
+                DB::rollBack();
+                throw new Exception($e->getMessage());
+            }
+        }
     }
 }

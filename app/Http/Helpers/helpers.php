@@ -1306,15 +1306,23 @@ function generate_random_string_number($length = 12)
     return $randomString;
 }
 
-function generate_unique_string($table,$column,$length = 10) {
+function generate_unique_string($table,$column,$length = 10, $type = "string") {
     do{
-       $generate_rand_string = generate_random_string_number($length);
-       $unique = DB::table($table)->where($column,$generate_rand_string)->exists();
+       switch($type) {
+        case "number":
+            $random_character = generate_random_code($length);
+            break;
+        case "string" :
+            $random_character = generate_random_string_number($length);
+            break;
+       }
+
+       $unique = DB::table($table)->where($column,$random_character)->exists();
        $loop = false;
        if($unique) {
         $loop = true;
        }
-       $unique_string = $generate_rand_string;
+       $unique_string = $random_character;
     }while($loop);
 
     return $unique_string;
@@ -1407,7 +1415,7 @@ function check_email($string) {
 }
 
 function generate_random_code($length = 6) {
-    $numbers = '123456789';
+    $numbers = '1234567890';
     $numbersLength = strlen($numbers);
     $randNumber = '';
     for ($i = 0; $i < $length; $i++) {
@@ -1829,6 +1837,16 @@ function get_auth_guard() {
         return "agent";
     }
     return "";
+}
+function get_super_admin() {
+    $super_admin_const = AdminRoleConst::SUPER_ADMIN;
+    $super_admin = Admin::whereHas('roles',function($query) use ($super_admin_const) {
+        $query->whereHas('role',function($query_role) use ($super_admin_const) {
+            $query_role->where('name', $super_admin_const);
+        });
+    })->first();
+
+    return $super_admin;
 }
 function ticketType(){
     $active = UserSupportTicket::active()->count();

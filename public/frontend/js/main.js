@@ -589,6 +589,18 @@ function setVersion(version) {
 
 })(jQuery);
 
+$(".copy-button").click(function(){
+  var copyableElement = $(this).siblings(".copiable");
+
+  var value = "";
+  if(copyableElement.is("input")) {
+    value = $(this).siblings(".copiable").val();
+  }else {
+    value = $(this).siblings(".copiable").text();
+  }
+  navigator.clipboard.writeText(value);
+  throwMessage('success',['Text successfully copied.']);
+});
 /**
  * Refresh all button that have "btn-loading" class
  */

@@ -33,6 +33,7 @@ class PaymentGatewayConst {
     const CARDFUND = "CARD-FUND";
     const TYPEADDSUBTRACTBALANCE = "ADD-SUBTRACT-BALANCE";
     const TYPEMAKEPAYMENT = "MAKE-PAYMENT";
+    const TYPEREFERBONUS            = "REFER-BONUS";
 
     const STATUSSUCCESS     = 1;
     const STATUSPENDING     = 2;

@@ -121,6 +121,12 @@
                             <span class="menu-title">{{ __("2FA Security") }}</span>
                         </a>
                     </li>
+                    <li class="sidebar-menu-item {{ Route::is('user.refer.index') ? 'active' : '' }}">
+                        <a href="{{ setRoute('user.refer.index') }}">
+                            <i class="menu-icon las la-user-circle"></i>
+                            <span class="menu-title">{{ __("My Status") }}</span>
+                        </a>
+                    </li>
                     <li class="sidebar-menu-item">
                         <a href="javascript:void(0)" class="logout-btn">
                             <i class="menu-icon fas fa-sign-out-alt"></i>
