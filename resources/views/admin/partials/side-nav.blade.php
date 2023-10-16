@@ -391,7 +391,12 @@
                     'title'     => "Languages",
                     'icon'      => "menu-icon las la-language",
                 ])
-
+                
+                @include('admin.components.side-nav.link',[
+                    'route'     => 'admin.settings.referral.index',
+                    'title'     => "Referral Settings",
+                    'icon'      => "menu-icon las la-network-wired",
+                ])
                 {{-- Verification Center --}}
                 @include('admin.components.side-nav.link-group',[
                     'group_title'       => "Verification Center",

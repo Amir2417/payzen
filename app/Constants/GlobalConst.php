@@ -32,6 +32,7 @@ class GlobalConst {
 
     const AGENT     = "AGENT";
     const USER      = "USER";
+    const ADMIN     = "ADMIN";
     const MERCHANT  = "MERCHANT";
 
     const TRX_CASH_PICKUP                 = "Cash Pickup";
@@ -47,4 +48,7 @@ class GlobalConst {
 
     const SENDER = 'SENDER';
     const RECEIVER = 'RECEIVER';
+
+    const CURRENT_BALANCE   = "c_balance";
+    const PROFIT_BALANCE    = "p_balance";
 }

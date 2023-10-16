@@ -15,7 +15,7 @@
                 <div class="account-wrapper">
                     <div class="account-form-area text-center">
                         <div class="account-logo text-center">
-                            <a href="index.html" class="site-logo site-title theme-change">
+                            <a href="{{ setRoute('index') }}" class="site-logo site-title theme-change">
                                 <img src="{{ get_logo($basic_settings) }}" white-img="{{ get_logo($basic_settings) }}"
                                 dark-img="{{ get_logo($basic_settings,'dark') }}" alt="logo">
                             </a>

@@ -40,6 +40,7 @@ use App\Http\Controllers\Admin\PushNotificationController;
 use App\Http\Controllers\Admin\SetupMobileTopupController;
 use App\Http\Controllers\Admin\AppOnboardScreensController;
 use App\Http\Controllers\Admin\PaymentGatewayCurrencyController;
+use App\Http\Controllers\Admin\ReferralSettingController;
 
 // All Admin Route Is Here
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -315,6 +316,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('download','download')->name('download');
     });
 
+    //referral settings
+    Route::controller(ReferralSettingController::class)->prefix('referral')->name('settings.referral.')->group(function(){
+        Route::get('index','index')->name('index');
+        Route::post('update','update')->name('update');
+
+    });
 
     // Setup Email Section
     Route::controller(SetupEmailController::class)->prefix('setup-email')->name('setup.email.')->group(function () {

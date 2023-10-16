@@ -23,6 +23,7 @@ use Database\Seeders\Admin\ModuleSettingSeeder;
 use Database\Seeders\Admin\OnboardScreenSeeder;
 use Database\Seeders\Admin\PaymentGatewaySeeder;
 use Database\Seeders\Admin\ReceiverCountry;
+use Database\Seeders\Admin\ReferralSettingSeeder;
 use Database\Seeders\Admin\RoleSeeder;
 use Database\Seeders\Admin\SetupEmailSeeder;
 use Database\Seeders\Admin\SetupPageSeeder;
@@ -75,6 +76,7 @@ class DatabaseSeeder extends Seeder
             SetupEmailSeeder::class,
             MerchantConfigurationSeeder::class,
             ModuleSettingSeeder::class,
+            ReferralSettingSeeder::class,
             //user
             UserSeeder::class,
             UserWalletSeeder::class,

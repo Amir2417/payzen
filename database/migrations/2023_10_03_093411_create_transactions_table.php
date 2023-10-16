@@ -1,9 +1,10 @@
 <?php
 
+use App\Constants\GlobalConst;
 use App\Constants\PaymentGatewayConst;
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -25,6 +26,10 @@ return new class extends Migration
             $table->unsignedBigInteger('merchant_wallet_id')->nullable();
             $table->unsignedBigInteger('sandbox_wallet_id')->nullable();
             $table->unsignedBigInteger("payment_gateway_currency_id")->nullable();
+            $table->enum('user_type',[
+                GlobalConst::USER,
+                GlobalConst::ADMIN,
+            ])->nullable()->comment("transaction creator");
             $table->enum("type",[
                 PaymentGatewayConst::TYPEADDMONEY,
                 PaymentGatewayConst::TYPEMONEYOUT,
@@ -43,10 +48,18 @@ return new class extends Migration
                 PaymentGatewayConst::TYPEMAKEPAYMENT,
                 PaymentGatewayConst::MERCHANTPAYMENT
             ]);
+            $table->string('request_currency')->comment("In add money user wallet currency, money transfer receiver currency")->nullable();
             $table->string("trx_id")->comment("Transaction ID");
             $table->decimal('request_amount', 28, 8)->default(0);
             $table->decimal('payable', 28, 8)->default(0);
+            $table->decimal('receive_amount', 28, 8)->nullable()->comment('add money: user wallet balance, money transfer: receiver amount, money out: user receive amount using manual info');
+            $table->enum('receiver_type',[
+                GlobalConst::USER,
+                GlobalConst::ADMIN,
+            ])->nullable()->comment("Uses maybe money transfer, make payment");
+            $table->unsignedBigInteger('receiver_id')->nullable()->comment("Uses maybe money transfer, make payment");
             $table->decimal('available_balance', 28, 8)->default(0);
+            $table->string('payment_currency')->nullable()->comment('user payment currency (wallet/gateway)');
             $table->string("remark")->nullable();
             $table->text("details")->nullable();
             $table->text("info")->nullable();

@@ -1,4 +1,3 @@
-
 @extends('user.layouts.user_auth')
 
 @php
@@ -10,63 +9,51 @@
 
 @section('content')
 
-<section class="account">
-
-    <div class="account-area">
-        <div class="account-wrapper">
-            <div class="account-logo text-center">
-               <a class="site-logo" href="{{ setRoute('index') }}">
-                <img src="{{ get_logo($basic_settings) }}"  data-white_img="{{ get_logo($basic_settings,'white') }}"
-                data-dark_img="{{ get_logo($basic_settings,'dark') }}"
-                    alt="site-logo">
-               </a>
-            </div>
-            <h5 class="title">{{ __("Reset Your Forgotten Password") }}</h5>
-            <p>{{ __(@$auth_text->value->language->$lang->forget_text) }}</p>
-            <form class="account-form" action="{{ setRoute('user.password.forgot.send.code') }}" method="POST">
-                @csrf
-                <div class="row ml-b-20">
-
-                    <div class="col-xl-12 col-lg-12 form-group">
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text copytext">{{ __("Email") }}</span>
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Start Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+<section class="account-section login">
+    <div class="container">
+        <div class="row justify-content-center align-items-center">
+            <div class="col-lg-5 col-md-12">
+                <div class="account-wrapper">
+                    <div class="account-thumb">
+                        <img src="{{ asset('public/frontend/images/account/account.jpg') }}" alt="element">
+                    </div>
+                    <div class="account-form-area">
+                        <div class="account-logo text-center">
+                            <a href="{{ setRoute('index') }}" class="site-logo site-title theme-change">
+                                <img src="{{ get_logo($basic_settings) }}" white-img="{{ get_logo($basic_settings) }}"
+                                dark-img="{{ get_logo($basic_settings,'dark') }}" alt="logo">
+                            </a>
+                        </div>
+                        <h4 class="title">{{ __("Forget Password?") }}</h4>
+                        <p>{{ __("Enter your email and we'll send you a otp to reset your password.") }}</p>
+                        <form action="{{ setRoute('user.password.forgot.send.code') }}" class="account-form" method="POST">
+                            @csrf
+                            <div class="row">
+                                <div class="col-lg-12 form-group">
+                                    <input type="text" class="form-control form--control" name="credentials" placeholder="Enter Email" required>
+                                </div>
+                                <div class="col-lg-12 form-group text-center">
+                                    <button type="submit" class="btn--base w-100">{{ __("Send OTP") }}</button>
+                                </div>
+                                <div class="col-lg-12">
+                                    <div class="account-item text-center mt-10">
+                                        <label>{{ __("Don't Have An Account?") }} <a href="{{ setRoute('user.login') }}" class="text--base">{{ __("Login Now") }}</a></label>
+                                    </div>
+                                </div>
                             </div>
-                            <input type="email" name="credentials" class="form--control checkUser mobile" placeholder="Enter Email Address...">
-
-                        </div>
-                        <small class="text-danger exits"></small>
-                    </div>
-
-                    <div class="col-lg-12 form-group text-center">
-                        <button type="submit"  class="btn--base w-100 btn-loading">Continue</button>
-                    </div>
-                    <div class="col-lg-12 text-center">
-                        <div class="account-item">
-                            <label>{{ __("Already Have An Account?") }} <a href="{{ setRoute('user.login') }}" class="account-control-btn">{{ __("Login Now") }}</a></label>
-                        </div>
+                        </form>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </section>
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    End acount
+    End Account
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
-
-<ul class="bg-bubbles">
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-</ul>
 @endsection
 
 @push('script')

@@ -18,7 +18,7 @@
                     </div>
                     <div class="account-form-area">
                         <div class="account-logo text-center">
-                            <a href="index.html" class="site-logo site-title theme-change">
+                            <a href="{{ setRoute('index') }}" class="site-logo site-title theme-change">
                                 <img src="{{ get_logo($basic_settings) }}" white-img="{{ get_logo($basic_settings) }}"
                                 dark-img="{{ get_logo($basic_settings,'dark') }}" alt="logo">
                             </a>
@@ -62,16 +62,16 @@
 @push('script')
 <script>
     $(document).ready(function() {
-        $("#show_hide_password a").on('click', function(event) {
+        $(".show_hide_password .show-pass").on('click', function(event) {
             event.preventDefault();
-            if($('#show_hide_password input').attr("type") == "text"){
-                $('#show_hide_password input').attr('type', 'password');
-                $('#show_hide_password i').addClass( "fa-eye-slash" );
-                $('#show_hide_password i').removeClass( "fa-eye" );
-            }else if($('#show_hide_password input').attr("type") == "password"){
-                $('#show_hide_password input').attr('type', 'text');
-                $('#show_hide_password i').removeClass( "fa-eye-slash" );
-                $('#show_hide_password i').addClass( "fa-eye" );
+            if($(this).parent().find("input").attr("type") == "text"){
+                $(this).parent().find("input").attr('type', 'password');
+                $(this).find("i").addClass( "fa-eye-slash" );
+                $(this).find("i").removeClass( "fa-eye" );
+            }else if($(this).parent().find("input").attr("type") == "password"){
+                $(this).parent().find("input").attr('type', 'text');
+                $(this).find("i").removeClass( "fa-eye-slash" );
+                $(this).find("i").addClass( "fa-eye" );
             }
         });
     });
