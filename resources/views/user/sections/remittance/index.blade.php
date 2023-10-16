@@ -1,6 +1,10 @@
 @extends('user.layouts.master')
 @php
-    $token = (object)session()->get('remittance_token');
+    $token = (object)session()->get('sender_remittance_token');
+    $sender_token = session()->get('sender_remittance_token');
+
+    $rtoken = (object)session()->get('receiver_remittance_token');
+    $receiver_token = session()->get('receiver_remittance_token');
 
 @endphp
 @php
@@ -79,7 +83,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                                 <div class="col-xl-6 col-lg-6 form-group">
                                     <label>{{ __("Sending Amount") }} <span class="text--base">*</span></label>
                                     <div class="input-group">
-                                        <input type="number" name="send_amount" class="form--control" step="0.01" placeholder="Enter Amount" value="{{ old('send_amount') }}" >
+                                        <input type="number" name="send_amount" class="form--control" step="0.01" placeholder="Enter Amount">
                                         <div class="input-group-append">
                                             <input type="hidden" name="sender_wallet" class="sender-wallet">
                                             <span class="input-group-text copytext send_cur_code">{{ get_default_currency_code() }}</span>
@@ -308,7 +312,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         getLimit();
         getFees();
         getReceiverAmount();
-        getSenderAmount();
+        // getSenderAmount();
         getExchangeRate();
     });
     $("select[name=to_country]").change(function(){
@@ -318,7 +322,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         getFees();
         getExchangeRate();
         getReceiverAmount();
-        getSenderAmount();
+        // getSenderAmount();
         getPreview();
     });
     $("select[name=transaction_type]").change(function(){
@@ -380,9 +384,11 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             var currencyRate = acceptVar().receiverCurrency_rate;
             var sender_currency = acceptVar().sCurrency;
             var sender_currency_rate = acceptVar().sCurrency_rate;
+            var sender_exchange_rate    = currencyRate / sender_currency_rate;
+            
             var walletBalance   = acceptVar().walletBalance;
             var walletId   = acceptVar().walletId;
-            $('.rate-show').html(sender_currency_rate + " " + sender_currency + " = " + parseFloat(currencyRate).toFixed(2) + " " + currencyCode);
+            $('.rate-show').html("1" + " " + sender_currency + " = " + parseFloat(sender_exchange_rate).toFixed(4) + " " + currencyCode);
             $('.available-balance').html("Available Balance :" + " " + walletBalance + " " + sender_currency);
             $('.sender-wallet').val(walletId);
     }
@@ -511,10 +517,13 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                 },
                 dataType: 'json',
                 success: function (res) {
+                    console.log(res);
                     var recipients = res.recipient;
                     if( recipients == ''){
+                        
                         $('.recipient').html('<option value="">No Recipient Aviliable</option>');
                     }else{
+                        
                         $('.recipient').html('<option value="">Select Recipient</option>');
 
                     }
@@ -650,21 +659,6 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         }
 
        }
-    // function readOnly() {
-    //     var recipient = acceptVar().recipientName;
-
-    //     if ( recipient === '' || recipient === undefined) {
-    //         $("input[name=send_amount]").val('').attr("readonly", true);
-    //         $("input[name=receive_amount]").val('').attr("readonly", true);
-    //         $('.confirmed').attr('disabled',true)
-    //     }else{
-
-    //         $("input[name=send_amount]").val("").removeAttr("readonly");
-    //         $("input[name=receive_amount]").val("").removeAttr("readonly");
-    //         $('.confirmed').attr('disabled',false)
-    //     }
-
-    // }
     $(".add-recipient").click(function(){
         var receiver_country = acceptVar().receiver_conctry;
         var transacion_type = acceptVar().tranaction_type;

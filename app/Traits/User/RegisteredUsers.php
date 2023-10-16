@@ -24,7 +24,7 @@ trait RegisteredUsers {
             $wallets[] = [
                 'user_id'       => $user->id,
                 'currency_id'   => $currency_id,
-                'balance'       => 1000,
+                'balance'       => 0,
                 'status'        => true,
                 'created_at'    => now(),
             ];

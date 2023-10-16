@@ -30,23 +30,19 @@ class RemitanceController extends Controller
         $this->trx_id = 'RT'.getTrxNum();
     }
     public function index() {
-        $page_title = "Remittance";
-        $exchangeCharge = TransactionSetting::where('slug','remittance')->where('status',1)->first();
-        $receiverCountries = ReceiverCounty::active()->get();
-        $receipients = Receipient::auth()->orderByDesc("id")->paginate(12);
-        $transactions = Transaction::auth()->remitance()->latest()->take(5)->get();
-        $defaultCurrency = Currency::where('default',true)->first();
-        $sender_wallets = UserWallet::auth()->whereHas('currency',function($q) {
+        $page_title         = "Remittance";
+        $exchangeCharge     = TransactionSetting::where('slug','remittance')->where('status',1)->first();
+        $receiverCountries  = ReceiverCounty::active()->get();
+        $transactions       = Transaction::agentAuth()->remitance()->latest()->take(5)->get();
+        $sender_wallets     = UserWallet::where('user_id',auth()->user()->id)->whereHas('currency',function($q) {
             $q->where("sender",GlobalConst::ACTIVE)->where("status",GlobalConst::ACTIVE);
         })->active()->get();
-        $receiver_wallets = Currency::receiver()->active()->get();
+        $receiver_wallets   = Currency::receiver()->active()->get();
         return view('user.sections.remittance.index',compact(
             "page_title",
             'exchangeCharge',
             'receiverCountries',
-            'receipients',
             'transactions',
-            'defaultCurrency',
             "sender_wallets",
             "receiver_wallets"
         ));
@@ -78,9 +74,7 @@ class RemitanceController extends Controller
         $exchangeCharge = TransactionSetting::where('slug','remittance')->where('status',1)->first();
         $user = auth()->user();
 
-        $userWallet = UserWallet::auth()->whereHas("currency",function($q) use ($validated) {
-            $q->where("id",$validated['sender_wallet'])->active();
-        })->active()->first();
+        $userWallet = UserWallet::where('user_id',$user->id)->where("id",$validated['sender_wallet'])->active()->first();
         if(!$userWallet){
             return back()->with(['error' => ['Sender wallet not found']]);
         }
@@ -92,7 +86,7 @@ class RemitanceController extends Controller
         if(!$to_country){
             return back()->with(['error' => ['Receiver country not found']]);
         }
-        $receipient = Receipient::auth()->where("id",$request->recipient)->first();
+        $receipient = Receipient::where('user_id',$user->id)->where("id",$request->recipient)->first();
         if(!$receipient){
             return back()->with(['error' => ['Receipient is invalid']]);
         }
@@ -133,7 +127,7 @@ class RemitanceController extends Controller
                 $trx_id = $this->trx_id;
                 $sender = $this->insertSender( $trx_id,$user,$userWallet,$send_amount,$receiver_will_get,$payable,$receipient,$form_country,$to_country,$transaction_type);
                 if($sender){
-                     $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient,$receiver_user,$userWallet);
+                    $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $send_amount,$user,$sender,$receipient,$receiver_user,$userWallet);
                 }
                 $receiverTrans = $this->insertReceiver( $trx_id,$user,$userWallet,$send_amount,$receiver_will_get,$payable,$receipient,$form_country,$to_country,$transaction_type,$receiver_user,$receiver_wallet);
                 if($receiverTrans){

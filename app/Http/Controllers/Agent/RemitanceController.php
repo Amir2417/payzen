@@ -38,7 +38,7 @@ class RemitanceController extends Controller
         $exchangeCharge     = TransactionSetting::where('slug','remittance')->where('status',1)->first();
         $receiverCountries  = ReceiverCounty::active()->get();
         $transactions       = Transaction::agentAuth()->remitance()->latest()->take(5)->get();
-        $sender_wallets     = AgentWallet::auth()->whereHas('currency',function($q) {
+        $sender_wallets     = AgentWallet::where('agent_id',auth()->user()->id)->whereHas('currency',function($q) {
             $q->where("sender",GlobalConst::ACTIVE)->where("status",GlobalConst::ACTIVE);
         })->active()->get();
         $receiver_wallets   = Currency::receiver()->active()->get();
@@ -79,9 +79,10 @@ class RemitanceController extends Controller
         $exchangeCharge = TransactionSetting::where('slug','remittance')->where('status',1)->first();
         $user = auth()->user();
 
-        $userWallet = AgentWallet::auth()->whereHas("currency",function($q) use ($validated) {
+        $userWallet = AgentWallet::where('agent_id',$user->id)->whereHas("currency",function($q) use ($validated) {
             $q->where("id",$validated['sender_wallet'])->active();
         })->active()->first();
+        dd($userWallet);
         if(!$userWallet){
             return back()->with(['error' => ['Sender wallet not found']]);
         }
@@ -127,7 +128,7 @@ class RemitanceController extends Controller
             if($transaction_type === Str::slug(GlobalConst::TRX_WALLET_TO_WALLET_TRANSFER)){
                 $receiver_user =  json_decode($receipient->details);
                 $receiver_user =  $receiver_user->id;
-                $receiver_wallet = AgentWallet::where('user_id',$receiver_user)->first();
+                $receiver_wallet = AgentWallet::where('agent_id',$receiver_user)->first();
                 if(!$receiver_wallet){
                     return back()->with(['error' => ['Receiver wallet not found']]);
                 }
@@ -257,9 +258,9 @@ class RemitanceController extends Controller
                 'image'         => files_asset_path('profile-default'),
             ];
 
-            UserNotification::create([
+            AgentNotification::create([
                 'type'      => NotificationConst::SEND_REMITTANCE,
-                'user_id'  => $user->id,
+                'agent_id'  => $user->id,
                 'message'   => $notification_content,
             ]);
             DB::commit();
@@ -335,9 +336,9 @@ class RemitanceController extends Controller
                 'image'         => files_asset_path('profile-default'),
             ];
 
-            UserNotification::create([
+            AgentNotification::create([
                 'type'      => NotificationConst::SEND_REMITTANCE,
-                'user_id'  => $receiver_user,
+                'agent_id'  => $receiver_user,
                 'message'   => $notification_content,
             ]);
             DB::commit();

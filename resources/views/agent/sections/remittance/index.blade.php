@@ -15,7 +15,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
     @include('agent.components.breadcrumb',['breadcrumbs' => [
         [
             'name'  => __("Dashboard"),
-            'url'   => setRoute("user.dashboard"),
+            'url'   => setRoute("agent.dashboard"),
         ]
     ], 'active' => __(@$page_title)])
 @endsection
@@ -312,7 +312,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         getLimit();
         getFees();
         getReceiverAmount();
-        getSenderAmount();
+        
         getExchangeRate();
     });
     $("select[name=to_country]").change(function(){
@@ -322,7 +322,6 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
         getFees();
         getExchangeRate();
         getReceiverAmount();
-        getSenderAmount();
         getPreview();
     });
     $("select[name=transaction_type]").change(function(){
@@ -384,9 +383,10 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
             var currencyRate = acceptVar().receiverCurrency_rate;
             var sender_currency = acceptVar().sCurrency;
             var sender_currency_rate = acceptVar().sCurrency_rate;
+            var sender_exchange_rate    = currencyRate / sender_currency_rate;
             var walletBalance   = acceptVar().walletBalance;
             var walletId   = acceptVar().walletId;
-            $('.rate-show').html(sender_currency_rate + " " + sender_currency + " = " + parseFloat(currencyRate).toFixed(2) + " " + currencyCode);
+            $('.rate-show').html("1" + " " + sender_currency + " = " + parseFloat(sender_exchange_rate).toFixed(4) + " " + currencyCode);
             $('.available-balance').html("Available Balance :" + " " + walletBalance + " " + sender_currency);
             $('.sender-wallet').val(walletId);
     }
@@ -448,7 +448,7 @@ $siteWallet = str_replace(' ','_',$basic_settings->site_name)."_Wallet";
                    percent: percent_charge,
                };
            } else {
-               // return "--";
+              
                return false;
            }
     }

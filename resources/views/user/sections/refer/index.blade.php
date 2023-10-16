@@ -12,9 +12,6 @@
                 <div class="account-avatar-wrapper">
                     <div class="account-avatar">
                         <img class=" d-block mx-auto avater" src="{{ auth()->user()->userImage }}" alt="" height="200" width="200">
-                        <div class="avatar-level-badge">
-                            <span>{{ $auth_user->referLevel?->title ?? "" }}</span>
-                        </div>
                     </div>
                 </div>
                 <div>
