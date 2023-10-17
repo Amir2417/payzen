@@ -14,6 +14,11 @@
     <div class="dashboard-area mt-10">
         <div class="dashboard-header-wrapper">
             <h4 class="title">{{ __("My Wallets") }}</h4>
+            <div class="dashboard-btn-wrapper">
+                <div class="dashboard-btn">
+                    <a href="{{ setRoute('user.wallets.index') }}" class="btn--base">{{ __("View More") }}</a>
+                </div>
+            </div>
         </div>
         @if (isset($fiat_wallets)  && $fiat_wallets->count() > 0)
             <div class="dashboard-item-area">

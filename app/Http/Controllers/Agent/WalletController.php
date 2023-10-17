@@ -28,7 +28,7 @@ class WalletController extends Controller
             return $q->where("type",GlobalConst::CRYPTO);
         })->orderByDesc("balance")->get();
         
-        return view('user.sections.wallets.index',compact("page_title","fiat_wallets","crypto_wallets"));
+        return view('agent.sections.wallets.index',compact("page_title","fiat_wallets","crypto_wallets"));
     }
 
 

@@ -1,25 +1,27 @@
-@extends('user.layouts.master')
+@extends('agent.layouts.master')
 
 @push('css')
     
 @endpush
 
 @section('breadcrumb')
-    @include('user.components.breadcrumb',['breadcrumbs' => [
+    @include('agent.components.breadcrumb',['breadcrumbs' => [
         [
             'name'  => __("Dashboard"),
-            'url'   => setRoute("user.dashboard"),
+            'url'   => setRoute("agent.dashboard"),
         ]
     ], 'active' => __("Wallets")])
 @endsection
 
 @section('content')
+<div class="body-wrapper">
     <div class="dashboard-area mt-10">
-        @include('user.components.wallets.fiat',compact("fiat_wallets"))
+        @include('agent.components.wallets.fiat',compact("fiat_wallets"))
     </div>
     <div class="dashboard-area mt-20">
-        @include('user.components.wallets.crypto',compact("crypto_wallets"))
+        @include('agent.components.wallets.crypto',compact("crypto_wallets"))
     </div>
+</div>
 @endsection
 
 @push('script')
