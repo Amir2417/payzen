@@ -6,76 +6,73 @@
 @endpush
 
 @section('content')
-    <section class="account">
-        <div class="account-area">
-            <div class="account-wrapper">
-                <div class="account-logo text-center">
-                    <a href="{{ setRoute('index') }}" class="site-logo">
-                        <img src="{{ get_logo($basic_settings) }}"  data-white_img="{{ get_logo($basic_settings,'white') }}"
-                                data-dark_img="{{ get_logo($basic_settings,'dark') }}"
-                                    alt="site-logo">
-                    </a>
-                </div>
-                <h5 class="title">{{ __(@$page_title) }}</h5>
-                {{-- <p>{{ __("Reset your password") }}</p> --}}
-                <form class="account-form" action="{{ setRoute('merchant.password.reset',$token) }}" method="POST">
-                    @csrf
-                    <div class="row ml-b-20">
-                        <div class="col-lg-12 form-group show_hide_password" >
-                            <input type="password"  class="form-control form--control" name="password" placeholder="New Password">
-                            <a href="javascript:void(0)" class="show-pass"><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
-                        </div>
-                        <div class="col-lg-12 form-group show_hide_password-2" >
-                            <input type="password"  class="form-control form--control" name="password_confirmation" placeholder="Confirmed Password">
-                            <a href="javascript:void(0)" class="show-pass"><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
-                        </div>
-
-                        <div class="col-lg-12 form-group text-center">
-                            <button type="submit" class="btn--base w-100 btn-loading">{{ __("Reset Password") }} <i class="las la-arrow-right"></i></button>
-                        </div>
-                        <div class="or-area">
-                            <span class="or-line"></span>
-                            <span class="or-title">Or</span>
-                            <span class="or-line"></span>
-                        </div>
-                        <div class="col-lg-12 text-center">
-                            <div class="account-item">
-                                <label>{{ __("Don't Have An Account?") }} <a href="{{ setRoute('merchant.register') }}" class="account-control-btn">{{ __("Register Now") }}</a></label>
-                            </div>
-                        </div>
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Start Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+<section class="account-section login">
+    <div class="container">
+        <div class="row justify-content-center align-items-center">
+            <div class="col-lg-5 col-md-12">
+                <div class="account-wrapper">
+                    <div class="account-thumb">
+                        <img src="{{ asset("public/frontend/images/account/account.jpg") }}" alt="element">
                     </div>
-                </form>
+                    <div class="account-form-area">
+                        <div class="account-logo text-center">
+                            <a href="{{ setRoute('index') }}" class="site-logo site-title theme-change">
+                                <img src="{{ get_logo($basic_settings) }}" white-img="{{ get_logo($basic_settings) }}"
+                                dark-img="{{ get_logo($basic_settings,'dark') }}" alt="logo">
+                            </a>
+                        </div>
+                        <h4 class="title">{{ __("Set New Password") }}</h4>
+                        <p>{{ __("Please Enter your new password and get login access on your Dashboard.") }}</p>
+                        <form action="{{ setRoute('merchant.password.reset',$token) }}" class="account-form" method="POST">
+                            @csrf
+                            <div class="row">
+                                <div class="col-lg-12 form-group show_hide_password">
+                                    <label>{{ __("New Password") }}<span class="text--base">*</span></label>
+                                    <input type="password" class="form-control form--control" name="password" placeholder="Enter Password" required>
+                                    <a href="javascript:void(0)" class="show-pass"><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
+                                </div>
+                                <div class="col-lg-12 form-group show_hide_password">
+                                    <label>{{ __("Confirm Password") }} <span class="text--base">*</span></label>
+                                    <input type="password" class="form-control form--control" name="password_confirmation" placeholder="Enter Password" required>
+                                    <a href="javascript:void(0)" class="show-pass"><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
+                                </div>
+                                <div class="col-lg-12 form-group text-center">
+                                    <button type="submit" class="btn--base w-100">{{ __("Confirm") }}</button>
+                                </div>
+                                <div class="col-lg-12">
+                                    <div class="account-item text-center mt-10">
+                                        <label>{{ __("Don't Have An Account?") }} <a href="{{ setRoute('merchant.login') }}" class="text--base">{{ __("Login Now") }}</a></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
-    </section>
-
-    <ul class="bg-bubbles">
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-    </ul>
+    </div>
+</section>
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    End Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 @endsection
 
 @push('script')
 <script>
     $(document).ready(function() {
-        $("#show_hide_password a").on('click', function(event) {
+        $(".show_hide_password .show-pass").on('click', function(event) {
             event.preventDefault();
-            if($('#show_hide_password input').attr("type") == "text"){
-                $('#show_hide_password input').attr('type', 'password');
-                $('#show_hide_password i').addClass( "fa-eye-slash" );
-                $('#show_hide_password i').removeClass( "fa-eye" );
-            }else if($('#show_hide_password input').attr("type") == "password"){
-                $('#show_hide_password input').attr('type', 'text');
-                $('#show_hide_password i').removeClass( "fa-eye-slash" );
-                $('#show_hide_password i').addClass( "fa-eye" );
+            if($(this).parent().find("input").attr("type") == "text"){
+                $(this).parent().find("input").attr('type', 'password');
+                $(this).find("i").addClass( "fa-eye-slash" );
+                $(this).find("i").removeClass( "fa-eye" );
+            }else if($(this).parent().find("input").attr("type") == "password"){
+                $(this).parent().find("input").attr('type', 'text');
+                $(this).find("i").removeClass( "fa-eye-slash" );
+                $(this).find("i").addClass( "fa-eye" );
             }
         });
     });
