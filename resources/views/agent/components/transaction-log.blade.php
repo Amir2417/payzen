@@ -204,27 +204,12 @@
                                 <i class="las la-balance-scale"></i>
                             </div>
                             <div class="preview-list-user-content">
-                                <span>{{ __("Customer Identifier") }}</span>
+                                <span>{{ __("Bill Number") }}</span>
                             </div>
                         </div>
                     </div>
                     <div class="preview-list-right">
-                        <span class="text--base">{{ @$item->details->customer_identifier }}</span>
-                    </div>
-                </div>
-                <div class="preview-list-item">
-                    <div class="preview-list-left">
-                        <div class="preview-list-user-wrapper">
-                            <div class="preview-list-user-icon">
-                                <i class="las la-receipt"></i>
-                            </div>
-                            <div class="preview-list-user-content">
-                                <span>{{ __("Flutterwave Reference") }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="preview-list-right">
-                        <span class="text--base">{{ @$item->details->flw_info->flw_ref }}</span>
+                        <span class="text--base">{{ @$item->details->bill_number }}</span>
                     </div>
                 </div>
                 @endif
@@ -450,7 +435,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="preview-list-right">
                             @if ($item->type == payment_gateway_const()::TYPEADDMONEY)
                                 <span class="text--warning">{{ get_amount($item->payable,$item->currency->currency_code) }}</span>

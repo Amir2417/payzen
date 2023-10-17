@@ -753,37 +753,6 @@ function switcherAjax(hitUrl,method = "PUT") {
   });
 }
 
-// dashboard-list
-$(document).on("click",".dashboard-list-item",function (e) {
-  if (e.target.classList.contains("select-btn")) {
-    $(".dashboard-list-item-wrapper .select-btn").text("Select");
-    $(e.target).text("Selected");
-    return false;
-  }
-  var element = $(this).parent(".dashboard-list-item-wrapper");
-  if (element.hasClass("show")) {
-    element.removeClass("show");
-    element.find(".preview-list-wrapper").removeClass("show");
-    element.find(".preview-list-wrapper").slideUp(300, "swing");
-  } else {
-    element.addClass("show");
-    element.children(".preview-list-wrapper").slideDown(300, "swing");
-    element
-      .siblings(".dashboard-list-item-wrapper")
-      .children(".preview-list-wrapper")
-      .slideUp(300, "swing");
-    element.siblings(".dashboard-list-item-wrapper").removeClass("show");
-    element
-      .siblings(".dashboard-list-item-wrapper")
-      .find(".dashboard-list-item")
-      .removeClass("show");
-    element
-      .siblings(".dashboard-list-item-wrapper")
-      .find(".preview-list-wrapper")
-      .slideUp(300, "swing");
-  }
-});
-
 $(".dashboard-list-item-wrapper .select-btn").click(function () {
   $(".dashboard-list-item-wrapper").removeClass("selected");
   $(this).parents(".dashboard-list-item-wrapper").toggleClass("selected");
