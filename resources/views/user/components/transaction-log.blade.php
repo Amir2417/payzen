@@ -65,8 +65,8 @@
                 </div>
                 <div class="dashboard-list-right">
                     @if ($item->type == payment_gateway_const()::TYPEADDMONEY)
-                        <h4 class="main-money text--warning">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h4>
-                        <h6 class="exchange-money fw-bold">{{ get_amount($item->payable,$item->currency->currency_code) }}</h6>
+                    <h4 class="main-money text--warning">{{ get_amount($item->request_amount,$item->info->sender_currency->code) }}</h4>
+                    <h6 class="exchange-money fw-bold">{{ get_amount($item->payable,$item->currency->currency_code) }}</h6>
                     @elseif($item->type == payment_gateway_const()::TYPEMONEYOUT)
                         <h6 class="exchange-money text--warning fw-bold">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h6>
                         <h4 class="main-money ">{{ get_amount($item->payable,$item->currency->currency_code) }}</h4>
@@ -424,7 +424,7 @@
                         </div>
                         <div class="preview-list-right">
                             @if ($item->type == payment_gateway_const()::TYPEADDMONEY)
-                                <span class="text-danger">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
+                                <span class="text-success">{{ get_amount($item->available_balance,$item->info->sender_currency->code) }}</span>
                             @elseif ($item->type == payment_gateway_const()::TYPEMONEYOUT)
                              @php
                                  $conversionAmount = $item->request_amount * $item->currency->rate;

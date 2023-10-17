@@ -28,6 +28,7 @@ use App\Models\StripeCard;
 class AddMoneyController extends Controller
 {
     use Stripe,Manual,FlutterwaveTrait;
+    
     public function index() {
 
         $page_title         = "Add Money";

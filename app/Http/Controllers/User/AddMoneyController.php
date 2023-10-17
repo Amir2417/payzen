@@ -155,32 +155,22 @@ class AddMoneyController extends Controller
     }
     public function flutterwaveCallback()
     {
-
         $status = request()->status;
-
-
         //if payment is successful
         if ($status ==  'successful') {
-
             $transactionID = Flutterwave::getTransactionIDFromCallback();
             $data = Flutterwave::verifyTransaction($transactionID);
-
             $requestData = request()->tx_ref;
             $token = $requestData;
-
-            $checkTempData = TemporaryData::where("type",'flutterwave')->where("identifier",$token)->first();
-            dd($checkTempData);
+            $checkTempData = TemporaryData::where("type",'flutterwave')->where("identifier",$token)->first();         
             if(!$checkTempData) return redirect()->route('user.add.money.index')->with(['error' => ['Transaction Failed. Record didn\'t saved properly. Please try again.']]);
-
             $checkTempData = $checkTempData->toArray();
-
             try{
                 PaymentGatewayHelper::init($checkTempData)->type(PaymentGatewayConst::TYPEADDMONEY)->responseReceive('flutterWave');
             }catch(Exception $e) {
                 return back()->with(['error' => [$e->getMessage()]]);
             }
             return redirect()->route("user.add.money.index")->with(['success' => ['Successfully added money']]);
-
         }
         elseif ($status ==  'cancelled'){
             return redirect()->route('user.add.money.index')->with(['error' => ['Add money cancelled']]);
