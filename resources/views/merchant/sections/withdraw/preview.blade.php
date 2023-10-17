@@ -21,7 +21,7 @@
             'name'  => __("Dashboard"),
             'url'   => setRoute("merchant.dashboard"),
         ]
-    ], 'active' => __("Money Out")])
+    ], 'active' => __("Withdraw")])
 @endsection
 
 @section('content')
@@ -118,7 +118,7 @@
                 <div class="dash-payment-item active">
                     <div class="dash-payment-title-area">
                         <span class="dash-payment-badge">!</span>
-                        <h5 class="title">{{__("Withdraw Money Information")}}</h5>
+                        <h5 class="title">{{_("Withdraw Information")}}</h5>
                     </div>
                     <div class="dash-payment-body">
                         <div class="preview-list-wrapper">
@@ -134,7 +134,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="request-amount">{{ number_format(@$moneyOutData->amount,2 )}} {{ get_default_currency_code() }}</span>
+                                    <span class="request-amount">{{ number_format(@$moneyOutData->amount,2 )}} {{@$moneyOutData->charges->wallet_cur_code}}</span>
                                 </div>
                             </div>
                             <div class="preview-list-item">
@@ -149,7 +149,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="request-amount">{{ __("1") }} {{ get_default_currency_code() }} =  {{ number_format(@$moneyOutData->gateway_rate,2 )}} {{ @$moneyOutData->gateway_currency }}</span>
+                                    <span class="request-amount">{{ __("1") }} {{ @$moneyOutData->charges->gateway_cur_code }} =  {{ number_format(@$moneyOutData->charges->exchange_rate,4 )}} {{ $moneyOutData->charges->wallet_cur_code }}</span>
                                 </div>
                             </div>
                             <div class="preview-list-item">
@@ -164,7 +164,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="conversion">{{ number_format(@$moneyOutData->conversion_amount,2 )}} {{ @$moneyOutData->gateway_currency }}</span>
+                                    <span class="conversion">{{ number_format(@$moneyOutData->charges->conversion_amount,2 )}} {{ @$moneyOutData->charges->gateway_cur_code }}</span>
                                 </div>
                             </div>
                             <div class="preview-list-item">
@@ -179,7 +179,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="fees">{{ number_format(@$moneyOutData->gateway_charge,2 )}} {{ @$moneyOutData->gateway_currency }}</span>
+                                    <span class="fees">{{ number_format(@$moneyOutData->charges->total_charge,2 )}} {{  @$moneyOutData->charges->gateway_cur_code }}</span>
                                 </div>
                             </div>
 
@@ -195,7 +195,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="text--success ">{{ number_format(@$moneyOutData->will_get,2 )}} {{ @$moneyOutData->gateway_currency }}</span>
+                                    <span class="text--success ">{{ number_format(@$moneyOutData->charges->will_get,2 )}} {{ @$moneyOutData->charges->gateway_cur_code }}</span>
                                 </div>
                             </div>
                             <div class="preview-list-item">
@@ -210,7 +210,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="text--warning last">{{ number_format(@$moneyOutData->payable,2 )}} {{ get_default_currency_code() }}</span>
+                                    <span class="text--warning last">{{ number_format(@$moneyOutData->charges->payable,2 )}} {{ @$moneyOutData->charges->wallet_cur_code }}</span>
                                 </div>
                             </div>
                         </div>
@@ -218,7 +218,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
 </div>

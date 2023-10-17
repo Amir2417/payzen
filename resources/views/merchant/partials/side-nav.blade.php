@@ -92,3 +92,14 @@
         </div>
     </div>
 </div>
+@push('script')
+    <script>
+        $(".logout-btn").click(function(){
+            var actionRoute =  "{{ setRoute('merchant.logout') }}";
+            var target      = 1;
+            var message     = `Are you sure to <strong>Logout</strong>?`;
+
+            openAlertModal(actionRoute,target,message,"Logout","POST");
+        });
+    </script>
+@endpush

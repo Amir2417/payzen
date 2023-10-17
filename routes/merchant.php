@@ -16,6 +16,7 @@ use App\Http\Controllers\Merchant\ReceiveMoneyController;
 use App\Http\Controllers\Merchant\SecurityController as MerchantSecurityController;
 use App\Http\Controllers\Merchant\SupportTicketController;
 use App\Http\Controllers\Merchant\TransactionController;
+use App\Http\Controllers\Merchant\WalletController as MerchantWalletController;
 
 Route::prefix("merchant")->name("merchant.")->group(function(){
     Route::controller(DashboardController::class)->group(function(){
@@ -36,7 +37,7 @@ Route::prefix("merchant")->name("merchant.")->group(function(){
             Route::get('/','index')->name('index');
         });
     });
-    Route::controller(WalletController::class)->prefix("wallets")->name("wallets.")->group(function(){
+    Route::controller(MerchantWalletController::class)->prefix("wallets")->name("wallets.")->group(function(){
         Route::get("/","index")->name("index");
         Route::post("balance","balance")->name("balance");
     });

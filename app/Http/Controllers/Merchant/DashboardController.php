@@ -6,6 +6,7 @@ use App\Constants\PaymentGatewayConst;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Currency;
 use App\Models\Merchants\MerchantQrCode;
+use App\Models\Merchants\MerchantWallet;
 use App\Models\Merchants\SandboxWallet;
 use App\Models\Transaction;
 use App\Models\User;
@@ -17,6 +18,13 @@ class DashboardController extends Controller
     public function index()
     {
         $page_title = "Merchant Dashboard";
+        $fiat_wallets = MerchantWallet::auth()->whereHas("currency",function($q) {
+            return $q->where("type",GlobalConst::FIAT);
+        })->with('currency','merchant')->orderByDesc("balance")->limit(8)->get();
+
+        $crypto_wallets = MerchantWallet::auth()->whereHas("currency",function($q) {
+            return $q->where("type",GlobalConst::CRYPTO);
+        })->with('currency','merchant')->orderByDesc("balance")->limit(8)->get();
         $baseCurrency = Currency::default();
         $transactions = Transaction::merchantAuth()->latest()->take(5)->get();
         $money_out_amount = Transaction::merchantAuth()->where('type', PaymentGatewayConst::TYPEMONEYOUT)->where('status', 1)->sum('request_amount');
@@ -80,7 +88,8 @@ class DashboardController extends Controller
             'chart_one_data'   => $chart_one_data,
             'month_day'        => $month_day,
         ];
-        return view('merchant.dashboard',compact("page_title","baseCurrency",'transactions','data','chartData'));
+        return view('merchant.dashboard',compact("page_title","baseCurrency",'transactions','data','chartData',"fiat_wallets",
+        "crypto_wallets"));
     }
 
     public function logout(Request $request) {

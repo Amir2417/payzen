@@ -14,6 +14,63 @@
 <div class="body-wrapper">
     <div class="dashboard-area mt-10">
         <div class="dashboard-header-wrapper">
+            <h4 class="title">{{ __("My Wallets") }}</h4>
+            <div class="dashboard-btn-wrapper">
+                <div class="dashboard-btn">
+                    <a href="{{ setRoute('merchant.wallets.index') }}" class="btn--base">{{ __("View More") }}</a>
+                </div>
+            </div>
+        </div>
+        @if (isset($fiat_wallets)  && $fiat_wallets->count() > 0)
+            <div class="dashboard-item-area">
+                <div class="dashboard-header-wrapper">
+                    <h6 class="title">{{ __("Fiat Currency") }}</h6>
+                </div>
+                <div class="row mb-20-none">
+                    @foreach ($fiat_wallets ?? [] as $item)
+                        <div class="col-xxl-3 col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-20">
+                            <div class="dashbord-item">
+                                <div class="dashboard-content">
+                                    <span class="sub-title">{{ $item->currency->name }}</span>
+                                    <h4 class="title">{{ get_amount($item->balance) }} <span class="text--danger">{{ $item->currency->code }}</span></h4>
+                                </div>
+                                <div class="dashboard-icon">
+                                    <img src="{{ get_image($item->currency->flag,'currency-flag') }}" alt="flag">
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+    </div>
+
+    <div class="dashboard-area mt-20">
+        @if (isset($crypto_wallets) && $crypto_wallets->count() > 0)
+            <div class="dashboard-item-area">
+                <div class="dashboard-header-wrapper">
+                    <h6 class="title">{{ __("Crypto Currency") }}</h6>
+                </div>
+                <div class="row mb-20-none">
+                    @foreach ($crypto_wallets ?? [] as $item)
+                        <div class="col-xxl-3 col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-20">
+                            <div class="dashbord-item">
+                                <div class="dashboard-content">
+                                    <span class="sub-title">{{ $item->currency->name }}</span>
+                                    <h4 class="title">{{ get_amount($item->balance) }} <span class="text--danger">{{ $item->currency->code }}</span></h4>
+                                </div>
+                                <div class="dashboard-icon">
+                                    <img src="{{ get_image($item->currency->flag,'currency-flag') }}" alt="flag">
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+    </div>
+    <div class="dashboard-area mt-10">
+        <div class="dashboard-header-wrapper">
             <h3 class="title">{{ __("Overview") }}</h3>
         </div>
         <div class="dashboard-item-area">

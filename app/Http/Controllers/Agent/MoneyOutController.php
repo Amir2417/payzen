@@ -38,10 +38,7 @@ class MoneyOutController extends Controller
         })->get();
         $transactions       = Transaction::where('agent_id',auth()->user()->id)->moneyOut()->orderByDesc("id")->latest()->take(10)->get();
        
-        return view('agent.sections.withdraw.index',compact('page_title',
-            'payment_gateways',
-            'transactions',
-            'currencies'
+        return view('agent.sections.withdraw.index',compact(    'page_title','payment_gateways','transactions','currencies'
         ));
     }
 

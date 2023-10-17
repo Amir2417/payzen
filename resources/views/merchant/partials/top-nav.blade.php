@@ -10,6 +10,9 @@
             @yield('breadcrumb')
         </div>
         <div class="right">
+            <div class="header-theme-wrapper">
+                <button class="dash-mode-button"><i class="las la-sun"></i></button>
+            </div>
             <div class="header-push-wrapper">
                 <button class="push-icon">
                     <i class="las la-bell"></i>
