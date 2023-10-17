@@ -71,11 +71,11 @@
                         <h6 class="exchange-money text--warning fw-bold">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h6>
                         <h4 class="main-money ">{{ get_amount($item->payable,$item->currency->currency_code) }}</h4>
                     @elseif($item->type == payment_gateway_const()::BILLPAY)
-                        <h4 class="main-money text--warning">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h4>
-                        <h6 class="exchange-money fw-bold">{{ get_amount($item->payable,get_default_currency_code()) }}</h6>
+                        <h4 class="main-money text--warning">{{ get_amount($item->request_amount,$item->details->charges->sender_currency) }}</h4>
+                        <h6 class="exchange-money fw-bold"> {{ get_transaction_numeric_attribute($item->attribute) }} {{  get_amount($item->payable,$item->details->charges->sender_currency) }}</h6>
                     @elseif($item->type == payment_gateway_const()::MOBILETOPUP)
-                        <h4 class="main-money text--warning">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h4>
-                        <h6 class="exchange-money fw-bold">{{ get_amount($item->payable,get_default_currency_code()) }}</h6>
+                        <h4 class="main-money text--warning">{{ get_amount($item->request_amount,$item->details->charges->sender_currency) }}</h4>
+                        <h6 class="exchange-money fw-bold"> {{ get_transaction_numeric_attribute($item->attribute) }} {{  get_amount($item->payable,$item->details->charges->sender_currency) }}</h6>
                     @elseif($item->type == payment_gateway_const()::VIRTUALCARD)
                         <h4 class="main-money text--warning">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h4>
                         <h6 class="exchange-money fw-bold">{{ get_amount($item->payable,get_default_currency_code()) }}</h6>
@@ -379,9 +379,9 @@
                             @elseif ($item->type == payment_gateway_const()::SENDREMITTANCE)
                                 <span>{{ get_amount($item->charge->total_charge,get_default_currency_code()) }}</span>
                             @elseif ($item->type == payment_gateway_const()::BILLPAY)
-                                <span>{{ get_amount($item->charge->total_charge,get_default_currency_code()) }}</span>
+                                <span>{{ get_amount($item->charge->total_charge,$item->details->charges->sender_currency) }}</span>
                             @elseif ($item->type == payment_gateway_const()::MOBILETOPUP)
-                                <span>{{ get_amount($item->charge->total_charge,get_default_currency_code()) }}</span>
+                                <span>{{ get_amount($item->charge->total_charge,$item->details->charges->sender_currency) }}</span>
                             @elseif ($item->type == payment_gateway_const()::VIRTUALCARD)
                                 <span>{{ get_amount($item->charge->total_charge,get_default_currency_code()) }}</span>
                             @elseif ($item->type == payment_gateway_const()::TYPEMONEYEXCHANGE)
@@ -483,9 +483,9 @@
                             @elseif ($item->type == payment_gateway_const()::TYPEMONEYOUT)
                                 <span class="text--danger">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
                             @elseif ($item->type == payment_gateway_const()::BILLPAY)
-                                <span class="text--danger">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
+                                <span class="text--danger">{{ get_amount($item->available_balance,$item->details->charges->sender_currency) }}</span>
                             @elseif ($item->type == payment_gateway_const()::MOBILETOPUP)
-                                <span class="text--danger">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
+                                <span class="text--danger">{{ get_amount($item->available_balance,$item->details->charges->sender_currency) }}</span>
                             @elseif ($item->type == payment_gateway_const()::VIRTUALCARD)
                                 @php
                                     $card_pan = str_split($item->details->card_info->card_pan??$item->details->card_info->maskedPan, 4);

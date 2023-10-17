@@ -2,21 +2,25 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Constants\NotificationConst;
-use App\Constants\PaymentGatewayConst;
-use App\Http\Controllers\Controller;
-use App\Models\Admin\BasicSettings;
-use App\Models\Admin\Currency;
-use App\Models\Admin\TransactionSetting;
-use App\Models\BillPayCategory;
-use App\Models\Transaction;
-use App\Models\UserNotification;
-use App\Models\UserWallet;
-use App\Notifications\User\BillPay\BillPayMail;
-use App\Providers\Admin\BasicSettingsProvider;
 use Exception;
+use App\Models\UserWallet;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
+use App\Constants\GlobalConst;
+use App\Models\Admin\Currency;
+use App\Models\BillPayCategory;
+use App\Models\UserNotification;
 use Illuminate\Support\Facades\DB;
+use App\Models\Admin\BasicSettings;
+use App\Constants\NotificationConst;
+use App\Http\Controllers\Controller;
+use App\Constants\PaymentGatewayConst;
+use App\Models\Admin\AdminNotification;
+use App\Models\Admin\TransactionSetting;
+use Illuminate\Support\Facades\Validator;
+use App\Providers\Admin\BasicSettingsProvider;
+use App\Notifications\User\BillPay\BillPayMail;
+use App\Events\User\NotificationEvent as UserNotificationEvent;
 
 class BillPayController extends Controller
 {
@@ -28,18 +32,21 @@ class BillPayController extends Controller
     }
     public function index() {
         $page_title = "Bill Pay";
-        $billPayCharge = TransactionSetting::where('slug','bill_pay')->where('status',1)->first();
-        $billType = BillPayCategory::active()->orderByDesc('id')->get();
+        $sender_wallets = UserWallet::auth()->whereHas('currency',function($q) {
+            $q->where("sender",GlobalConst::ACTIVE)->where("status",GlobalConst::ACTIVE);
+        })->active()->get();
+        $charges = TransactionSetting::where('slug','bill_pay')->where('status',1)->first();
+        $bill_types = BillPayCategory::active()->get();
         $transactions = Transaction::auth()->billPay()->latest()->take(10)->get();
-        return view('user.sections.bill-pay.index',compact("page_title",'billPayCharge','transactions','billType'));
+        return view('user.sections.bill-pay.index',compact('page_title','sender_wallets','charges','transactions','bill_types'));
     }
     public function payConfirm(Request $request){
-        $request->validate([
-            'bill_type' => 'required|string',
-            'bill_number' => 'required|min:8',
-            'amount' => 'required|numeric|gt:0',
-
-        ]);
+        $validated = Validator::make($request->all(),[
+            'sender_amount'     => "required|numeric|gt:0",
+            'sender_currency'   => "required|string|exists:currencies,code",
+            'bill_type'         => "required|string|max:300",
+            'bill_number'         => "required",
+        ])->validate();
         $basic_setting = BasicSettings::first();
         $user = auth()->user();
         if($basic_setting->kyc_verification){
@@ -51,48 +58,38 @@ class BillPayController extends Controller
                 return redirect()->route('user.profile.index')->with(['error' => ['Admin rejected your kyc information, Please re-submit again']]);
             }
         }
-        $amount = $request->amount;
-        $billType = $request->bill_type;
-        $bill_type = BillPayCategory::where('id', $billType)->first();
-        $bill_number = $request->bill_number;
-        $user = auth()->user();
-        $billPayCharge = TransactionSetting::where('slug','bill_pay')->where('status',1)->first();
-        $userWallet = UserWallet::where('user_id',$user->id)->first();
-        if(!$userWallet){
-            return back()->with(['error' => ['Sender wallet not found']]);
-        }
-        $baseCurrency = Currency::default();
-        $rate = $baseCurrency->rate;
-        if(!$baseCurrency){
-            return back()->with(['error' => ['Default currency not found']]);
-        }
 
-        $minLimit =  $billPayCharge->min_limit *  $rate;
-        $maxLimit =  $billPayCharge->max_limit *  $rate;
-        if($amount < $minLimit || $amount > $maxLimit) {
-            return back()->with(['error' => ['Please follow the transaction limit']]);
-        }
-        //charge calculations
-        $fixedCharge = $billPayCharge->fixed_charge *  $rate;
-        $percent_charge = ($request->amount / 100) * $billPayCharge->percent_charge;
-        $total_charge = $fixedCharge + $percent_charge;
-        $payable = $total_charge + $amount;
-        if($payable > $userWallet->balance ){
-            return back()->with(['error' => ['Sorry, insufficient balance']]);
-        }
+        $sender_wallet = UserWallet::auth()->whereHas("currency",function($q) use ($validated) {
+            $q->where("code",$validated['sender_currency'])->active();
+        })->active()->first();
+
+        if(!$sender_wallet) return back()->with(['error' => ['Your wallet isn\'t available with currency ('.$validated['sender_currency'].')']]);
+        $trx_charges = TransactionSetting::where('slug','bill_pay')->where('status',1)->first();;
+        $charges = $this->billPayCharge($validated['sender_amount'],$trx_charges,$sender_wallet);
+
+        $bill_type = BillPayCategory::where('slug', $validated['bill_type'])->first();
+        if(!$bill_type) return back()->with(['error' => ['Your selected bill type  isn\'t available']]);
+         // Check transaction limit
+         $sender_currency_rate = $sender_wallet->currency->rate;
+         $min_amount = $trx_charges->min_limit * $sender_currency_rate;
+         $max_amount = $trx_charges->max_limit * $sender_currency_rate;
+         if($charges['sender_amount'] < $min_amount || $charges['sender_amount'] > $max_amount) {
+             return back()->with(['error' => ['Please follow the transaction limit. (Min '.$min_amount . ' ' . $sender_wallet->currency->code .' - Max '.$max_amount. ' ' . $sender_wallet->currency->code . ')']]);
+         }
+         if($charges['payable'] > $sender_wallet->balance) return back()->with(['error' => ['Your wallet balance is insufficient']]);
         try{
             $trx_id = 'BP'.getTrxNum();
-            $sender = $this->insertSender( $trx_id,$user,$userWallet,$amount, $bill_type, $bill_number,$payable);
-            $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$user,$sender);
+            $sender = $this->insertSender($trx_id,$sender_wallet, $charges, $bill_type,$validated['bill_number']);
+            $this->insertSenderCharges($sender,$charges,$sender_wallet);
             if( $this->basic_settings->email_notification == true){
                 $notifyData = [
                     'trx_id'  => $trx_id,
                     'bill_type'  => @$bill_type->name,
-                    'bill_number'  => $bill_number,
-                    'request_amount'   => $amount,
-                    'charges'   => $total_charge,
-                    'payable'  => $payable,
-                    'current_balance'  => getAmount($userWallet->balance, 4),
+                    'bill_number'  => @$validated['bill_number'],
+                    'request_amount'   =>getAmount($charges['sender_amount'],2).' '.$charges['sender_currency'],
+                    'charges'   => getAmount($charges['total_charge'],2).' '.$charges['sender_currency'],
+                    'payable'  => getAmount($charges['payable'],2).' '.$charges['sender_currency'],
+                    'current_balance'  => getAmount($sender_wallet->balance, 4).' '.$charges['sender_currency'],
                     'status'  => "Pending",
                 ];
                 //send notifications
@@ -105,30 +102,31 @@ class BillPayController extends Controller
         }
 
     }
-    public function insertSender( $trx_id,$user,$userWallet,$amount, $bill_type, $bill_number,$payable) {
+    public function insertSender( $trx_id,$sender_wallet, $charges, $bill_type,$bill_number) {
         $trx_id = $trx_id;
-        $authWallet = $userWallet;
-        $afterCharge = ($authWallet->balance - $payable);
+        $authWallet = $sender_wallet;
+        $afterCharge = ($authWallet->balance -  $charges['payable']);
         $details =[
             'bill_type_id' => $bill_type->id??'',
             'bill_type_name' => $bill_type->name??'',
             'bill_number' => $bill_number,
-            'bill_amount' => $amount??"",
+            'bill_amount' => $charges['sender_amount']??"",
+            'charges' => $charges,
         ];
         DB::beginTransaction();
         try{
             $id = DB::table("transactions")->insertGetId([
-                'user_id'                       => $user->id,
-                'user_wallet_id'                => $authWallet->id,
+                'user_id'                       => $sender_wallet->user->id,
+                'user_wallet_id'                => $sender_wallet->id,
                 'payment_gateway_currency_id'   => null,
                 'type'                          => PaymentGatewayConst::BILLPAY,
                 'trx_id'                        => $trx_id,
-                'request_amount'                => $amount,
-                'payable'                       => $payable,
+                'request_amount'                => $charges['sender_amount'],
+                'payable'                       => $charges['payable'],
                 'available_balance'             => $afterCharge,
                 'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::BILLPAY," ")) . " Request To Admin",
                 'details'                       => json_encode($details),
-                'attribute'                      =>PaymentGatewayConst::SEND,
+                'attribute'                     =>PaymentGatewayConst::SEND,
                 'status'                        => 2,
                 'created_at'                    => now(),
             ]);
@@ -146,34 +144,60 @@ class BillPayController extends Controller
             'balance'   => $afterCharge,
         ]);
     }
-    public function insertSenderCharges($fixedCharge,$percent_charge, $total_charge, $amount,$user,$id) {
+    public function insertSenderCharges($id,$charges,$sender_wallet) {
         DB::beginTransaction();
         try{
             DB::table('transaction_charges')->insert([
-                'transaction_id'    => $id,
-                'percent_charge'    => $percent_charge,
-                'fixed_charge'      =>$fixedCharge,
-                'total_charge'      =>$total_charge,
-                'created_at'        => now(),
+                'transaction_id'    =>  $id,
+                'percent_charge'    =>  $charges['percent_charge'],
+                'fixed_charge'      =>  $charges['fixed_charge'],
+                'total_charge'      =>  $charges['total_charge'],
+                'created_at'        =>  now(),
             ]);
             DB::commit();
 
             //notification
             $notification_content = [
                 'title'         =>"Bill Pay ",
-                'message'       => "Bill Pay request send to admin " .$amount.' '.get_default_currency_code()." successful.",
-                'image'         => files_asset_path('profile-default'),
+                'message'       => "Bill Pay Request Send To Admin " .$charges['sender_amount'].' '.$charges['sender_currency']." Successful.",
+                'image'         => get_image($sender_wallet->user->image,'user-profile'),
             ];
 
             UserNotification::create([
                 'type'      => NotificationConst::BILL_PAY,
-                'user_id'  => $user->id,
+                'user_id'  => $sender_wallet->user->id,
                 'message'   => $notification_content,
             ]);
+            //Push Notifications
+            event(new UserNotificationEvent($notification_content,$sender_wallet->user));
+            send_push_notification(["user-".$sender_wallet->user->id],[
+                'title'     => $notification_content['title'],
+                'body'      => $notification_content['message'],
+                'icon'      => $notification_content['image'],
+            ]);
+
+           //admin notification
+           $notification_content['title'] = "Bill Pay Request Send To Admin  ".$charges['sender_amount'].' '.$charges['sender_currency'].' Successful ('.$sender_wallet->user->username.')';
+           AdminNotification::create([
+               'type'      => NotificationConst::BILL_PAY,
+               'admin_id'  => 1,
+               'message'   => $notification_content,
+           ]);
             DB::commit();
         }catch(Exception $e) {
             DB::rollBack();
             throw new Exception($e->getMessage());
         }
+    }
+    public function billPayCharge($sender_amount,$charges,$sender_wallet) {
+        $data['sender_amount']          = $sender_amount;
+        $data['sender_currency']        = $sender_wallet->currency->code;
+        $data['sender_currency_rate']   = $sender_wallet->currency->rate;
+        $data['percent_charge']         = ($sender_amount / 100) * $charges->percent_charge ?? 0;
+        $data['fixed_charge']           = $sender_wallet->currency->rate * $charges->fixed_charge ?? 0;
+        $data['total_charge']           = $data['percent_charge'] + $data['fixed_charge'];
+        $data['sender_wallet_balance']  = $sender_wallet->balance;
+        $data['payable']                = $sender_amount + $data['total_charge'];
+        return $data;
     }
 }
