@@ -241,6 +241,8 @@ class PaymentGateway {
             Auth::guard($api_user_login_guard)->loginUsingId($creator->id);
         }
 
+        
+        $method_name = $tempData['type']."Success";
         $currency_id = $tempData['data']->currency ?? "";
         $gateway_currency = PaymentGatewayCurrency::find($currency_id);
         if(!$gateway_currency) throw new Exception('Transaction Failed. Gateway currency not available.');

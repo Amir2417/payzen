@@ -480,12 +480,12 @@
         function getExchangeRate() {
             var sender_currency = acceptVar().sCurrency;
             var sender_currency_rate = acceptVar().sCurrency_rate;
-            // console.log("sender_currency_rate",sender_currency_rate);
+            
             var receiver_currency = acceptVar().rCurrency;
             var receiver_currency_rate = acceptVar().rCurrency_rate;
-            // console.log("receiver_currency_rate",receiver_currency_rate);
+            
             var rate = parseFloat(receiver_currency_rate) / parseFloat(sender_currency_rate);
-            // console.log(rate);
+           
             $('.rate-show').html("1 " + sender_currency + " = " + parseFloat(rate).toFixed(4) + " " + receiver_currency);
 
             return rate;
@@ -511,7 +511,7 @@
 
             // Fees
             var charges = feesCalculation();
-            // console.log(total_charge + "--");
+            
             $('.fees').text(charges.total + " " + sender_currency);
 
             // Pay In Total

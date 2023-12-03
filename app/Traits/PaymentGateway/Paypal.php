@@ -75,6 +75,7 @@ trait Paypal
     }
     public function paypalInitApi($output = null) {
         if(!$output) $output = $this->output;
+        dd($output);
         $credentials = $this->getPaypalCredentials($output);
 
         $config = $this->paypalConfig($credentials,$output['amount']);

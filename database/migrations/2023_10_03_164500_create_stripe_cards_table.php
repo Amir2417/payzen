@@ -17,10 +17,10 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger("user_id")->nullable();
             $table->unsignedBigInteger("agent_id")->nullable();
-            $table->text('name');
-            $table->text('card_number')->unique();
-            $table->text('expiration_date');
-            $table->text('cvc_code');
+            $table->string('name',250);
+            $table->string('card_number',250);
+            $table->string('expiration_date',250);
+            $table->string('cvc_code',250);
             $table->boolean('status')->default(true);
             $table->timestamps();
 

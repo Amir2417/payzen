@@ -132,7 +132,7 @@ Route::prefix('user')->group(function(){
                 });
             });
 
-             //add money
+            //add money
             Route::controller(AddMoneyController::class)->prefix("add-money")->group(function(){
                 Route::get('/information','addMoneyInformation');
                 Route::post('submit-data','submitData');
@@ -140,20 +140,19 @@ Route::prefix('user')->group(function(){
                 Route::post('stripe/payment/confirm','paymentConfirmedApi')->name('api.stripe.payment.confirmed');
                 //manual gateway
                 Route::post('manual/payment/confirmed','manualPaymentConfirmedApi')->name('api.manual.payment.confirmed');
-
             });
             //Receive Money
             Route::controller(ReceiveMoneyController::class)->prefix('receive-money')->group(function(){
                 Route::get('/','index');
             });
-             //Send Money
+            //Send Money
             Route::controller(SendMoneyController::class)->prefix('send-money')->group(function(){
                 Route::get('info','sendMoneyInfo');
                 Route::post('exist','checkUser');
                 Route::post('qr/scan','qrScan');
                 Route::post('confirmed','confirmedSendMoney');
             });
-             //Withdraw Money
+            //Withdraw Money
             Route::controller(MoneyOutController::class)->prefix('withdraw')->group(function(){
                 Route::get('info','moneyOutInfo');
                 Route::post('insert','moneyOutInsert');
@@ -162,8 +161,8 @@ Route::prefix('user')->group(function(){
                //get flutterWave banks
                Route::get('get/flutterwave/banks','getBanks');
             });
-             //Make Payment
-             Route::controller(MakePaymentController::class)->prefix('make-payment')->group(function(){
+            //Make Payment
+            Route::controller(MakePaymentController::class)->prefix('make-payment')->group(function(){
                 Route::get('info','makePaymentInfo');
                 Route::post('check/merchant','checkMerchant');
                 Route::post('merchants/scan','qrScan');

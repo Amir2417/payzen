@@ -31,6 +31,7 @@ class AuthorizationController extends Controller
     }
     public function sendMailCode()
     {
+        
         $user = auth()->user();
         $resend = UserAuthorization::where("user_id",$user->id)->first();
         if( $resend){
@@ -182,6 +183,7 @@ class AuthorizationController extends Controller
 
     }
     public function sendEmailOtp(Request $request){
+        
         $basic_settings = $this->basic_settings;
         if($basic_settings->agree_policy){
             $agree = 'required';
@@ -235,6 +237,7 @@ class AuthorizationController extends Controller
             }
             DB::commit();
         }catch(Exception $e) {
+            
             DB::rollBack();
             $message = ['error'=>['Something went wrong! Please try again']];
             return Helpers::error($message);

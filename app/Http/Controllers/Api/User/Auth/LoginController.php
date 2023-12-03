@@ -95,6 +95,7 @@ class LoginController extends Controller
             'phone_code'    => 'required|string|max:20',
             'phone'         => 'required|string|max:20',
             'zip_code'         => 'required|string|max:20',
+            'refer'         => 'nullable|string|exists:users,referral_id',
             'agree'         =>  $agree,
 
         ]);
@@ -118,7 +119,7 @@ class LoginController extends Controller
         $mobile        = remove_speacial_char($data['phone']);
         $mobile_code   = remove_speacial_char($data['phone_code']);
         $complete_phone             =  $mobile_code . $mobile;
-
+        $referral_id       = generate_unique_string('users','referral_id',8,'number');
 
         $email = User::orWhere('email',$data['email'])->first();
         if($email){
@@ -139,6 +140,7 @@ class LoginController extends Controller
         $user->mobile =  $mobile;
         $user->mobile_code =  $mobile_code;
         $user->full_mobile =    $complete_phone;
+        $user->referral_id =    $referral_id;
         $user->password = Hash::make($data['password']);
         $user->username = make_username($data['firstname'],$data['lastname']);
         // $user->image = 'default.png';
@@ -180,6 +182,8 @@ class LoginController extends Controller
            }
         $token = $user->createToken('user_token')->accessToken;
         $this->createUserWallets($user);
+        $this->createAsReferUserIfExists($request, $user);
+        $this->createNewUserRegisterBonus($user);
         $this->createQr($user);
         $data = ['token' => $token, 'user' => $user, ];
         $message =  ['success'=>['Registration Successful']];

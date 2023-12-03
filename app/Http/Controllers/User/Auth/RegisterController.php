@@ -84,7 +84,6 @@ class RegisterController extends Controller
 
         ]);
         $validated = $validator->validate();
-
         $field_name = "username";
         if(check_email($validated['email'])) {
             $field_name = "email";
@@ -93,6 +92,7 @@ class RegisterController extends Controller
         $exist = User::where($field_name,$validated['email'])->first();
         if( $exist) return back()->with(['error' => ['User already  exists, please try with another email']]);
         $code = generate_random_code();
+        
         $data = [
             'user_id'       =>  0,
             'email'         => $validated['email'],
@@ -113,7 +113,7 @@ class RegisterController extends Controller
             }
             DB::commit();
         }catch(Exception $e) {
-
+            
             DB::rollBack();
             return back()->with(['error' => ['Something went wrong! Please try again']]);
         };
@@ -347,7 +347,7 @@ class RegisterController extends Controller
             $this->createAsReferUserIfExists($request, $user);
             $this->createNewUserRegisterBonus($user);
         }catch(Exception $e) {
-            dd($e->getMessage());
+            
             $this->guard()->logout();
             $user->delete();
             return redirect()->back()->with(['error' => ['Something went wrong! Please try again']]);

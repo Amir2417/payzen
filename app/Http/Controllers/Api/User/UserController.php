@@ -40,9 +40,9 @@ class UserController extends Controller
         $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
             return[
                 'balance' => getAmount($data->balance,2),
-                'currency' => get_default_currency_code(),
+                'currency' => $data->currency->code,
             ];
-        })->first();
+        });
         $transactions = Transaction::auth()->latest()->take(5)->get()->map(function($item){
 
             $basic_settings = BasicSettings::first();

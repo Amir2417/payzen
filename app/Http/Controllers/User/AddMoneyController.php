@@ -103,6 +103,7 @@ class AddMoneyController extends Controller
             }
         }
         try{
+            dd($request->all());
             $instance = PaymentGatewayHelper::init($request->all())->gateway()->render();
         }catch(Exception $e) {
             return back()->with(['error' => [$e->getMessage()]]);

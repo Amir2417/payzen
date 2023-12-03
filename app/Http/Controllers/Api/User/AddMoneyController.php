@@ -28,9 +28,9 @@ class AddMoneyController extends Controller
         $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
             return[
                 'balance' => getAmount($data->balance,2),
-                'currency' => get_default_currency_code(),
+                'currency' => $data->currency->code,
             ];
-            })->first();
+            });
             $transactions = Transaction::auth()->addMoney()->latest()->take(5)->get()->map(function($item){
                 $statusInfo = [
                     "success" =>      1,
@@ -107,6 +107,7 @@ class AddMoneyController extends Controller
          $validator = Validator::make($request->all(), [
             'currency'  => "required",
             'amount'        => "required|numeric",
+            'sender_wallet'  =>'required',
         ]);
         if($validator->fails()){
             $error =  ['error'=>$validator->errors()->all()];
@@ -137,8 +138,8 @@ class AddMoneyController extends Controller
         return Helpers::error($error);
         }
         $defualt_currency = Currency::default();
-
-        $user_wallet = UserWallet::auth()->where('currency_id', $defualt_currency->id)->first();
+        
+        $user_wallet = UserWallet::auth()->where('id', $request->sender_wallet)->first();
 
         if(!$user_wallet) {
             $error = ['error'=>['User wallet not found!']];
@@ -149,6 +150,7 @@ class AddMoneyController extends Controller
             return Helpers::error($error);
         }
         try{
+            dd($request->all());
             $instance = PaymentGatewayApi::init($request->all())->gateway()->api()->get();
 
             $trx = $instance['response']['id']??$instance['response']['trx']??$instance['response']['reference_id']??$instance['response'];
@@ -203,7 +205,7 @@ class AddMoneyController extends Controller
                     $message =  ['success'=>['Add Money Inserted Successfully']];
                     return Helpers::success($data, $message);
                 }else if($temData->type == PaymentGatewayConst::PAYPAL) {
-
+                    dd($temData->data->amount);
                     $payment_informations =[
                     'trx' =>  $temData->identifier,
                     'gateway_currency_name' =>  $payment_gateway_currency->name,

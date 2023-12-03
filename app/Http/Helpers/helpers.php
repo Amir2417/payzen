@@ -1722,6 +1722,13 @@ function generateQr($val)
 
     return "https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=$val&choe=UTF-8&chf=bg,s,FFFFFF00";
 }
+
+function get_files_public_path($slug)
+{
+    $files_path = files_path($slug)->path ?? "";
+    return "public/" . $files_path;
+}
+
 function userGuard() {
     if(auth()->guard('web')->check()){
         $user = auth()->guard('web')->user();
