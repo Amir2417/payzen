@@ -102,6 +102,7 @@ class PaymentGateway {
 
         $gateway_currency = $output['currency'];
         $requested_amount = ($output['amount']->requested_amount / $output['sender_currency']->rate) * $output['currency']->rate;
+        
         if($requested_amount < ($gateway_currency->min_limit) || $requested_amount > ($gateway_currency->max_limit)) {
             throw ValidationException::withMessages([
                 $this->amount_input = "Please follow the transaction limit",
@@ -151,7 +152,7 @@ class PaymentGateway {
             $fixed_charges = 0;
             $percent_charges = 0;
         }
-
+        
         $fixed_charge_calc = ($fixed_charges) * $sender_currency_rate;
         $gateway_request_amount     = ($amount / $sender_currency->rate) * $currency->rate;
         $percent_charge_calc = (($gateway_request_amount / 100 ) * $percent_charges );

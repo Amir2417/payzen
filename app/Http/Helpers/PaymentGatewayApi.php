@@ -1,23 +1,24 @@
 <?php
 namespace App\Http\Helpers;
 
-use App\Constants\PaymentGatewayConst;
-use App\Http\Helpers\Api\Helpers;
-use App\Models\Admin\Currency;
-use App\Models\Admin\PaymentGatewayCurrency;
+use Exception;
 use App\Models\UserWallet;
+use App\Models\AgentWallet;
+use Illuminate\Support\Str;
+use App\Models\Admin\Currency;
+use App\Http\Helpers\Api\Helpers;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Traits\PaymentGateway\Manual;
 use App\Traits\PaymentGateway\Paypal;
 use App\Traits\PaymentGateway\Stripe;
-use App\Traits\PaymentGateway\Manual;
-use Exception;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Str;
-use App\Traits\PaymentGateway\FlutterwaveTrait;
+use App\Constants\PaymentGatewayConst;
 use App\Traits\PaymentGateway\RazorTrait;
+use Illuminate\Support\Facades\Validator;
+use App\Models\Admin\PaymentGatewayCurrency;
 use App\Traits\PaymentGateway\PagaditoTrait;
+use Illuminate\Validation\ValidationException;
+use App\Traits\PaymentGateway\FlutterwaveTrait;
 
 class PaymentGatewayApi {
 
@@ -53,9 +54,17 @@ class PaymentGatewayApi {
             $error = ['error'=>['Gateway not available']];
             return Helpers::error($error);
         }
-        $defualt_currency = Currency::default();
+        $defualt_currency = Currency::where('id',$validated['sender_wallet'])->first();
 
         $user_wallet = UserWallet::auth()->where('currency_id', $defualt_currency->id)->first();
+
+        if(get_auth_guard() == 'web'){
+
+            $user_wallet = UserWallet::auth()->where('currency_id', $defualt_currency->id)->first();
+        }else{
+          
+            $user_wallet = AgentWallet::auth()->where('currency_id', $defualt_currency->id)->first();
+        }
 
         if(!$user_wallet) {
             $this->currency_input_name = "User wallet not found!";
@@ -67,12 +76,14 @@ class PaymentGatewayApi {
         if($gateway_currency->gateway->isAutomatic()) {
             $this->output['gateway']    = $gateway_currency->gateway;
             $this->output['currency']   = $gateway_currency;
+            $this->output['sender_currency']   = $defualt_currency;
             $this->output['amount']     = $this->amount();
             $this->output['wallet']     = $user_wallet;
             $this->output['distribute'] = $this->gatewayDistribute($gateway_currency->gateway);
         }elseif($gateway_currency->gateway->isManual()){
             $this->output['gateway']    = $gateway_currency->gateway;
             $this->output['currency']   = $gateway_currency;
+            $this->output['sender_currency']   = $defualt_currency;
             $this->output['amount']     = $this->amount();
             $this->output['wallet']     = $user_wallet;
             $this->output['distribute'] = $this->gatewayDistribute($gateway_currency->gateway);
@@ -97,14 +108,14 @@ class PaymentGatewayApi {
     public function limitValidation($output) {
 
         $gateway_currency = $output['currency'];
-
-        $requested_amount = $output['amount']->requested_amount;
         
-
-        if($requested_amount < ($gateway_currency->min_limit/$gateway_currency->rate) || $requested_amount > ($gateway_currency->max_limit/$gateway_currency->rate)) {
-
-            $error = ['error'=>['Please follow the transaction limit']];
-            return Helpers::error($error);
+        $requested_amount = ($output['amount']->requested_amount / $output['sender_currency']->rate) * $output['currency']->rate;
+       
+        
+        if($requested_amount < ($gateway_currency->min_limit) || $requested_amount > ($gateway_currency->max_limit)) {
+            throw ValidationException::withMessages([
+                $this->amount_input = "Please follow the transaction limit",
+            ]);
         }
     }
 
@@ -125,13 +136,14 @@ class PaymentGatewayApi {
         if(method_exists($this,$method)) {
             return $method;
         }
-        dd($method);
+        
         $error = ['error'=>["Gateway(".$gateway->name.") Trait or Method (".$method."()) does not exists"]];
         return Helpers::error($error);
     }
 
     public function amount() {
         $currency = $this->output['currency'] ?? null;
+        
         $sender_currency = $this->output['sender_currency'] ?? null;
         if(!$currency) {
             $error = ['error'=>['Gateway currency not found']];
@@ -159,12 +171,13 @@ class PaymentGatewayApi {
         }
 
         $fixed_charge_calc = ($fixed_charges) * $sender_currency_rate;
-        dd($sender_currency);
+        
         $gateway_request_amount     = ($amount / $sender_currency->rate) * $currency->rate;
         
         $percent_charge_calc = (($gateway_request_amount / 100 ) * $percent_charges );
 
         $total_charge = $fixed_charge_calc + $percent_charge_calc;
+        
 
         if($receiver_currency) {
             $receiver_currency_rate = $receiver_currency->rate;
@@ -184,7 +197,8 @@ class PaymentGatewayApi {
                 'total_amount'              => $request_amount + $total_charge,
                 'exchange_rate'             => $exchange_rate,
                 'will_get'                  => $will_get,
-                'default_currency'          => get_default_currency_code(),
+                'wallet_currency'          => $sender_currency->code,
+                'wallet_currency_rate'          => $sender_currency->rate,
             ];
 
         }else {
@@ -204,12 +218,13 @@ class PaymentGatewayApi {
                 'total_amount'              => $total_Amount,
                 'exchange_rate'             => $exchange_rate,
                 'will_get'                  => $will_get,
-                'default_currency'          => get_default_currency_code(),
+                'wallet_currency'           => $sender_currency->code,
+                'wallet_currency_rate'          => $sender_currency->rate,
             ];
            
         }
-
         return (object) $data;
+        
     }
 
     public function render() {

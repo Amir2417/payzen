@@ -80,7 +80,6 @@
                                 <div class="col-xl-12 col-lg-12 form-group">
                                     <div class="note-area">
                                         <code class="d-block limit-show">--</code>
-                                        <code class="d-block fees-show">--</code>
                                     </div>
                                 </div>
                                 <div class="col-xl-12 col-lg-12">
@@ -217,6 +216,7 @@
             var element             = event;
             var currencyCode        = acceptVar().selectedCurrency;
             var selectedCurrencyRate  = acceptVar().selectedCurrencyRate;
+            
             var selectedCurrencyCode  = acceptVar().selectedCurrency;
             var currencyMinAmount   = acceptVar().currencyMinAmount;
             var currencyMaxAmount   = acceptVar().currencyMaxAmount;
@@ -230,8 +230,9 @@
             $('.sender-wallet').val(walletId);
         }
         function getLimit() {
-            var sender_currency         = acceptVar().currencyCode;
-            var sender_currency_rate    = acceptVar().currencyRate;
+            var sender_currency         = acceptVar().selectedCurrency;
+            
+            var sender_currency_rate    = acceptVar().selectedCurrencyRate;
             var min_limit               = acceptVar().currencyMinAmount;
             var max_limit               = acceptVar().currencyMaxAmount;
             if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {

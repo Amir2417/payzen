@@ -75,16 +75,15 @@ trait Paypal
     }
     public function paypalInitApi($output = null) {
         if(!$output) $output = $this->output;
-        dd($output);
+        
         $credentials = $this->getPaypalCredentials($output);
 
         $config = $this->paypalConfig($credentials,$output['amount']);
         $paypalProvider = new PayPalClient;
         $paypalProvider->setApiCredentials($config);
         $paypalProvider->getAccessToken();
-        $total_charge = $output['amount']->total_charge * $output['sender_currency']->rate;
-        $requested_amount   = $output['amount']->requested_amount + $total_charge;
-        $payable_amount     = ($requested_amount / $output['sender_currency']->rate) * $output['currency']->rate;
+        
+        $payable_amount   = $output['amount']->total_amount;
         
 
         $response = $paypalProvider->createOrder([

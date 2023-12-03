@@ -139,18 +139,20 @@ class AddMoneyController extends Controller
         }
         $defualt_currency = Currency::default();
         
-        $user_wallet = UserWallet::auth()->where('id', $request->sender_wallet)->first();
+        $user_wallet = UserWallet::auth()->with(['currency'])->where('id', $request->sender_wallet)->first();
 
         if(!$user_wallet) {
             $error = ['error'=>['User wallet not found!']];
             return Helpers::error($error);
         }
-        if($amount < ($payment_gateways_currencies->min_limit/$payment_gateways_currencies->rate) || $amount > ($payment_gateways_currencies->max_limit/$payment_gateways_currencies->rate)) {
+        $request_amount     = $amount / $user_wallet->currency->rate;
+       
+        if($request_amount < ($payment_gateways_currencies->min_limit) || $request_amount > ($payment_gateways_currencies->max_limit/$payment_gateways_currencies->rate)) {
             $error = ['error'=>['Please follow the transaction limit']];
             return Helpers::error($error);
         }
         try{
-            dd($request->all());
+            
             $instance = PaymentGatewayApi::init($request->all())->gateway()->api()->get();
 
             $trx = $instance['response']['id']??$instance['response']['trx']??$instance['response']['reference_id']??$instance['response'];
@@ -205,15 +207,19 @@ class AddMoneyController extends Controller
                     $message =  ['success'=>['Add Money Inserted Successfully']];
                     return Helpers::success($data, $message);
                 }else if($temData->type == PaymentGatewayConst::PAYPAL) {
-                    dd($temData->data->amount);
+                    
                     $payment_informations =[
                     'trx' =>  $temData->identifier,
                     'gateway_currency_name' =>  $payment_gateway_currency->name,
-                    'request_amount' => getAmount($temData->data->amount->requested_amount,4).' '.$temData->data->amount->default_currency,
-                    'exchange_rate' => "1".' '.$temData->data->amount->default_currency.' = '.getAmount($temData->data->amount->sender_cur_rate).' '.$temData->data->amount->sender_cur_code,
-                    'total_charge' => getAmount($temData->data->amount->total_charge,2).' '.$temData->data->amount->sender_cur_code,
-                    'will_get' => getAmount($temData->data->amount->will_get,2).' '.$temData->data->amount->default_currency,
-                    'payable_amount' =>  getAmount($temData->data->amount->total_amount,2).' '.$temData->data->amount->sender_cur_code,
+                    'sender_cur_rate'   => $temData->data->amount->sender_cur_rate,
+                    'exchange_rate'     => $temData->data->amount->exchange_rate,
+                    'request_amount' => getAmount($temData->data->amount->requested_amount,4),
+                    'sender_cur_code'   => $temData->data->amount->sender_cur_code,
+                    'wallet_currency'   => $temData->data->amount->wallet_currency,
+                    'wallet_currency_rate'   => $temData->data->amount->wallet_currency_rate,
+                    'total_charge' => getAmount($temData->data->amount->total_charge,2),
+                    'will_get' => getAmount($temData->data->amount->will_get,2),
+                    'payable_amount' =>  getAmount($temData->data->amount->total_amount,2),
                     ];
                     $data =[
                         'gategay_type' => $payment_gateway->type,
