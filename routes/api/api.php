@@ -76,6 +76,12 @@ Route::prefix('user')->group(function(){
         Route::post('resend/otp',[AuthorizationController::class,"resendEmailOtp"]);
     });
 
+    // if(userGuard()['type'] == "AGENT"){
+    //     return redirect()->route('agent.add.money.payment', $gatewayAlias);
+    // }elseif(userGuard()['type'] == "USER"){
+    //     return redirect()->route('user.add.money.payment', $gatewayAlias);
+    // }
+
     Route::post('register',[LoginController::class,'register']);
     Route::post('login',[LoginController::class,'login']);
 

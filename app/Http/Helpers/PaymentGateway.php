@@ -224,6 +224,7 @@ class PaymentGateway {
 
     public function responseReceive($type = null) {
         $tempData = $this->request_data;
+        
         if(empty($tempData) || empty($tempData['type'])) throw new Exception('Transaction Failed. Record didn\'t saved properly. Please try again.');
 
         $method_name = $tempData['type']."Success";
@@ -258,11 +259,17 @@ class PaymentGateway {
         $this->request_data = $validator_data;
         $this->gateway();
         $this->output['tempData'] = $tempData;
+        $type = $tempData['type'];
         if($type == 'flutterWave'){
             if(method_exists(FlutterwaveTrait::class,$method_name)) {
                 return $this->$method_name($this->output);
             }
-        }elseif($type == 'razorpay'){
+        }elseif($type == 'stripe'){
+            if(method_exists(Stripe::class,$method_name)) {
+                return $this->$method_name($this->output);
+            }
+        }
+        elseif($type == 'razorpay'){
             if(method_exists(RazorTrait::class,$method_name)) {
                 return $this->$method_name($this->output);
             }
@@ -275,6 +282,7 @@ class PaymentGateway {
                 return $this->$method_name($this->output);
             }
         }
+       
         throw new Exception("Response method ".$method_name."() does not exists.");
     }
 

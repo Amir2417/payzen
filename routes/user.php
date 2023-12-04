@@ -76,6 +76,7 @@ Route::prefix("user")->name("user.")->group(function(){
             Route::post('manual/payment/confirmed','manualPaymentConfirmed')->name('manual.payment.confirmed');
             Route::get('flutterwave/callback', 'flutterwaveCallback')->name('flutterwave.callback');
             Route::get('razor/callback', 'razorCallback')->name('razor.callback');
+            Route::get('stripe/payment/success/{trx}','stripePaymentSuccess')->name('stripe.payment.success');
 
         });
     });
