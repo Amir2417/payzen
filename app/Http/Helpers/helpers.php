@@ -1,5 +1,6 @@
 <?php
 
+use Stripe\ExchangeRate;
 use App\Models\UserWallet;
 use App\Models\Admin\Admin;
 use Illuminate\Support\Arr;
@@ -41,8 +42,8 @@ use App\Models\Merchants\MerchantNotification;
 use App\Providers\Admin\BasicSettingsProvider;
 use Illuminate\Validation\ValidationException;
 use App\Models\Merchants\MerchantAuthorization;
-use Pusher\PushNotifications\PushNotifications;
 
+use Pusher\PushNotifications\PushNotifications;
 use App\Notifications\User\Auth\SendAuthorizationCode;
 use App\Notifications\Merchant\Auth\SendAuthorizationCode as AuthSendAuthorizationCode;
 use App\Notifications\Agent\Auth\SendAuthorizationCode as AgentAuthSendAuthorizationCode;

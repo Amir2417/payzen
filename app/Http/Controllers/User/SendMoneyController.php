@@ -57,7 +57,7 @@ class SendMoneyController extends Controller
             'sender_currency'   => "required|string|exists:currencies,code",
             'receiver_amount'   => "required|numeric|gt:0",
             'receiver_currency' => "required|string|exists:currencies,code",
-            'email'          => "required|string",
+            'email'             => "required|string",
         ])->validate();
         $sender_wallet = UserWallet::auth()->whereHas("currency",function($q) use ($validated) {
             $q->where("code",$validated['sender_currency'])->active();

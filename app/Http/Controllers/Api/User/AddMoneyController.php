@@ -267,11 +267,15 @@ class AddMoneyController extends Controller
                     $payment_informations =[
                         'trx' =>  $temData->identifier,
                         'gateway_currency_name' =>  $payment_gateway_currency->name,
-                        'request_amount' => getAmount($temData->data->amount->requested_amount,4).' '.$temData->data->amount->default_currency,
-                        'exchange_rate' => "1".' '.$temData->data->amount->default_currency.' = '.getAmount($temData->data->amount->sender_cur_rate,4).' '.$temData->data->amount->sender_cur_code,
-                        'total_charge' => getAmount($temData->data->amount->total_charge,4).' '.$temData->data->amount->sender_cur_code,
-                        'will_get' => getAmount($temData->data->amount->will_get,4).' '.$temData->data->amount->default_currency,
-                        'payable_amount' =>  getAmount($temData->data->amount->total_amount,4).' '.$temData->data->amount->sender_cur_code,
+                        'sender_cur_rate'   => $temData->data->amount->sender_cur_rate,
+                        'exchange_rate'     => $temData->data->amount->exchange_rate,
+                        'request_amount' => getAmount($temData->data->amount->requested_amount,4),
+                        'sender_cur_code'   => $temData->data->amount->sender_cur_code,
+                        'wallet_currency'   => $temData->data->amount->wallet_currency,
+                        'wallet_currency_rate'   => $temData->data->amount->wallet_currency_rate,
+                        'total_charge' => getAmount($temData->data->amount->total_charge,2),
+                        'will_get' => getAmount($temData->data->amount->will_get,2),
+                        'payable_amount' =>  getAmount($temData->data->amount->total_amount,2),
                     ];
                     $data =[
                         'gateway_type' => $payment_gateway->type,
@@ -289,11 +293,15 @@ class AddMoneyController extends Controller
                     $payment_informations =[
                         'trx' =>  $temData->identifier,
                         'gateway_currency_name' =>  $payment_gateway_currency->name,
-                        'request_amount' => getAmount($temData->data->amount->requested_amount,4).' '.$temData->data->amount->default_currency,
-                        'exchange_rate' => "1".' '.$temData->data->amount->default_currency.' = '.getAmount($temData->data->amount->sender_cur_rate,4).' '.$temData->data->amount->sender_cur_code,
-                        'total_charge' => getAmount($temData->data->amount->total_charge,4).' '.$temData->data->amount->sender_cur_code,
-                        'will_get' => getAmount($temData->data->amount->will_get,4).' '.$temData->data->amount->default_currency,
-                        'payable_amount' =>  getAmount($temData->data->amount->total_amount,4).' '.$temData->data->amount->sender_cur_code,
+                        'sender_cur_rate'   => $temData->data->amount->sender_cur_rate,
+                        'exchange_rate'     => $temData->data->amount->exchange_rate,
+                        'request_amount' => getAmount($temData->data->amount->requested_amount,4),
+                        'sender_cur_code'   => $temData->data->amount->sender_cur_code,
+                        'wallet_currency'   => $temData->data->amount->wallet_currency,
+                        'wallet_currency_rate'   => $temData->data->amount->wallet_currency_rate,
+                        'total_charge' => getAmount($temData->data->amount->total_charge,2),
+                        'will_get' => getAmount($temData->data->amount->will_get,2),
+                        'payable_amount' =>  getAmount($temData->data->amount->total_amount,2),
                     ];
                     $data =[
                         'gateway_type' => $payment_gateway->type,
@@ -313,11 +321,15 @@ class AddMoneyController extends Controller
                     $payment_informations =[
                         'trx' =>  $temData->identifier,
                         'gateway_currency_name' =>  $payment_gateway_currency->name,
-                        'request_amount' => getAmount($temData->data->amount->requested_amount,2).' '.$temData->data->amount->default_currency,
-                        'exchange_rate' => "1".' '.$temData->data->amount->default_currency.' = '.getAmount($temData->data->amount->sender_cur_rate).' '.$temData->data->amount->sender_cur_code,
-                        'total_charge' => getAmount($temData->data->amount->total_charge,2).' '.$temData->data->amount->sender_cur_code,
-                        'will_get' => getAmount($temData->data->amount->will_get,2).' '.$temData->data->amount->default_currency,
-                        'payable_amount' =>  getAmount($temData->data->amount->total_amount,2).' '.$temData->data->amount->sender_cur_code,
+                        'sender_cur_rate'   => $temData->data->amount->sender_cur_rate,
+                        'exchange_rate'     => $temData->data->amount->exchange_rate,
+                        'request_amount' => getAmount($temData->data->amount->requested_amount,4),
+                        'sender_cur_code'   => $temData->data->amount->sender_cur_code,
+                        'wallet_currency'   => $temData->data->amount->wallet_currency,
+                        'wallet_currency_rate'   => $temData->data->amount->wallet_currency_rate,
+                        'total_charge' => getAmount($temData->data->amount->total_charge,2),
+                        'will_get' => getAmount($temData->data->amount->will_get,2),
+                        'payable_amount' =>  getAmount($temData->data->amount->total_amount,2),
                     ];
                     $data =[
                         'gategay_type' => $payment_gateway->type,

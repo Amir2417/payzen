@@ -2,24 +2,25 @@
 
 namespace App\Http\Controllers\Api\User;
 
-use App\Constants\NotificationConst;
-use App\Constants\PaymentGatewayConst;
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\Api\Helpers;
-use App\Models\Admin\BasicSettings;
-use App\Models\Admin\Currency;
-use App\Models\Admin\TransactionSetting;
-use App\Models\Transaction;
+use Exception;
 use App\Models\User;
-use App\Models\UserNotification;
 use App\Models\UserQrCode;
 use App\Models\UserWallet;
-use App\Notifications\User\SendMoney\ReceiverMail;
-use App\Notifications\User\SendMoney\SenderMail;
-use Exception;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
+use App\Constants\GlobalConst;
+use App\Models\Admin\Currency;
+use App\Models\UserNotification;
+use App\Http\Helpers\Api\Helpers;
 use Illuminate\Support\Facades\DB;
+use App\Models\Admin\BasicSettings;
+use App\Constants\NotificationConst;
+use App\Http\Controllers\Controller;
+use App\Constants\PaymentGatewayConst;
+use App\Models\Admin\TransactionSetting;
 use Illuminate\Support\Facades\Validator;
+use App\Notifications\User\SendMoney\SenderMail;
+use App\Notifications\User\SendMoney\ReceiverMail;
 
 class SendMoneyController extends Controller
 {
@@ -43,6 +44,27 @@ class SendMoneyController extends Controller
                 'daily_limit' => getAmount($data->daily_limit,2),
             ];
         })->first();
+
+        $sender_currency    = Currency::where('sender',true)->where('status',true)->get()->map(function($data){
+            return[
+                'name'      => $data->name,
+                'code'      => $data->code,
+                'type'      => $data->type,
+                'rate'      => $data->rate,
+                'symbol'    => $data->symbol,
+            ];
+        });
+
+        $receiver_currency    = Currency::where('receiver',true)->where('status',true)->get()->map(function($data){
+            return[
+                'name'      => $data->name,
+                'code'      => $data->code,
+                'type'      => $data->type,
+                'rate'      => $data->rate,
+                'symbol'    => $data->symbol,
+            ];
+        });
+
         $transactions = Transaction::auth()->senMoney()->latest()->take(10)->get()->map(function($item){
             $statusInfo = [
                 "success" =>      1,
@@ -85,15 +107,17 @@ class SendMoneyController extends Controller
         $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
             return[
                 'balance' => getAmount($data->balance,2),
-                'currency' => get_default_currency_code(),
+                'currency' => $data->currency->code,
             ];
-        })->first();
+        });
         $data =[
             'base_curr' => get_default_currency_code(),
             'base_curr_rate' => get_default_currency_rate(),
             'sendMoneyCharge'=> (object)$sendMoneyCharge,
             'userWallet'=>  (object)$userWallet,
             'transactions'   => $transactions,
+            'sender_currency'   => $sender_currency,
+            'receiver_currency'   => $receiver_currency
         ];
         $message =  ['success'=>['Send Money Information']];
         return Helpers::success($data,$message);
@@ -158,12 +182,15 @@ class SendMoneyController extends Controller
     public function confirmedSendMoney(Request $request){
         $validator = Validator::make(request()->all(), [
             'amount' => 'required|numeric|gt:0',
-            'email' => 'required|email'
+            'email' => 'required|email',
+            'sender_currency'   => "required|string|exists:currencies,code",
+            'receiver_currency' => "required|string|exists:currencies,code",
         ]);
         if($validator->fails()){
             $error =  ['error'=>$validator->errors()->all()];
             return Helpers::validation($error);
         }
+        $validated  = $validator->validate();
         $basic_setting = BasicSettings::first();
         $user = auth()->user();
         if($basic_setting->kyc_verification){
@@ -181,12 +208,17 @@ class SendMoneyController extends Controller
         $amount = $request->amount;
         $user = auth()->user();
         $sendMoneyCharge = TransactionSetting::where('slug','transfer')->where('status',1)->first();
-        $userWallet = UserWallet::where('user_id',$user->id)->first();
+        $userWallet = UserWallet::auth()->whereHas("currency",function($q) use ($validated) {
+            $q->where("code",$validated['sender_currency'])->active();
+        })->active()->first();
+        
+
         if(!$userWallet){
             $error = ['error'=>['Sender wallet not found']];
             return Helpers::error($error);
         }
-        $baseCurrency = Currency::default();
+        $baseCurrency = Currency::receiver()->active()->where('code',$request->receiver_currency)->first();
+        
         if(!$baseCurrency){
             $error = ['error'=>['Default currency not found']];
             return Helpers::error($error);
@@ -202,14 +234,18 @@ class SendMoneyController extends Controller
             $error = ['error'=>['Can\'t transfer/request to your own']];
             return Helpers::error($error);
         }
-        $receiverWallet = UserWallet::where('user_id',$receiver->id)->first();
+        $receiverWallet = UserWallet::where('user_id',$receiver->id)->whereHas("currency",function($q) use ($baseCurrency){
+            $q->receiver()->where("code",$baseCurrency->code);
+        })->first();
+        
         if(!$receiverWallet){
             $error = ['error'=>['Receiver wallet not found']];
             return Helpers::error($error);
         }
 
-        $minLimit =  $sendMoneyCharge->min_limit *  $rate;
-        $maxLimit =  $sendMoneyCharge->max_limit *  $rate;
+        $sender_currency_rate = $userWallet->currency->rate;
+        $minLimit =  $sendMoneyCharge->min_limit *  $sender_currency_rate;
+        $maxLimit =  $sendMoneyCharge->max_limit *  $sender_currency_rate;
         if($amount < $minLimit || $amount > $maxLimit) {
             $error = ['error'=>['Please follow the transaction limit']];
             return Helpers::error($error);
@@ -219,6 +255,7 @@ class SendMoneyController extends Controller
         $percent_charge = ($request->amount / 100) * $sendMoneyCharge->percent_charge;
         $total_charge = $fixedCharge + $percent_charge;
         $payable = $total_charge + $amount;
+        
         $recipient = $amount;
         if($payable > $userWallet->balance ){
             $error = ['error'=>['Sorry, insufficient balance']];
@@ -235,9 +272,10 @@ class SendMoneyController extends Controller
                 'charges'   => getAmount( $total_charge, 2).' ' .get_default_currency_code(),
                 'received_amount'  => getAmount( $recipient, 2).' ' .get_default_currency_code(),
                 'status'  => "Success",
-              ];
-
-            $sender = $this->insertSender( $trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver);
+            ];
+            $trx_charges =  userGroupTransactionsCharges(GlobalConst::TRANSFER);
+            $charges = $this->transferCharges($amount,$fixedCharge,$percent_charge,$total_charge,$trx_charges,$userWallet,$baseCurrency);
+            $sender = $this->insertSender( $trx_id,$user,$userWallet,$charges,$amount,$recipient,$payable,$receiver,$receiverWallet);
             if($sender){
                  $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$user,$sender,$receiver);
             }
@@ -252,8 +290,8 @@ class SendMoneyController extends Controller
                 'received_amount'  => getAmount( $recipient, 2).' ' .get_default_currency_code(),
                 'status'  => "Success",
               ];
-
-            $receiverTrans = $this->insertReceiver( $trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver,$receiverWallet);
+              
+            $receiverTrans = $this->insertReceiver( $trx_id,$user,$userWallet,$charges,$amount,$recipient,$payable,$receiver,$receiverWallet);
             if($receiverTrans){
                  $this->insertReceiverCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$user,$receiverTrans,$receiver);
             }
@@ -265,6 +303,7 @@ class SendMoneyController extends Controller
             $message =  ['success'=>['Send Money successful to '.$receiver->fullname]];
             return Helpers::onlysuccess($message);
         }catch(Exception $e) {
+            
             $error = ['error'=>['Something is wrong, Please try again later']];
             return Helpers::error($error);
 
@@ -272,8 +311,10 @@ class SendMoneyController extends Controller
     }
 
      //sender transaction
-     public function insertSender($trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver) {
+     public function insertSender($trx_id,$user,$userWallet,$charges,$amount,$recipient,$payable,$receiver,$receiverWallet) {
+        
         $trx_id = $trx_id;
+        $receiverWallet = $receiverWallet;
         $authWallet = $userWallet;
         $afterCharge = ($authWallet->balance - $payable);
         $details =[
@@ -292,11 +333,12 @@ class SendMoneyController extends Controller
                 'payable'                       => $payable,
                 'available_balance'             => $afterCharge,
                 'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPETRANSFERMONEY," ")) . " To " .$receiver->fullname,
-                'details'                       => json_encode($details),
-                'attribute'                      =>PaymentGatewayConst::SEND,
+                'details'                       => json_encode(['receiver_username'=> $receiverWallet->user->username,'receiver_email'=> $receiverWallet->user->email,'sender_username'=> $userWallet->user->username,'sender_email'=> $userWallet->user->email,'charges' => $charges]),
+                'attribute'                     => PaymentGatewayConst::SEND,
                 'status'                        => true,
                 'created_at'                    => now(),
             ]);
+            
             $this->updateSenderWalletBalance($authWallet,$afterCharge);
 
             DB::commit();
@@ -344,7 +386,7 @@ class SendMoneyController extends Controller
         }
     }
     //Receiver Transaction
-    public function insertReceiver($trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver,$receiverWallet) {
+    public function insertReceiver($trx_id,$user,$userWallet,$charges,$amount,$recipient,$payable,$receiver,$receiverWallet) {
         $trx_id = $trx_id;
         $receiverWallet = $receiverWallet;
         $recipient_amount = ($receiverWallet->balance + $recipient);
@@ -364,8 +406,8 @@ class SendMoneyController extends Controller
                 'payable'                       => $payable,
                 'available_balance'             => $recipient_amount,
                 'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPETRANSFERMONEY," ")) . " From " .$user->fullname,
-                'details'                       => json_encode($details),
-                'attribute'                      =>PaymentGatewayConst::RECEIVED,
+                'details'                       => json_encode(['receiver_username'=> $receiverWallet->user->username,'receiver_email'=> $receiverWallet->user->email,'sender_username'=> $userWallet->user->username,'sender_email'=> $userWallet->user->email,'charges' => $charges]),
+                'attribute'                     => PaymentGatewayConst::RECEIVED,
                 'status'                        => true,
                 'created_at'                    => now(),
             ]);
@@ -414,6 +456,22 @@ class SendMoneyController extends Controller
             $error = ['error'=>['Something is wrong, Please try again later']];
             return Helpers::error($error);
         }
+    }
+
+    public function transferCharges($amount,$fixedCharge,$percent_charge,$total_charge,$trx_charges,$userWallet,$baseCurrency) {
+        $exchange_rate = $baseCurrency->rate / $userWallet->currency->rate;
+  
+        $data['exchange_rate']          = $exchange_rate;
+        $data['sender_amount']          = $amount;
+        $data['sender_currency']        = $userWallet->currency->code;
+        $data['receiver_amount']        = $amount * $exchange_rate;
+        $data['receiver_currency']      = $baseCurrency->code;
+        $data['percent_charge']         = $percent_charge ?? 0;
+        $data['fixed_charge']           = $fixedCharge ?? 0;
+        $data['total_charge']           = $total_charge;
+        $data['sender_wallet_balance']  = $userWallet->balance;
+        $data['payable']                = $amount + $total_charge;
+        return $data;
     }
 
 }

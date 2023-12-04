@@ -9,11 +9,12 @@ use App\Models\VirtualCard;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Constants\GlobalConst;
+use App\Models\Admin\Currency;
 use App\Models\VirtualCardApi;
-use App\Http\Helpers\Api\Helpers;
-use App\Http\Controllers\Controller;
-use App\Models\Admin\BasicSettings;
 use App\Models\UserNotification;
+use App\Http\Helpers\Api\Helpers;
+use App\Models\Admin\BasicSettings;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
@@ -43,6 +44,27 @@ class UserController extends Controller
                 'currency' => $data->currency->code,
             ];
         });
+
+        $sender_currency    = Currency::where('sender',true)->where('status',true)->get()->map(function($data){
+            return[
+                'name'      => $data->name,
+                'code'      => $data->code,
+                'type'      => $data->type,
+                'rate'      => $data->rate,
+                'symbol'    => $data->symbol,
+            ];
+        });
+
+        $receiver_currency    = Currency::where('receiver',true)->where('status',true)->get()->map(function($data){
+            return[
+                'name'      => $data->name,
+                'code'      => $data->code,
+                'type'      => $data->type,
+                'rate'      => $data->rate,
+                'symbol'    => $data->symbol,
+            ];
+        });
+        
         $transactions = Transaction::auth()->latest()->take(5)->get()->map(function($item){
 
             $basic_settings = BasicSettings::first();
@@ -291,6 +313,8 @@ class UserController extends Controller
         'topUps'   =>  getAmount($topUps,2).' '.get_default_currency_code(),
         'totalTransactions'   =>  $totalTransactions,
         'transactions'   =>   $transactions,
+        'sender_currency'   => $sender_currency,
+        'receiver_currency'   => $receiver_currency
         ];
         $message =  ['success'=>['User Dashboard']];
         return Helpers::success($data,$message);
