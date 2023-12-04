@@ -40,12 +40,12 @@ trait Stripe
             $user_name = $user->firstname.' '.$user->lastname ?? '';
         }
         if(userGuard()['type'] == "AGENT"){
+            
             $return_url = route('agent.add.money.stripe.payment.success', $reference);
         }elseif(userGuard()['type'] == "USER"){
-           
             $return_url = route('user.add.money.stripe.payment.success', $reference);
         }
-        $return_url = route('user.add.money.stripe.payment.success', $reference);
+        
 
          // Enter the details of the payment
          $data = [

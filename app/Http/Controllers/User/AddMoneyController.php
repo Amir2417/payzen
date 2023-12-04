@@ -214,7 +214,7 @@ class AddMoneyController extends Controller
         try{
             PaymentGatewayHelper::init($checkTempData)->type(PaymentGatewayConst::TYPEADDMONEY)->responseReceive();
         }catch(Exception $e) {
-            dd($e->getMessage());
+            
             return back()->with(['error' => ["Something Is Wrong..."]]);
         }
         return redirect()->route("user.add.money.index")->with(['success' => ['Successfully Added Money']]);

@@ -138,5 +138,21 @@ class AddMoneyController extends Controller
             return redirect()->route('agent.add.money.index')->with(['error' => ['Transaction failed']]);
         }
     }
+    //stripe success
+    public function stripePaymentSuccess($trx){
+        $token = $trx;
+        $checkTempData = TemporaryData::where("type",PaymentGatewayConst::STRIPE)->where("identifier",$token)->first();
+        
+        if(!$checkTempData) return redirect()->route('user.add.money.index')->with(['error' => ['Transaction Failed. Record didn\'t saved properly. Please try again.']]);
+        $checkTempData = $checkTempData->toArray();
+
+        try{
+            PaymentGatewayHelper::init($checkTempData)->type(PaymentGatewayConst::TYPEADDMONEY)->responseReceive();
+        }catch(Exception $e) {
+            
+            return back()->with(['error' => ["Something Is Wrong..."]]);
+        }
+        return redirect()->route("agent.add.money.index")->with(['success' => ['Successfully Added Money']]);
+    }
 
 }

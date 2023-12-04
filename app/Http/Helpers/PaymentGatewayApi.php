@@ -109,8 +109,8 @@ class PaymentGatewayApi {
 
         $gateway_currency = $output['currency'];
         
-        $requested_amount = ($output['amount']->requested_amount / $output['sender_currency']->rate) * $output['currency']->rate;
-       
+        $requested_amount = $output['amount']->requested_amount;
+        
         
         if($requested_amount < ($gateway_currency->min_limit) || $requested_amount > ($gateway_currency->max_limit)) {
             throw ValidationException::withMessages([
@@ -169,12 +169,12 @@ class PaymentGatewayApi {
             $fixed_charges = 0;
             $percent_charges = 0;
         }
-
-        $fixed_charge_calc = ($fixed_charges) * $sender_currency_rate;
         
-        $gateway_request_amount     = ($amount / $sender_currency->rate) * $currency->rate;
+        $fixed_charge_calc = $fixed_charges;
         
-        $percent_charge_calc = (($gateway_request_amount / 100 ) * $percent_charges );
+       
+        
+        $percent_charge_calc = (($amount / 100 ) * $percent_charges );
 
         $total_charge = $fixed_charge_calc + $percent_charge_calc;
         
@@ -197,8 +197,8 @@ class PaymentGatewayApi {
                 'total_amount'              => $request_amount + $total_charge,
                 'exchange_rate'             => $exchange_rate,
                 'will_get'                  => $will_get,
-                'wallet_currency'          => $sender_currency->code,
-                'wallet_currency_rate'          => $sender_currency->rate,
+                'wallet_currency'           => $sender_currency->code,
+                'wallet_currency_rate'      => $sender_currency->rate,
             ];
 
         }else {
@@ -206,7 +206,7 @@ class PaymentGatewayApi {
             $defualt_currency = Currency::default();
             $exchange_rate =  $defualt_currency->rate;
             $will_get = $request_amount;
-            $total_Amount = ($amount / $sender_currency->rate) * $currency->rate + $total_charge;
+            $total_Amount = $amount + $total_charge;
 
             $data = [
                 'requested_amount'          => $request_amount,
