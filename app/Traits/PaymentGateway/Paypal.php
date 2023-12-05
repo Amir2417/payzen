@@ -23,6 +23,7 @@ use Srmklive\PayPal\Services\PayPal as PayPalClient;
 trait Paypal
 {
     public function paypalInit($output = null) {
+        
         if(!$output) $output = $this->output;
         $credentials = $this->getPaypalCredentials($output);
 
@@ -38,7 +39,7 @@ trait Paypal
             $return_url = route('agent.add.money.payment.success',PaymentGatewayConst::PAYPAL);
             $cancel_url = route('agent.add.money.payment.cancel',PaymentGatewayConst::PAYPAL);
         }
-
+        
         $response = $paypalProvider->createOrder([
             "intent" => "CAPTURE",
             "application_context" => [
@@ -283,7 +284,12 @@ trait Paypal
 
     public function createTransaction($output, $trx_id) {
         $trx_id =  $trx_id;
-        $inserted_id = $this->insertRecord($output, $trx_id);
+
+        if(userGuard()['type'] == "AGENT"){
+            $inserted_id = $this->insertRecordAgent($output, $trx_id);
+        }else{
+            $inserted_id = $this->insertRecordUser($output, $trx_id);
+        }
         $this->insertCharges($output,$inserted_id);
         $this->insertDevice($output,$inserted_id);
         $this->removeTempData($output);
@@ -297,14 +303,8 @@ trait Paypal
 
     }
     
-    public function insertRecord($output, $trx_id) {
-        if(get_auth_guard() == 'web'){
-            $user_id_column         = "user_id";
-            $user_wallet_id_column  = "user_wallet_id";
-        }else{
-            $user_id_column         = "agent_id";
-            $user_wallet_id_column  = "agent_wallet_id";
-        }
+    public function insertRecordUser($output, $trx_id) {
+       
         $trx_id =  $trx_id;
       
         $token = $this->output['tempData']['identifier'] ?? "";
@@ -328,8 +328,8 @@ trait Paypal
         try{
             
             $id = DB::table("transactions")->insertGetId([
-                $user_id_column                 => auth()->user()->id,
-                $user_wallet_id_column          => $output['wallet']->id,
+                'user_id'             => auth()->user()->id,
+                'user_wallet_id'           => $output['wallet']->id,
                 'payment_gateway_currency_id'   => $output['currency']->id,
                 'type'                          => $output['type'],
                 'trx_id'                        => $trx_id,
@@ -350,9 +350,57 @@ trait Paypal
             DB::rollBack();
             throw new Exception($e->getMessage());
         }
-        return $id;
+        return $id;     
+        
+    }
+    public function insertRecordAgent($output, $trx_id) {
        
-           
+        $trx_id =  $trx_id;
+      
+        $token = $this->output['tempData']['identifier'] ?? "";
+        $info = [
+            'sender_currency'           => [
+                'code'                  => $output['sender_currency']->code,
+                'rate'                  => $output['sender_currency']->rate,
+            ],
+            'payment_currency'          => [
+                'code'                  => $output['currency']->currency_code,
+                'rate'                  => $output['currency']->rate,
+            ],
+            'amount'                    => [
+                'request_amount'        => floatval($output['amount']->requested_amount),
+                'total_charge'          => $output['amount']->total_charge,
+                'total_amount'          => $output['amount']->total_amount,
+            ]
+
+        ];
+        DB::beginTransaction();
+        try{
+            
+            $id = DB::table("transactions")->insertGetId([
+                'agent_id'             => auth()->user()->id,
+                'agent_wallet_id'           => $output['wallet']->id,
+                'payment_gateway_currency_id'   => $output['currency']->id,
+                'type'                          => $output['type'],
+                'trx_id'                        => $trx_id,
+                'request_amount'                => $output['amount']->requested_amount,
+                'payable'                       => $output['amount']->total_amount,
+                'available_balance'             => $output['wallet']->balance + $output['amount']->requested_amount,
+                'remark'                        => ucwords(remove_speacial_char($output['type']," ")) . " With " . $output['gateway']->name,
+                'details'                       => json_encode($output['capture']),
+                'info'                          => json_encode($info),
+                'status'                        => true,
+                'attribute'                     => PaymentGatewayConst::SEND,
+                'created_at'                    => now(),
+            ]);
+            
+            $this->updateWalletBalance($output);
+            DB::commit();
+        }catch(Exception $e) {
+            DB::rollBack();
+            throw new Exception($e->getMessage());
+        }
+        return $id;     
         
     }
 

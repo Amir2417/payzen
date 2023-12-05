@@ -22,6 +22,8 @@ use Jenssegers\Agent\Agent;
 use App\Models\Admin\PaymentGateway as PaymentGatewayModel;
 use App\Models\Admin\PaymentGatewayCurrency;
 use App\Models\AgentNotification;
+use App\Models\AgentWallet;
+use App\Models\UserWallet;
 use App\Notifications\User\AddMoney\ManualMail;
 use App\Traits\ControlDynamicInputFields;
 use Illuminate\Support\Facades\Validator;
@@ -30,7 +32,9 @@ trait Manual
 {
 use ControlDynamicInputFields;
     public function manualInit($output = null) {
+       
         if(!$output) $output = $this->output;
+        
         $gatewayAlias = $output['gateway']['alias'];
         $identifier = generate_unique_string("transactions","trx_id",16);
         $this->manualJunkInsert($identifier);
@@ -46,11 +50,12 @@ use ControlDynamicInputFields;
     public function manualJunkInsert($response) {
 
         $output = $this->output;
-
+       
         $data = [
             'gateway'           => $output['gateway']->id,
             'currency'          => $output['currency']->id,
             'sender_currency'   => $output['sender_currency']->rate,
+            'sender_wallet'     => $output['wallet'],
             'amount'            => json_decode(json_encode($output['amount']),true),
             'response'          => $response,
         ];
@@ -77,7 +82,13 @@ use ControlDynamicInputFields;
         try{
             $trx_id = 'AM'.getTrxNum();
             $user = auth()->user();
-            $inserted_id = $this->insertRecordManual($output,$get_values,$trx_id);
+
+            
+            if(userGuard()['type'] == "AGENT"){
+                $inserted_id = $this->insertRecordManualAgent($output,$get_values,$trx_id);
+            }else{
+                $inserted_id = $this->insertRecordManualUser($output,$get_values,$trx_id);
+            }
             $this->insertChargesManual($output,$inserted_id);
             $this->insertDeviceManual($output,$inserted_id);
             $this->removeTempDataManual($output);
@@ -98,17 +109,10 @@ use ControlDynamicInputFields;
     }
 
 
-    public function insertRecordManual($output,$get_values,$trx_id) {
+    public function insertRecordManualUser($output,$get_values,$trx_id) {
+        
         $trx_id = $trx_id;
         $token = $this->output['tempData']['identifier'] ?? "";
-        DB::beginTransaction();
-        if (get_auth_guard() == 'web') {
-            $user_id_column         = "user_id";
-            $user_wallet_id_column  = "user_wallet_id";
-        }else{
-            $user_id_column         = "agent_id";
-            $user_wallet_id_column  = "agent_wallet_id";
-        }
         $info = [
             'sender_currency'           => [
                 'code'                  => $output['sender_currency']->code,
@@ -125,16 +129,18 @@ use ControlDynamicInputFields;
             ]
 
         ];
+        
+        DB::beginTransaction();
         try{
             $id = DB::table("transactions")->insertGetId([
-                $user_id_column                 => auth()->user()->id,
-                $user_wallet_id_column          => $output['wallet']->id,
+                'user_id'                       => auth()->user()->id,
+                'user_wallet_id'                => $output['wallet']->id,
                 'payment_gateway_currency_id'   => $output['currency']->id,
                 'type'                          => PaymentGatewayConst::TYPEADDMONEY,
                 'trx_id'                        => $trx_id,
                 'request_amount'                => $output['amount']->requested_amount,
                 'payable'                       => $output['amount']->total_amount,
-                'available_balance'             => $output['wallet']->balance,
+                'available_balance'             => $output['wallet']->balance + $output['amount']->requested_amount,
                 'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPEADDMONEY," ")) . " With " . $output['gateway']->name,
                 'details'                       => json_encode($get_values),
                 'info'                          => json_encode($info),
@@ -142,12 +148,62 @@ use ControlDynamicInputFields;
                 'attribute'                     => PaymentGatewayConst::SEND,
                 'created_at'                    => now(),
             ]);
+           
             $this->updateWalletBalanceManual($output);
             DB::commit();
         }catch(Exception $e) {
             DB::rollBack();
             throw new Exception($e->getMessage());
         }
+        
+        return $id;
+    }
+    public function insertRecordManualAgent($output,$get_values,$trx_id) {
+        
+        $trx_id = $trx_id;
+        $token = $this->output['tempData']['identifier'] ?? "";
+        $info = [
+            'sender_currency'           => [
+                'code'                  => $output['sender_currency']->code,
+                'rate'                  => $output['sender_currency']->rate,
+            ],
+            'payment_currency'          => [
+                'code'                  => $output['currency']->currency_code,
+                'rate'                  => $output['currency']->rate,
+            ],
+            'amount'                    => [
+                'request_amount'        => floatval($output['amount']->requested_amount),
+                'total_charge'          => $output['amount']->total_charge,
+                'total_amount'          => $output['amount']->total_amount,
+            ]
+
+        ];
+        DB::beginTransaction();
+        try{
+            $id = DB::table("transactions")->insertGetId([
+                'agent_id'                       => auth()->user()->id,
+                'agent_wallet_id'                => $output['wallet']->id,
+                'payment_gateway_currency_id'   => $output['currency']->id,
+                'type'                          => PaymentGatewayConst::TYPEADDMONEY,
+                'trx_id'                        => $trx_id,
+                'request_amount'                => $output['amount']->requested_amount,
+                'payable'                       => $output['amount']->total_amount,
+                'available_balance'             => $output['wallet']->balance + $output['amount']->requested_amount,
+                'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPEADDMONEY," ")) . " With " . $output['gateway']->name,
+                'details'                       => json_encode($get_values),
+                'info'                          => json_encode($info),
+                'status'                        => 2,
+                'attribute'                     => PaymentGatewayConst::SEND,
+                'created_at'                    => now(),
+            ]);
+           
+            $this->updateWalletBalanceManual($output);
+            DB::commit();
+        }catch(Exception $e) {
+            DB::rollBack();
+            throw new Exception($e->getMessage());
+        }
+        
         return $id;
     }
 
@@ -161,6 +217,7 @@ use ControlDynamicInputFields;
     public function insertChargesManual($output,$id) {
         DB::beginTransaction();
         try{
+            
             DB::table('transaction_charges')->insert([
                 'transaction_id'    => $id,
                 'percent_charge'    => $output['amount']->percent_charge,
@@ -244,6 +301,7 @@ use ControlDynamicInputFields;
         return $response;
     }
     public function manualPaymentConfirmedApi(Request $request){
+        $basic_setting = BasicSettings::first();
         $validator = Validator::make($request->all(), [
             'track' => 'required',
         ]);
@@ -253,13 +311,15 @@ use ControlDynamicInputFields;
         }
         $track = $request->track;
         $hasData = TemporaryData::where('identifier', $track)->first();
+        
         if(!$hasData){
             $error = ['error'=>["Sorry, your payment information is invalid"]];
             return Helpers::error($error);
         }
         $gateway = PaymentGatewayModel::manual()->where('slug',PaymentGatewayConst::add_money_slug())->where('id',$hasData->data->gateway)->first();
+        
         $payment_fields = $gateway->input_fields ?? [];
-
+        
         $validation_rules = $this->generateValidationRules($payment_fields);
         $validator2 = Validator::make($request->all(), $validation_rules);
 
@@ -269,15 +329,25 @@ use ControlDynamicInputFields;
         }
         $validated = $validator2->validate();
         $get_values = $this->placeValueWithFields($payment_fields, $validated);
+        
         $payment_gateway_currency = PaymentGatewayCurrency::where('id', $hasData->data->currency)->first();
-        $gateway_request = ['currency' => $payment_gateway_currency->alias, 'amount'  => $hasData->data->amount->requested_amount];
+        
+        $gateway_request = ['currency' => $payment_gateway_currency->alias, 'amount'  => $hasData->data->amount->requested_amount,'sender_wallet'   => $hasData->data->sender_wallet->id];
         $output = PaymentGatewayApi::init($gateway_request)->gateway()->get();
-
+        
         try{
             $trx_id = 'AM'.getTrxNum();
             $user = auth()->user();
-            $user->notify(new ManualMail($user,$output,$trx_id));
-            $inserted_id = $this->insertRecordManual($output,$get_values,$trx_id);
+            if( $basic_setting->email_notification == true){
+               
+                // $user->notify(new ManualMail($user,$output,$trx_id));
+            }
+            if(userGuard()['type'] == "AGENT" || authGuardApi()['type']  == "AGENT"){
+                $inserted_id = $this->insertRecordManualAgent($output,$get_values,$trx_id);
+            }else{
+                $inserted_id = $this->insertRecordManualUser($output,$get_values,$trx_id);
+            }
+           
             $this->insertChargesManual($output,$inserted_id);
             $this->insertDeviceManual($output,$inserted_id);
             $hasData->delete();

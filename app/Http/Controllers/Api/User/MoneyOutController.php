@@ -29,98 +29,111 @@ class MoneyOutController extends Controller
     public function moneyOutInfo(){
         $user = auth()->user();
         $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
-                return[
-                    'balance' => getAmount($data->balance,2),
-                    'currency' => get_default_currency_code(),
-                ];
-            })->first();
-
-            $transactions = Transaction::auth()->moneyOut()->latest()->take(5)->get()->map(function($item){
-                    $statusInfo = [
-                        "success" =>      1,
-                        "pending" =>      2,
-                        "rejected" =>     3,
-                        ];
-                    return[
-                        'id' => $item->id,
-                        'trx' => $item->trx_id,
-                        'gateway_name' => $item->currency->gateway->name,
-                        'gateway_currency_name' => $item->currency->name,
-                        'transaction_type' => $item->type,
-                        'request_amount' => getAmount($item->request_amount,2).' '.get_default_currency_code() ,
-                        'payable' => getAmount($item->payable,2).' '.$item->currency->currency_code,
-                        'exchange_rate' => '1 ' .get_default_currency_code().' = '.getAmount($item->currency->rate,2).' '.$item->currency->currency_code,
-                        'total_charge' => getAmount($item->charge->total_charge,2).' '.$item->currency->currency_code,
-                        'current_balance' => getAmount($item->available_balance,2).' '.get_default_currency_code(),
-                        'status' => $item->stringStatus->value ,
-                        'date_time' => $item->created_at ,
-                        'status_info' =>(object)$statusInfo ,
-                        'rejection_reason' =>$item->reject_reason??"" ,
-
-                    ];
-            });
-            $gateways = PaymentGateway::where('status', 1)->where('slug', PaymentGatewayConst::money_out_slug())->get()->map(function($gateway){
-                    $currencies = PaymentGatewayCurrency::where('payment_gateway_id',$gateway->id)->get()->map(function($data){
-                    return[
-                        'id' => $data->id,
-                        'payment_gateway_id' => $data->payment_gateway_id,
-                        'type' => $data->gateway->type,
-                        'name' => $data->name,
-                        'alias' => $data->alias,
-                        'currency_code' => $data->currency_code,
-                        'currency_symbol' => $data->currency_symbol,
-                        'image' => $data->image,
-                        'min_limit' => getAmount($data->min_limit,2),
-                        'max_limit' => getAmount($data->max_limit,2),
-                        'percent_charge' => getAmount($data->percent_charge,2),
-                        'fixed_charge' => getAmount($data->fixed_charge,2),
-                        'rate' => getAmount($data->rate,2),
-                        'created_at' => $data->created_at,
-                        'updated_at' => $data->updated_at,
-                    ];
-
-                    });
-                    return[
-                        'id' => $gateway->id,
-                        'name' => $gateway->name,
-                        'image' => $gateway->image,
-                        'slug' => $gateway->slug,
-                        'code' => $gateway->code,
-                        'type' => $gateway->type,
-                        'alias' => $gateway->alias,
-                        'supported_currencies' => $gateway->supported_currencies,
-                        'input_fields' => $gateway->input_fields??null,
-                        'status' => $gateway->status,
-                        'currencies' => $currencies
-
-                    ];
-            });
-            // $flutterwave_supported_bank = getFlutterwaveBanks();
-            $data =[
-                'base_curr'    => get_default_currency_code(),
-                'base_curr_rate'    => getAmount(1,2),
-                'default_image'    => "public/backend/images/default/default.webp",
-                "image_path"  =>  "public/backend/images/payment-gateways",
-                'userWallet'   =>   (object)$userWallet,
-                'gateways'   => $gateways,
-                // 'flutterwave_supported_bank'   => $flutterwave_supported_bank,
-                'transactionss'   =>   $transactions,
+            return[
+                'balance' => getAmount($data->balance,2),
+                'currency' => $data->currency->code,
             ];
-            $message =  ['success'=>['Withdraw Information!']];
-            return Helpers::success($data,$message);
+        });
+
+        $currency    = Currency::where('status',true)->get()->map(function($data){
+            return[
+                'name'      => $data->name,
+                'code'      => $data->code,
+                'type'      => $data->type,
+                'rate'      => $data->rate,
+                'symbol'    => $data->symbol,
+            ];
+        });
+
+        $transactions = Transaction::auth()->moneyOut()->latest()->take(5)->get()->map(function($item){
+                $statusInfo = [
+                    "success" =>      1,
+                    "pending" =>      2,
+                    "rejected" =>     3,
+                    ];
+                return[
+                    'id' => $item->id,
+                    'trx' => $item->trx_id,
+                    'gateway_name' => $item->currency->gateway->name,
+                    'gateway_currency_name' => $item->currency->name,
+                    'transaction_type' => $item->type,
+                    'request_amount' => getAmount($item->request_amount,2).' '.get_default_currency_code() ,
+                    'payable' => getAmount($item->payable,2).' '.$item->currency->currency_code,
+                    'exchange_rate' => '1 ' .get_default_currency_code().' = '.getAmount($item->currency->rate,2).' '.$item->currency->currency_code,
+                    'total_charge' => getAmount($item->charge->total_charge,2).' '.$item->currency->currency_code,
+                    'current_balance' => getAmount($item->available_balance,2).' '.get_default_currency_code(),
+                    'status' => $item->stringStatus->value ,
+                    'date_time' => $item->created_at ,
+                    'status_info' =>(object)$statusInfo ,
+                    'rejection_reason' =>$item->reject_reason??"" ,
+
+                ];
+        });
+        $gateways = PaymentGateway::where('status', 1)->where('slug', PaymentGatewayConst::money_out_slug())->get()->map(function($gateway){
+                $currencies = PaymentGatewayCurrency::where('payment_gateway_id',$gateway->id)->get()->map(function($data){
+                return[
+                    'id' => $data->id,
+                    'payment_gateway_id' => $data->payment_gateway_id,
+                    'type' => $data->gateway->type,
+                    'name' => $data->name,
+                    'alias' => $data->alias,
+                    'currency_code' => $data->currency_code,
+                    'currency_symbol' => $data->currency_symbol,
+                    'image' => $data->image,
+                    'min_limit' => getAmount($data->min_limit,2),
+                    'max_limit' => getAmount($data->max_limit,2),
+                    'percent_charge' => getAmount($data->percent_charge,2),
+                    'fixed_charge' => getAmount($data->fixed_charge,2),
+                    'rate' => getAmount($data->rate,2),
+                    'created_at' => $data->created_at,
+                    'updated_at' => $data->updated_at,
+                ];
+
+                });
+                return[
+                    'id' => $gateway->id,
+                    'name' => $gateway->name,
+                    'image' => $gateway->image,
+                    'slug' => $gateway->slug,
+                    'code' => $gateway->code,
+                    'type' => $gateway->type,
+                    'alias' => $gateway->alias,
+                    'supported_currencies' => $gateway->supported_currencies,
+                    'input_fields' => $gateway->input_fields??null,
+                    'status' => $gateway->status,
+                    'currencies' => $currencies
+
+                ];
+        });
+        // $flutterwave_supported_bank = getFlutterwaveBanks();
+        $data =[
+            'base_curr'    => get_default_currency_code(),
+            'base_curr_rate'    => getAmount(1,2),
+            'default_image'    => "public/backend/images/default/default.webp",
+            "image_path"  =>  "public/backend/images/payment-gateways",
+            'userWallet'   =>   (object)$userWallet,
+            'gateways'   => $gateways,
+            'currency'   => $currency,
+            'transactionss'   =>   $transactions,
+        ];
+        $message =  ['success'=>['Withdraw Information!']];
+        return Helpers::success($data,$message);
 
     }
 
     public function moneyOutInsert(Request $request){
         $validator = Validator::make($request->all(), [
             'amount' => 'required|numeric|gt:0',
-            'gateway' => 'required'
+            'gateway' => 'required',
+            'wallet_currency'   => 'required'
         ]);
         if($validator->fails()){
             $error =  ['error'=>$validator->errors()->all()];
             return Helpers::validation($error);
         }
+        
         $basic_setting = BasicSettings::first();
+        $wallet_currency = $request->wallet_currency;
         $user = auth()->user();
         if($basic_setting->kyc_verification){
             if( $user->kyc_verified == 0){
@@ -135,11 +148,15 @@ class MoneyOutController extends Controller
             }
         }
 
-        $userWallet = UserWallet::where('user_id',$user->id)->where('status',1)->first();
+        $userWallet = UserWallet::auth()->whereHas("currency",function($q) use ($wallet_currency) {
+            $q->where("code",$wallet_currency)->active();
+        })->active()->first();
+
         $gate =PaymentGatewayCurrency::whereHas('gateway', function ($gateway) {
             $gateway->where('slug', PaymentGatewayConst::money_out_slug());
             $gateway->where('status', 1);
         })->where('alias',$request->gateway)->first();
+        
         if (!$gate) {
             $error = ['error'=>['Invalid Gateway!']];
             return Helpers::error($error);
@@ -164,7 +181,7 @@ class MoneyOutController extends Controller
         $conversion_amount = $request->amount * $gate->rate;
         $will_get = $conversion_amount -  $charge;
         //base_cur_charge
-        $baseFixedCharge = $gate->fixed_charge *  $baseCurrency->rate;
+        $baseFixedCharge = $gate->fixed_charge;
         $basePercent_charge = ($request->amount / 100) * $gate->percent_charge;
         $base_total_charge = $baseFixedCharge + $basePercent_charge;
         $reduceAbleTotal = $amount;

@@ -41,7 +41,7 @@ class PaymentGatewayApi {
 
     public function gateway() {
         $request_data = $this->request_data;
-
+        
         if(empty($request_data)){
             $error = ['error'=>['Gateway Information is not available. Please provide payment gateway currency alias']];
             return Helpers::error($error);
@@ -54,45 +54,61 @@ class PaymentGatewayApi {
             $error = ['error'=>['Gateway not available']];
             return Helpers::error($error);
         }
-        $defualt_currency = Currency::where('id',$validated['sender_wallet'])->first();
+        // $user_wallet = UserWallet::auth()->where('id', $validated['sender_wallet'])->first();
 
-        $user_wallet = UserWallet::auth()->where('currency_id', $defualt_currency->id)->first();
+        // $defualt_currency = Currency::where('id',$user_wallet->currency_id)->first();
+        // dd($defualt_currency->id,$user_wallet->id);
+           
+        
+        if(request()->expectsJson()){
 
-        if(get_auth_guard() == 'web'){
+            if(userGuard()['type'] == "AGENT"){
+                $user_wallet = AgentWallet::auth()->where('id', $validated['sender_wallet'])->first();
+                $defualt_currency = Currency::where('id',$user_wallet->currency_id)->first();
+            }else{
+                $user_wallet = UserWallet::auth()->where('id', $validated['sender_wallet'])->first();
+                $defualt_currency = Currency::where('id',$user_wallet->currency_id)->first();
+            }
 
-            $user_wallet = UserWallet::auth()->where('currency_id', $defualt_currency->id)->first();
-        }else{
-          
-            $user_wallet = AgentWallet::auth()->where('currency_id', $defualt_currency->id)->first();
-        }
+       }else{
+        if(auth()->guard('agent')->user()){
+            $user = auth()->guard('agent')->user();
 
+            $user_wallet = AgentWallet::where('agent_id',$user->id)->where('id', $validated['sender_wallet'])->first();
+            $defualt_currency = Currency::where('id',$user_wallet->currency_id)->first();
+            }else{
+                $user_wallet = UserWallet::auth()->where('id', $validated['sender_wallet'])->first();
+                $defualt_currency = Currency::where('id',$user_wallet->currency_id)->first();
+            }
+       }
+       
         if(!$user_wallet) {
             $this->currency_input_name = "User wallet not found!";
             $error = ['error'=>['User wallet not found!']];
             return Helpers::error($error);
         }
 
-
+        
         if($gateway_currency->gateway->isAutomatic()) {
             $this->output['gateway']    = $gateway_currency->gateway;
             $this->output['currency']   = $gateway_currency;
             $this->output['sender_currency']   = $defualt_currency;
-            $this->output['amount']     = $this->amount();
             $this->output['wallet']     = $user_wallet;
+            $this->output['amount']     = $this->amount();
             $this->output['distribute'] = $this->gatewayDistribute($gateway_currency->gateway);
         }elseif($gateway_currency->gateway->isManual()){
             $this->output['gateway']    = $gateway_currency->gateway;
             $this->output['currency']   = $gateway_currency;
             $this->output['sender_currency']   = $defualt_currency;
-            $this->output['amount']     = $this->amount();
             $this->output['wallet']     = $user_wallet;
+            $this->output['amount']     = $this->amount();
             $this->output['distribute'] = $this->gatewayDistribute($gateway_currency->gateway);
 
         }
 
         // limit validation
         $this->limitValidation($this->output);
-
+        
         return $this;
     }
 
@@ -111,8 +127,13 @@ class PaymentGatewayApi {
         
         $requested_amount = $output['amount']->requested_amount;
         
-        
-        if($requested_amount < ($gateway_currency->min_limit) || $requested_amount > ($gateway_currency->max_limit)) {
+        $exchange_rate  = $output['amount']->sender_cur_rate / $output['amount']->wallet_currency_rate;
+        $amount = $requested_amount   * $exchange_rate;
+        $min_amount = $gateway_currency->min_limit / $output['amount']->wallet_currency_rate;
+        $max_amount = $gateway_currency->max_limit / $output['amount']->wallet_currency_rate;
+
+       
+        if($amount < $min_amount || $amount > $max_amount) {
             throw ValidationException::withMessages([
                 $this->amount_input = "Please follow the transaction limit",
             ]);
@@ -129,11 +150,14 @@ class PaymentGatewayApi {
         $alias = Str::lower($gateway->alias);
         if($gateway->type == PaymentGatewayConst::AUTOMATIC){
             $method = PaymentGatewayConst::register($alias);
+           
         }elseif($gateway->type == PaymentGatewayConst::MANUAL){
+            
             $method = PaymentGatewayConst::register(strtolower($gateway->type));
         }
-
+       
         if(method_exists($this,$method)) {
+           
             return $method;
         }
         
@@ -154,10 +178,11 @@ class PaymentGatewayApi {
     }
 
     public function chargeCalculate($currency,$sender_currency,$receiver_currency = null) {
-        
         $amount = $this->request_data[$this->amount_input];
-        // $request_amount     = ($amount / $sender_currency->rate) * $currency->rate;
-        $request_amount     = $amount;
+        
+        $exchange   = $currency->rate / $sender_currency->rate;
+        $request_amount     = $amount * $exchange;
+        
         $sender_currency_rate = $currency->rate;
         ($sender_currency_rate == "" || $sender_currency_rate == null) ? $sender_currency_rate = 0 : $sender_currency_rate;
         ($request_amount == "" || $request_amount == null) ? $request_amount : $request_amount;
@@ -171,22 +196,18 @@ class PaymentGatewayApi {
         }
         
         $fixed_charge_calc = $fixed_charges;
-        
-       
-        
         $percent_charge_calc = (($amount / 100 ) * $percent_charges );
 
         $total_charge = $fixed_charge_calc + $percent_charge_calc;
-        
-
+       
         if($receiver_currency) {
             $receiver_currency_rate = $receiver_currency->rate;
             ($receiver_currency_rate == "" || $receiver_currency_rate == null) ? $receiver_currency_rate = 0 : $receiver_currency_rate;
             $exchange_rate = ($receiver_currency_rate / $sender_currency_rate);
-            $will_get = ($request_amount * $exchange_rate);
+            $will_get = $amount;
 
             $data = [
-                'requested_amount'          => $request_amount,
+                'requested_amount'          => $amount,
                 'sender_cur_code'           => $currency->currency_code,
                 'sender_cur_rate'           => $sender_currency_rate ?? 0,
                 'receiver_cur_code'         => $receiver_currency->currency_code,
@@ -205,11 +226,11 @@ class PaymentGatewayApi {
           
             $defualt_currency = Currency::default();
             $exchange_rate =  $defualt_currency->rate;
-            $will_get = $request_amount;
-            $total_Amount = $amount + $total_charge;
-
+            $will_get = $amount;
+            $total_Amount = $request_amount + $total_charge;
+            
             $data = [
-                'requested_amount'          => $request_amount,
+                'requested_amount'          => $amount,
                 'sender_cur_code'           => $currency->currency_code,
                 'sender_cur_rate'           => $sender_currency_rate ?? 0,
                 'fixed_charge'              => $fixed_charge_calc,
@@ -219,12 +240,12 @@ class PaymentGatewayApi {
                 'exchange_rate'             => $exchange_rate,
                 'will_get'                  => $will_get,
                 'wallet_currency'           => $sender_currency->code,
-                'wallet_currency_rate'          => $sender_currency->rate,
+                'wallet_currency_rate'      => $sender_currency->rate,
             ];
            
         }
-        return (object) $data;
         
+        return (object) $data;
     }
 
     public function render() {
@@ -270,7 +291,7 @@ class PaymentGatewayApi {
         }
 
         $method_name = $tempData['type']."Success";
-
+        
 
         $currency_id = $tempData['data']->currency ?? "";
         $gateway_currency = PaymentGatewayCurrency::find($currency_id);
@@ -287,7 +308,8 @@ class PaymentGatewayApi {
         $this->request_data = $validator_data;
         $this->gateway();
         $this->output['tempData'] = $tempData;
-        if($type == 'flutterWave'){
+        $type = $tempData['type'];
+        if($type == 'flutterwave'){
             if(method_exists(FlutterwaveTrait::class,$method_name)) {
                 return $this->$method_name($this->output);
             }
@@ -295,7 +317,13 @@ class PaymentGatewayApi {
             if(method_exists(RazorTrait::class,$method_name)) {
                 return $this->$method_name($this->output);
             }
-        }elseif($type == 'pagadito'){
+        }elseif($type == 'stripe'){
+           
+            if(method_exists(Stripe::class,$method_name)) {
+                return $this->$method_name($this->output);
+            }
+        }
+        elseif($type == 'pagadito'){
             if(method_exists(PagaditoTrait::class,$method_name)) {
                 return $this->$method_name($this->output);
             }
@@ -304,7 +332,7 @@ class PaymentGatewayApi {
                 return $this->$method_name($this->output);
             }
         }
-
+       
         $error = ['error'=>["Response method ".$method_name."() does not exists."]];
         return Helpers::error($error);
 

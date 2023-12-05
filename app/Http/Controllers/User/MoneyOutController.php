@@ -46,6 +46,7 @@ class MoneyOutController extends Controller
             'amount'            => "required|numeric|gt:0",
             'wallet_currency'   => "required|exists:currencies,code",
         ]);
+        
         $amount = $request->amount;
         $wallet_currency = $request->wallet_currency;
         $basic_setting = BasicSettings::first();
@@ -463,7 +464,7 @@ class MoneyOutController extends Controller
             'percent_charge'            => $percent_charge_calc,
             'total_charge'              => $total_charge,
             'conversion_amount'         => $conversion_amount,
-            'payable'                   => $payable,
+            'payable'                   => floatval($payable) + floatval($total_charge),
             'exchange_rate'             => $exchange_rate,
             'will_get'                  => $will_get,
             'default_currency'          => get_default_currency_code(),

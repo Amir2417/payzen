@@ -65,6 +65,7 @@ Route::controller(AddMoneyController::class)->prefix("add-money")->group(functio
     Route::get("cancel/response/{gateway}",'cancel')->name('api.payment.cancel');
     Route::get('/flutterwave/callback', 'flutterwaveCallback')->name('api.flutterwave.callback');
     Route::get('razor/callback', 'razorCallback')->name('api.razor.callback');
+    Route::get('stripe/payment/success/{trx}','stripePaymentSuccess')->name('api.stripe.payment.success');
 });
 
 Route::prefix('user')->group(function(){
@@ -141,6 +142,7 @@ Route::prefix('user')->group(function(){
                 Route::post('stripe/payment/confirm','paymentConfirmedApi')->name('api.stripe.payment.confirmed');
                 //manual gateway
                 Route::post('manual/payment/confirmed','manualPaymentConfirmedApi')->name('api.manual.payment.confirmed');
+                
             });
             //Receive Money
             Route::controller(ReceiveMoneyController::class)->prefix('receive-money')->group(function(){

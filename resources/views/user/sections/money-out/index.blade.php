@@ -112,21 +112,6 @@
                                 <div class="preview-list-left">
                                     <div class="preview-list-user-wrapper">
                                         <div class="preview-list-user-icon">
-                                            <i class="lab la-get-pocket"></i>
-                                        </div>
-                                        <div class="preview-list-user-content">
-                                            <span>{{ __("Conversion Amount") }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="preview-list-right">
-                                    <span class="conversion-amount">--</span>
-                                </div>
-                            </div>
-                            <div class="preview-list-item">
-                                <div class="preview-list-left">
-                                    <div class="preview-list-user-wrapper">
-                                        <div class="preview-list-user-icon">
                                             <i class="las la-battery-half"></i>
                                         </div>
                                         <div class="preview-list-user-content">
@@ -197,181 +182,185 @@
     var defualCurrencyRate = "{{ get_default_currency_rate() }}";
     var userBalanceRoute = "{{ setRoute('user.wallets.balance') }}";
 
-   $('select[name=gateway]').on('change',function(){
-       getExchangeRate($(this));
-       getLimit();
-       getFees();
-       getPreview();
-       getUserBalance();
-   });
-   $('select[name=wallet_currency]').on('change',function(){
-       getExchangeRate($(this));
-       getLimit();
-       getFees();
-       getPreview();
-       getUserBalance();
-   });
-   $(document).ready(function(){
-       getExchangeRate();
-       getLimit();
-       getFees();
-       getUserBalance();
-   });
-   $("input[name=amount]").keyup(function(){
+    $('select[name=gateway]').on('change',function(){
+        getExchangeRate($(this));
+        getLimit();
         getFees();
         getPreview();
         getUserBalance();
-   });
-   function getExchangeRate(event) {
-       var element = event;
-       var currencyCode = acceptVar().sCurrency;
-       var currencyRate = acceptVar().sCurrency_rate;
-       var gateway_currency = acceptVar().currencyCode;
-       var gateway_currency_rate = acceptVar().currencyRate;
-       var exchange_rate = parseFloat(currencyRate) / parseFloat(gateway_currency_rate);
-       $('.rate-show').html("1 " + gateway_currency + " = " + parseFloat(exchange_rate).toFixed(4) + " " + currencyCode);
-   }
-   function getLimit() {
-       var gateway_currency = acceptVar().currencyCode;
-       var gateway_currency_rate = acceptVar().currencyRate;
+    });
+    $('select[name=wallet_currency]').on('change',function(){
+        getExchangeRate($(this));
+        getLimit();
+        getFees();
+        getPreview();
+        getUserBalance();
+    });
+    $(document).ready(function(){
+        getExchangeRate();
+        getLimit();
+        getFees();
+        getUserBalance();
+    });
+    $("input[name=amount]").keyup(function(){
+            getFees();
+            getPreview();
+            getUserBalance();
+    });
+    function getExchangeRate(event) {
+        var element = event;
+        var currencyCode = acceptVar().sCurrency;
+        var currencyRate = acceptVar().sCurrency_rate;
+        var gateway_currency = acceptVar().currencyCode;
+        var gateway_currency_rate = acceptVar().currencyRate;
+        var exchange_rate = parseFloat(currencyRate) / parseFloat(gateway_currency_rate);
+        $('.rate-show').html("1 " + gateway_currency + " = " + parseFloat(exchange_rate).toFixed(4) + " " + currencyCode);
+    }
+    function getLimit() {
+        var gateway_currency = acceptVar().currencyCode;
+        var gateway_currency_rate = acceptVar().currencyRate;
 
-       var sender_currency = acceptVar().sCurrency;
-       var sender_currency_rate = acceptVar().sCurrency_rate;
+        var sender_currency = acceptVar().sCurrency;
+        var sender_currency_rate = acceptVar().sCurrency_rate;
 
-       var min_limit = acceptVar().currencyMinAmount;
-       var max_limit =acceptVar().currencyMaxAmount;
-       if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
-           var min_limit_calc = parseFloat((min_limit/gateway_currency_rate) * sender_currency_rate).toFixed(2);
-           var max_limit_clac = parseFloat((max_limit/gateway_currency_rate) * sender_currency_rate).toFixed(2);
-           $('.limit-show').html("Limit " + min_limit_calc + " " + sender_currency + " - " + max_limit_clac + " " + sender_currency);
-           return {
-               minLimit:min_limit_calc,
-               maxLimit:max_limit_clac,
-           };
-       }else {
-           $('.limit-show').html("--");
-           return {
-               minLimit:0,
-               maxLimit:0,
-           };
-       }
-   }
-
-   function acceptVar() {
-       var selectedVal                     = $("select[name=gateway] :selected");
-       var currencyCode                    = $("select[name=gateway] :selected").attr("data-currency");
-       var currencyRate                    = $("select[name=gateway] :selected").attr("data-rate");
-       var currencyMinAmount               = $("select[name=gateway] :selected").attr("data-min_amount");
-       var currencyMaxAmount               = $("select[name=gateway] :selected").attr("data-max_amount");
-       var currencyFixedCharge             = $("select[name=gateway] :selected").attr("data-fixed_charge");
-       var currencyPercentCharge           = $("select[name=gateway] :selected").attr("data-percent_charge");
-       var senderCurrency                  = $("select[name=wallet_currency] :selected").val();;
-       var senderCurrency_rate             = $("select[name=wallet_currency] :selected").attr("data-rate");;
-
-       // var sender_select = $("input[name=from_wallet_id] :selected");
-
-       return {
-           currencyCode:currencyCode,
-           currencyRate:currencyRate,
-           currencyMinAmount:currencyMinAmount,
-           currencyMaxAmount:currencyMaxAmount,
-           currencyFixedCharge:currencyFixedCharge,
-           currencyPercentCharge:currencyPercentCharge,
-           selectedVal:selectedVal,
-           sCurrency: senderCurrency,
-           sCurrency_rate: senderCurrency_rate,
-
-       };
-   }
-
-   function feesCalculation() {
-       var sender_currency = acceptVar().currencyCode;
-       var sender_currency_rate = acceptVar().currencyRate;
-       var sender_amount = $("input[name=amount]").val();
-       sender_amount == "" ? (sender_amount = 0) : (sender_amount = sender_amount);
-
-       var fixed_charge = acceptVar().currencyFixedCharge;
-       var percent_charge = acceptVar().currencyPercentCharge;
-       if ($.isNumeric(percent_charge) && $.isNumeric(fixed_charge) && $.isNumeric(sender_amount)) {
-           // Process Calculation
-           var fixed_charge_calc = parseFloat(fixed_charge);
-           var percent_charge_calc = (parseFloat(sender_amount) / 100) * parseFloat(percent_charge);
-           var total_charge = parseFloat(fixed_charge_calc) + parseFloat(percent_charge_calc);
-           total_charge = parseFloat(total_charge).toFixed(2);
-           // return total_charge;
-           return {
-               total: total_charge,
-               fixed: fixed_charge_calc,
-               percent: percent_charge,
-           };
-       } else {
-           // return "--";
-           return false;
-       }
-   }
-
-        function getFees() {
-            var sender_currency = acceptVar().currencyCode;
-            var percent = acceptVar().currencyPercentCharge;
-            var charges = feesCalculation();
-            if (charges == false) {
-                return false;
-            }
-            $(".fees-show").html("Charge: " + parseFloat(charges.fixed).toFixed(2) + " " + sender_currency + " + " + parseFloat(charges.percent).toFixed(2) + "% = " + parseFloat(charges.total).toFixed(2) + " " + sender_currency);
+        var min_limit = acceptVar().currencyMinAmount;
+        var max_limit =acceptVar().currencyMaxAmount;
+        if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
+            var min_limit_calc = parseFloat((min_limit/gateway_currency_rate) * sender_currency_rate).toFixed(2);
+            var max_limit_clac = parseFloat((max_limit/gateway_currency_rate) * sender_currency_rate).toFixed(2);
+            $('.limit-show').html("Limit " + min_limit_calc + " " + sender_currency + " - " + max_limit_clac + " " + sender_currency);
+            return {
+                minLimit:min_limit_calc,
+                maxLimit:max_limit_clac,
+            };
+        }else {
+            $('.limit-show').html("--");
+            return {
+                minLimit:0,
+                maxLimit:0,
+            };
         }
-        function getPreview() {
-           var senderAmount = $("input[name=amount]").val();
-           var gateway_currency = acceptVar().currencyCode;
-           var gateway_currency_rate = acceptVar().currencyRate;
+    }
 
-           var sender_currency = acceptVar().sCurrency;
-           var sender_currency_rate = acceptVar().sCurrency_rate;
+    function acceptVar() {
+        var selectedVal                     = $("select[name=gateway] :selected");
+        var currencyCode                    = $("select[name=gateway] :selected").attr("data-currency");
+        var currencyRate                    = $("select[name=gateway] :selected").attr("data-rate");
+        var currencyMinAmount               = $("select[name=gateway] :selected").attr("data-min_amount");
+        var currencyMaxAmount               = $("select[name=gateway] :selected").attr("data-max_amount");
+        var currencyFixedCharge             = $("select[name=gateway] :selected").attr("data-fixed_charge");
+        var currencyPercentCharge           = $("select[name=gateway] :selected").attr("data-percent_charge");
+        var senderCurrency                  = $("select[name=wallet_currency] :selected").val();;
+        var senderCurrency_rate             = $("select[name=wallet_currency] :selected").attr("data-rate");;
 
-           var exchange_rate =   parseFloat(sender_currency_rate).toFixed(16) / parseFloat(gateway_currency_rate).toFixed(16);
+        // var sender_select = $("input[name=from_wallet_id] :selected");
 
-           senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
+        return {
+            currencyCode:currencyCode,
+            currencyRate:currencyRate,
+            currencyMinAmount:currencyMinAmount,
+            currencyMaxAmount:currencyMaxAmount,
+            currencyFixedCharge:currencyFixedCharge,
+            currencyPercentCharge:currencyPercentCharge,
+            selectedVal:selectedVal,
+            sCurrency: senderCurrency,
+            sCurrency_rate: senderCurrency_rate,
 
-           // conversion Amount
-           var request_amount = parseFloat(senderAmount)
-           $('.request-amount').text(request_amount.toFixed(2) + " " + sender_currency);
+        };
+    }                
 
-           // conversion Amount
-           var conversion_amount = parseFloat(senderAmount).toFixed(16) / parseFloat(exchange_rate).toFixed(16)
-           $('.conversion-amount').text(conversion_amount.toFixed(2) + " " + gateway_currency);
+    function feesCalculation() {
+        var sender_currency = acceptVar().currencyCode;
+        var sender_currency_rate = acceptVar().currencyRate;
+        var sender_amount = $("input[name=amount]").val();
+        sender_amount == "" ? (sender_amount = 0) : (sender_amount = sender_amount);
 
-           // Fees
-           var charges = feesCalculation();
-           // console.log(total_charge + "--");
-           $('.fees').text(charges.total + " " + gateway_currency);
-
-           // will get amount
-           var willGet = parseFloat(conversion_amount).toFixed(2) - parseFloat(charges.total).toFixed(2);
-           $('.will-get').text(willGet + " " + gateway_currency);
-
-           // Pay In Total
-           $('.pay-in-total').text(parseFloat(senderAmount).toFixed(2) + " " + sender_currency);
-
+        var fixed_charge = acceptVar().currencyFixedCharge;
+        var percent_charge = acceptVar().currencyPercentCharge;
+        if ($.isNumeric(percent_charge) && $.isNumeric(fixed_charge) && $.isNumeric(sender_amount)) {
+            // Process Calculation
+            var fixed_charge_calc = parseFloat(fixed_charge);
+            var percent_charge_calc = (parseFloat(sender_amount) / 100) * parseFloat(percent_charge);
+            var total_charge = parseFloat(fixed_charge_calc) + parseFloat(percent_charge_calc);
+            total_charge = parseFloat(total_charge).toFixed(2);
+            // return total_charge;
+            
+            return {
+                total: total_charge,
+                fixed: fixed_charge_calc,
+                percent: percent_charge,
+            };
+        } else {
+            // return "--";
+            return false;
         }
-        function getUserBalance() {
-           var selectedCurrency = acceptVar().sCurrency;
-           var CSRF = $("meta[name=csrf-token]").attr("content");
-           var data = {
-               _token      : CSRF,
-               target      : selectedCurrency,
-           };
-           // Make AJAX request for getting user balance
-           $.post(userBalanceRoute,data,function() {
-               // success
-           }).done(function(response){
-               var balance = response.data;
-               balance = parseFloat(balance).toFixed(2);
-               $(".balance-show").html("Available Balance " + balance + " " + selectedCurrency);
+    
+    }
 
-           }).fail(function(response) {
-               var response = JSON.parse(response.responseText);
-               throwMessage(response.type,response.message.error);
-           });
+    function getFees() {
+        var sender_currency = acceptVar().currencyCode;
+        var percent = acceptVar().currencyPercentCharge;
+        var charges = feesCalculation();
+        if (charges == false) {
+            return false;
         }
+        $(".fees-show").html("Charge: " + parseFloat(charges.fixed).toFixed(2) + " " + sender_currency + " + " + parseFloat(charges.percent).toFixed(2) + "% = " + parseFloat(charges.total).toFixed(2) + " " + sender_currency);
+    }
+    function getPreview() {
+        var senderAmount = $("input[name=amount]").val();
+        var gateway_currency = acceptVar().currencyCode;
+        var gateway_currency_rate = acceptVar().currencyRate;
+
+        var sender_currency = acceptVar().sCurrency;
+        var sender_currency_rate = acceptVar().sCurrency_rate;
+
+        var exchange_rate =   parseFloat(sender_currency_rate).toFixed(16) / parseFloat(gateway_currency_rate).toFixed(16);
+
+        senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
+
+        // conversion Amount
+        var request_amount = parseFloat(senderAmount)
+        $('.request-amount').text(request_amount.toFixed(2) + " " + sender_currency);
+
+        // conversion Amount
+        var conversion_amount = parseFloat(senderAmount).toFixed(16) / parseFloat(exchange_rate).toFixed(16)
+        $('.conversion-amount').text(conversion_amount.toFixed(2) + " " + gateway_currency);
+
+        // Fees
+        var charges = feesCalculation();
+        // console.log(total_charge + "--");
+        $('.fees').text(charges.total + " " + gateway_currency);
+        
+        // will get amount
+        var willGet = parseFloat(conversion_amount).toFixed(2);
+        $('.will-get').text(willGet + " " + gateway_currency);
+        var payableAmount    = parseFloat(senderAmount) + parseFloat(charges.total);
+        console.log(parseFloat(payableAmount));
+       // Pay In Total
+       $('.pay-in-total').text(parseFloat(payableAmount).toFixed(2) + " " + sender_currency);
+        
+
+    }
+    function getUserBalance() {
+        var selectedCurrency = acceptVar().sCurrency;
+        var CSRF = $("meta[name=csrf-token]").attr("content");
+        var data = {
+            _token      : CSRF,
+            target      : selectedCurrency,
+        };
+        // Make AJAX request for getting user balance
+        $.post(userBalanceRoute,data,function() {
+            // success
+        }).done(function(response){
+            var balance = response.data;
+            balance = parseFloat(balance).toFixed(2);
+            $(".balance-show").html("Available Balance " + balance + " " + selectedCurrency);
+
+        }).fail(function(response) {
+            var response = JSON.parse(response.responseText);
+            throwMessage(response.type,response.message.error);
+        });
+    }
 
 </script>
 @endpush

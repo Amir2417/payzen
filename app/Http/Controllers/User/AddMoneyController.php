@@ -102,6 +102,7 @@ class AddMoneyController extends Controller
                 return redirect()->route('user.profile.index')->with(['error' => ['Admin rejected your kyc information, Please re-submit again']]);
             }
         }
+        
         try{
             
             $instance = PaymentGatewayHelper::init($request->all())->gateway()->render();
@@ -166,8 +167,9 @@ class AddMoneyController extends Controller
             $checkTempData = TemporaryData::where("type",'flutterwave')->where("identifier",$token)->first();         
             if(!$checkTempData) return redirect()->route('user.add.money.index')->with(['error' => ['Transaction Failed. Record didn\'t saved properly. Please try again.']]);
             $checkTempData = $checkTempData->toArray();
+            
             try{
-                PaymentGatewayHelper::init($checkTempData)->type(PaymentGatewayConst::TYPEADDMONEY)->responseReceive('flutterWave');
+                PaymentGatewayHelper::init($checkTempData)->type(PaymentGatewayConst::TYPEADDMONEY)->responseReceive();
             }catch(Exception $e) {
                 return back()->with(['error' => [$e->getMessage()]]);
             }

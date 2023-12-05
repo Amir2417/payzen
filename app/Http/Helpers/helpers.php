@@ -1732,28 +1732,30 @@ function get_files_public_path($slug)
 
 function userGuard() {
     if(auth()->guard('web')->check()){
-        $user = auth()->guard('web')->user();
+        $user = auth()->user();
         $userType = 'USER';
         $guard = "1";
     } else if(auth()->guard('api')->check()){
-        $user = auth()->guard('api')->user();
+        $user = auth()->user();
         $userType = 'USER';
         $guard = "2";
+    }else if(auth()->guard('agent')->check()){
+        $user = auth()->guard('agent')->user();
+        $userType = 'AGENT';
+        $guard = "3";
+    }else if(auth()->guard('agent_api')->check()){
+        $user = auth()->guard('agent_api')->user();
+        $userType = 'AGENT';
+        $guard = "4";
     } else if(auth()->guard('merchant')->check()){
         $user = auth()->guard('merchant')->user();
         $userType = 'MERCHANT';
-        $guard = "3";
+        $guard = "5";
     }else if(auth()->guard('merchant_api')->check()){
         $user = auth()->guard('merchant_api')->user();
         $userType = 'MERCHANT';
-        $guard = "4";
+        $guard = "6";
     }
-    else if(auth()->guard('agent')->check()){
-        $user = auth()->guard('agent')->user();
-        $userType = 'AGENT';
-        $guard = "5";
-    }
-
     return [
         'user'=>$user,
         'type'=> $userType,
@@ -2136,4 +2138,33 @@ function get_api_languages(){
     });
 
     return $lang;
+}
+
+function authGuardApi(){
+    if (Auth::check()) {
+        $guardName = Auth::getDefaultDriver();
+        if( $guardName == 'web'){
+            $userType = 'USER';
+        } else if( $guardName == 'api'){
+            $userType = 'USER';
+        } else if( $guardName == 'agent'){
+            $userType = 'AGENT';
+        } else if($guardName == 'agent_api'){
+            $userType = 'AGENT';
+        } else if($guardName == 'merchant'){
+            $userType = 'MERCHANT';
+        } else if($guardName == 'merchant_api'){
+            $userType = 'MERCHANT';
+        }
+        if(auth()->guard($guardName)->check()){
+            $user = auth()->user();
+            $userType = $userType;
+            $guard = $guardName;
+        }
+        return [
+            'user'=>$user,
+            'type'=> $userType,
+            'guard'=>$guard
+        ];
+    }
 }

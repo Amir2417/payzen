@@ -140,13 +140,18 @@ class AddMoneyController extends Controller
         $defualt_currency = Currency::default();
         
         $user_wallet = UserWallet::auth()->with(['currency'])->where('id', $request->sender_wallet)->first();
-
+        
         if(!$user_wallet) {
             $error = ['error'=>['User wallet not found!']];
             return Helpers::error($error);
         }
+        $exchange_rate  = $payment_gateways_currencies->rate / $user_wallet->currency->rate;
+        $request_amount = $amount   * $exchange_rate;
+        $min_amount = $payment_gateways_currencies->min_limit / $user_wallet->currency->rate;
+        $max_amount = $payment_gateways_currencies->max_limit / $user_wallet->currency->rate;
         
-        if($amount <  $payment_gateways_currencies->min_limit || $amount >  $payment_gateways_currencies->max_limit) {
+        // dd($exchange_rate,$user_wallet->currency->rate,$payment_gateways_currencies->rate,$min_amount,$max_amount,$request_amount);
+        if($request_amount <  $min_amount || $request_amount >  $max_amount) {
             
             $error = ['error'=>['Please follow the transaction limit']];
             return Helpers::error($error);
@@ -165,25 +170,7 @@ class AddMoneyController extends Controller
             $payment_gateway = PaymentGateway::where('id', $temData->data->gateway)->first();
             if($payment_gateway->type == "AUTOMATIC") {
                 if($temData->type == PaymentGatewayConst::STRIPE) {
-                    $card = [
-                        [
-                            'field_name' => "name",
-                            'label_name' => "Name",
-                        ],
-                        [
-                            'field_name' => "cardNumber",
-                            'label_name' => "Card Number",
-                        ],
-                        [
-                            'field_name' => "cardExpiry",
-                            'label_name' => "Expire Date",
-                        ],
-                        [
-                            'field_name' => "cardCVC",
-                            'label_name' => "CVC Code",
-                        ],
-                    ];
-                    $card2 = (array) $card;
+                    
                     $payment_informations =[
                         'trx' =>  $temData->identifier,
                         'gateway_currency_name' =>  $payment_gateway_currency->name,
@@ -199,14 +186,13 @@ class AddMoneyController extends Controller
                     ];
 
                     $data =[
-                    'gategay_type' => $payment_gateway->type,
-                    'gateway_currency_name' => $payment_gateway_currency->name,
-                    'alias' => $payment_gateway_currency->alias,
-                    'identify' => $temData->type,
-                    'input_fields' => $card2,
-                    'payment_informations' => $payment_informations,
-                    'url' => route('api.stripe.payment.confirmed'),
-                    'method' => "post",
+                        'gategay_type' => $payment_gateway->type,
+                        'gateway_currency_name' => $payment_gateway_currency->name,
+                        'alias' => $payment_gateway_currency->alias,
+                        'identify' => $temData->type,
+                        'payment_informations' => $payment_informations,
+                        'url' => @$temData->data->response->link."?prefilled_email=".@$user->email,
+                        'method' => "get",
                     ];
                     $message =  ['success'=>['Add Money Inserted Successfully']];
                     return Helpers::success($data, $message);
@@ -317,11 +303,12 @@ class AddMoneyController extends Controller
 
                 }
             }elseif($payment_gateway->type == "MANUAL"){
-
+                
                     $payment_informations =[
                         'trx' =>  $temData->identifier,
                         'gateway_currency_name' =>  $payment_gateway_currency->name,
                         'sender_cur_rate'   => $temData->data->amount->sender_cur_rate,
+                        'user_wallet'       => $user_wallet->id,
                         'exchange_rate'     => $temData->data->amount->exchange_rate,
                         'request_amount' => getAmount($temData->data->amount->requested_amount,4),
                         'sender_cur_code'   => $temData->data->amount->sender_cur_code,
@@ -449,5 +436,24 @@ class AddMoneyController extends Controller
             $message = ['error' => ['Payment Failed']];
             Helpers::error($message);
         }
+    }
+    //stripe success
+    public function stripePaymentSuccess($trx){
+        $token = $trx;
+        $checkTempData = TemporaryData::where("type",PaymentGatewayConst::STRIPE)->where("identifier",$token)->first();
+        $message = ['error' => ['Transaction Failed. Record didn\'t saved properly. Please try again.']];
+       
+        if(!$checkTempData) return Helpers::error($message);
+        $checkTempData = $checkTempData->toArray();
+
+        try{
+            PaymentGatewayApi::init($checkTempData)->type(PaymentGatewayConst::TYPEADDMONEY)->responseReceive();
+        }catch(Exception $e) {
+            $message = ['error' => ["Something Is Wrong..."]];
+            return Helpers::error($message);
+        }
+        $message = ['success' => ["Payment Successful, Please Go Back Your App"]];
+        return Helpers::onlysuccess($message);
+
     }
 }

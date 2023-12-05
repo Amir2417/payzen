@@ -40,10 +40,10 @@ trait FlutterwaveTrait
             $user_phone = $user->full_mobile ?? '';
             $user_name = $user->firstname.' '.$user->lastname ?? '';
         }
-        if(get_auth_guard() == 'web'){
-            $return_url = route('user.add.money.flutterwave.callback');
-        }else{
+        if(userGuard()['type'] == "AGENT"){
             $return_url = route('agent.add.money.flutterwave.callback');
+        }else{
+            $return_url = route('user.add.money.flutterwave.callback');
         }
         
 
@@ -203,6 +203,7 @@ trait FlutterwaveTrait
 
     public function flutterwaveSuccess($output = null) {
         if(!$output) $output = $this->output;
+        
         $token = $this->output['tempData']['identifier'] ?? "";
         if(empty($token)) throw new Exception('Transaction faild. Record didn\'t saved properly. Please try again.');
         return $this->createTransactionFlutterwave($output);

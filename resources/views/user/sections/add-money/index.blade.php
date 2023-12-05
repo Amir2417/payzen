@@ -216,29 +216,34 @@
             var element             = event;
             var currencyCode        = acceptVar().selectedCurrency;
             var selectedCurrencyRate  = acceptVar().selectedCurrencyRate;
+            var selectedCurRate = parseFloat(selectedCurrencyRate).toFixed(2) / parseFloat(selectedCurrencyRate).toFixed(2);
+           
+            
             
             var selectedCurrencyCode  = acceptVar().selectedCurrency;
-            var currencyMinAmount   = acceptVar().currencyMinAmount;
-            var currencyMaxAmount   = acceptVar().currencyMaxAmount;
+            
             var walletBalance       = acceptVar().walletBalance;
             var walletId            = acceptVar().walletId;
             var paymentGatewayRate  = acceptVar().currencyRate;
             var paymentGatewayCode  = acceptVar().currencyCode;
+            
+            var exchangeRate        = parseFloat(paymentGatewayRate).toFixed(2) / parseFloat(selectedCurrencyRate).toFixed(2);
 
-            $('.rate-show').html(parseFloat(paymentGatewayRate).toFixed(2) + " " + paymentGatewayCode + " = " + selectedCurrencyRate + " " + selectedCurrencyCode);
+            $('.rate-show').html(parseFloat(selectedCurRate).toFixed(2) + " " + selectedCurrencyCode + " = " + parseFloat(exchangeRate).toFixed(5) + " " + paymentGatewayCode);
             $('.balance-show').html("Available Balance :" + " " + walletBalance + " " + currencyCode);
             $('.sender-wallet').val(walletId);
         }
         function getLimit() {
-            var sender_currency         = acceptVar().selectedCurrency;
+            var selectedCurrency       = acceptVar().selectedCurrency;
+            var payment_gate_rate       = acceptVar().currencyRate;
             
-            var sender_currency_rate    = acceptVar().selectedCurrencyRate;
             var min_limit               = acceptVar().currencyMinAmount;
             var max_limit               = acceptVar().currencyMaxAmount;
             if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
-                var min_limit_calc = parseFloat(min_limit*sender_currency_rate).toFixed(2);
-                var max_limit_clac = parseFloat(max_limit*sender_currency_rate).toFixed(2);
-                $('.limit-show').html("Limit " + min_limit_calc + " " + sender_currency + " - " + max_limit_clac + " " + sender_currency);
+                var min_limit_calc = parseFloat(min_limit/payment_gate_rate).toFixed(2);
+                var max_limit_clac = parseFloat(max_limit/payment_gate_rate).toFixed(2);
+                
+                $('.limit-show').html("Limit " + min_limit_calc + " " + selectedCurrency + " - " + max_limit_clac + " " + selectedCurrency);
                 return {
                     minLimit:min_limit_calc,
                     maxLimit:max_limit_clac,
@@ -294,11 +299,12 @@
             var percent_charge = acceptVar().currencyPercentCharge;
             if ($.isNumeric(percent_charge) && $.isNumeric(fixed_charge) && $.isNumeric(request_amount)) {
                 // Process Calculation
-                var fixed_charge_calc = parseFloat(fixed_charge) * parseFloat(sender_currency_rate);
+                var fixed_charge_calc = parseFloat(fixed_charge);
             
-                var percent_charge_calc = (parseFloat(request_amount) / 100) * parseFloat(percent_charge);
+                var percent_charge_calc = (parseFloat(sender_amount) / 100) * parseFloat(percent_charge);
                 var total_charge = parseFloat(fixed_charge_calc) + parseFloat(percent_charge_calc);
                 total_charge = parseFloat(total_charge).toFixed(2);
+               
                 // return total_charge;
                 return {
                     total: total_charge,
