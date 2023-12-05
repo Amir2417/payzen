@@ -26,9 +26,9 @@ class BillPayController extends Controller
         $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
             return[
                 'balance' => getAmount($data->balance,2),
-                'currency' => get_default_currency_code(),
+                'currency' => $data->currency->code,
             ];
-        })->first();
+        });
         $billPayCharge = TransactionSetting::where('slug','bill_pay')->where('status',1)->get()->map(function($data){
             return[
                 'id' => $data->id,
@@ -82,11 +82,13 @@ class BillPayController extends Controller
             'bill_type' => 'required|string',
             'bill_number' => 'required|min:8',
             'amount' => 'required|numeric|gt:0',
+            'sender_currency'   => "required|string|exists:currencies,code",
         ]);
         if($validator->fails()){
             $error =  ['error'=>$validator->errors()->all()];
             return Helpers::validation($error);
         }
+        $validated  = $validator->validate();
         $basic_setting = BasicSettings::first();
         $user = auth()->user();
         if($basic_setting->kyc_verification){
@@ -111,12 +113,16 @@ class BillPayController extends Controller
         $bill_number = $request->bill_number;
         $user = auth()->user();
         $billPayCharge = TransactionSetting::where('slug','bill_pay')->where('status',1)->first();
-        $userWallet = UserWallet::where('user_id',$user->id)->first();
+        $userWallet = UserWallet::auth()->whereHas("currency",function($q) use ($validated) {
+            $q->where("code",$validated['sender_currency'])->active();
+        })->active()->first();
         if(!$userWallet){
             $error = ['error'=>['wallet not found']];
             return Helpers::error($error);
         }
-        $baseCurrency = Currency::default();
+        $baseCurrency = $userWallet->currency;
+        $charge_values = $this->billPayCharge($validated['amount'],$billPayCharge,$userWallet);
+        
         if(!$baseCurrency){
             $error = ['error'=>['Default currency not found']];
             return Helpers::error($error);
@@ -151,44 +157,62 @@ class BillPayController extends Controller
               ];
                //send notifications
             $user = auth()->user();
-            $sender = $this->insertSender( $trx_id,$user,$userWallet,$amount, $bill_type, $bill_number,$payable);
+            // dd($charge_values);
+            $sender = $this->insertSender( $trx_id,$user,$userWallet,$amount, $bill_type, $bill_number,$payable,$charge_values);
             $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$user,$sender);
             //send notifications
             if( $basic_setting->email_notification == true){
-                $user->notify(new BillPayMail($user,(object)$notifyData));
+                // $user->notify(new BillPayMail($user,(object)$notifyData));
             }
             $message =  ['success'=>['Bill pay request send to admin successful']];
             return Helpers::onlysuccess($message);
         }catch(Exception $e) {
+            dd($e->getMessage());
             $error = ['error'=>['Something is wrong, Please try again later']];
             return Helpers::error($error);
         }
 
     }
-    public function insertSender( $trx_id,$user,$userWallet,$amount, $bill_type, $bill_number,$payable) {
+    public function billPayCharge($sender_amount,$charges,$userWallet) {
+        $data['sender_amount']          = $sender_amount;
+        $data['sender_currency']        = $userWallet->currency->code;
+        $data['sender_currency_rate']   = $userWallet->currency->rate;
+        $data['percent_charge']         = ($sender_amount / 100) * $charges->percent_charge ?? 0;
+        $data['fixed_charge']           = $userWallet->currency->rate * $charges->fixed_charge ?? 0;
+        $data['total_charge']           = $data['percent_charge'] + $data['fixed_charge'];
+        $data['userWallet_balance']  = $userWallet->balance;
+        $data['payable']                = $sender_amount + $data['total_charge'];
+        return $data;
+    }
+    public function insertSender( $trx_id,$user,$userWallet,$amount, $bill_type,$bill_number,$payable,$charge_values) {
         $trx_id = $trx_id;
+        
         $authWallet = $userWallet;
-        $afterCharge = ($authWallet->balance - $payable);
+        $afterCharge = ($authWallet->balance - $charge_values['payable']);
+        
         $details =[
             'bill_type_id' => $bill_type->id??'',
             'bill_type_name' => $bill_type->name??'',
             'bill_number' => $bill_number,
             'bill_amount' => $amount??"",
+            'charges' => $charge_values,
         ];
+        
+        
         DB::beginTransaction();
         try{
             $id = DB::table("transactions")->insertGetId([
-                'user_id'                       => $user->id,
+                'user_id'                       => $authWallet->user->id,
                 'user_wallet_id'                => $authWallet->id,
                 'payment_gateway_currency_id'   => null,
                 'type'                          => PaymentGatewayConst::BILLPAY,
                 'trx_id'                        => $trx_id,
-                'request_amount'                => $amount,
-                'payable'                       => $payable,
+                'request_amount'                => $charge_values['sender_amount'],
+                'payable'                       => $charge_values['payable'],
                 'available_balance'             => $afterCharge,
                 'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::BILLPAY," ")) . " Request To Admin",
                 'details'                       => json_encode($details),
-                'attribute'                      =>PaymentGatewayConst::SEND,
+                'attribute'                     => PaymentGatewayConst::SEND,
                 'status'                        => 2,
                 'created_at'                    => now(),
             ]);
@@ -196,6 +220,7 @@ class BillPayController extends Controller
 
             DB::commit();
         }catch(Exception $e) {
+            dd($e->getMessage());
             DB::rollBack();
             $error = ['error'=>['Something is wrong, Please try again later']];
             return Helpers::error($error);

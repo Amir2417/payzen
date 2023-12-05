@@ -48,6 +48,7 @@ class BillPayController extends Controller
             'bill_number'         => "required",
         ])->validate();
         $basic_setting = BasicSettings::first();
+       
         $user = auth()->user();
         if($basic_setting->kyc_verification){
             if( $user->kyc_verified == 0){
