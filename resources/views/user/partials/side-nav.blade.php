@@ -70,6 +70,7 @@
                         </a>
                     </li>
                     @endif
+                   
                     @if(module_access('make-payment',$module)->status)
                     <li class="sidebar-menu-item">
                         <a href="{{ setRoute('user.make.payment.index') }}">

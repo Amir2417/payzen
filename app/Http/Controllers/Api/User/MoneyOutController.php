@@ -45,7 +45,7 @@ class MoneyOutController extends Controller
             ];
         });
 
-        $transactions = Transaction::auth()->moneyOut()->latest()->take(5)->get()->map(function($item){
+        $transactions = Transaction::auth()->withdraw()->latest()->take(5)->get()->map(function($item){
                 $statusInfo = [
                     "success" =>      1,
                     "pending" =>      2,
@@ -69,7 +69,7 @@ class MoneyOutController extends Controller
 
                 ];
         });
-        $gateways = PaymentGateway::where('status', 1)->where('slug', PaymentGatewayConst::money_out_slug())->get()->map(function($gateway){
+        $gateways = PaymentGateway::where('status', 1)->where('slug', PaymentGatewayConst::withdraw_slug())->get()->map(function($gateway){
                 $currencies = PaymentGatewayCurrency::where('payment_gateway_id',$gateway->id)->get()->map(function($data){
                 return[
                     'id' => $data->id,
@@ -212,7 +212,7 @@ class MoneyOutController extends Controller
         ];
         $identifier = generate_unique_string("transactions","trx_id",16);
         $inserted = TemporaryData::create([
-            'type'          => PaymentGatewayConst::TYPEMONEYOUT,
+            'type'          => PaymentGatewayConst::TYPEWITHDRAW,
             'identifier'    => $identifier,
             'data'          => $insertData,
         ]);
@@ -273,7 +273,7 @@ class MoneyOutController extends Controller
             return Helpers::validation($error);
         }
         $basic_setting = BasicSettings::first();
-        $track = TemporaryData::where('identifier',$request->trx)->where('type',PaymentGatewayConst::TYPEMONEYOUT)->first();
+        $track = TemporaryData::where('identifier',$request->trx)->where('type',PaymentGatewayConst::TYPEWITHDRAW)->first();
         if(!$track){
             $error = ['error'=>["Sorry, your payment information is invalid"]];
             return Helpers::error($error);
@@ -321,7 +321,8 @@ class MoneyOutController extends Controller
             $error =  ['error'=>$validator->errors()->all()];
             return Helpers::validation($error);
         }
-        $track = TemporaryData::where('identifier',$request->trx)->where('type',PaymentGatewayConst::TYPEMONEYOUT)->first();
+        $track = TemporaryData::where('identifier',$request->trx)->where('type',PaymentGatewayConst::TYPEWITHDRAW)->first();
+        
         if(!$track){
             $error = ['error'=>["Sorry, your payment information is invalid"]];
             return Helpers::error($error);
@@ -361,24 +362,25 @@ class MoneyOutController extends Controller
         $trx_id = $moneyOutData->trx_id ??'MO'.getTrxNum();
         $authWallet = UserWallet::where('id',$moneyOutData->wallet_id)->where('user_id',$moneyOutData->user_id)->first();
         $afterCharge = ($authWallet->balance - ($moneyOutData->amount));
+        
         DB::beginTransaction();
         try{
             $id = DB::table("transactions")->insertGetId([
                 'user_id'                       => auth()->user()->id,
                 'user_wallet_id'                => $moneyOutData->wallet_id,
                 'payment_gateway_currency_id'   => $moneyOutData->gateway_currency_id,
-                'type'                          => PaymentGatewayConst::TYPEMONEYOUT,
+                'type'                          => PaymentGatewayConst::TYPEWITHDRAW,
                 'trx_id'                        => $trx_id,
                 'request_amount'                => $moneyOutData->amount,
                 'payable'                       => $moneyOutData->will_get,
                 'available_balance'             => $afterCharge,
-                'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPEMONEYOUT," ")) . " by " .$gateway->name,
+                'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPEWITHDRAW," ")) . " by " .$gateway->name,
                 'details'                       => json_encode($get_values),
                 'status'                        => $status,
                 'created_at'                    => now(),
             ]);
             $this->updateWalletBalanceManual($authWallet,$afterCharge);
-
+            
             DB::commit();
         }catch(Exception $e) {
             DB::rollBack();
@@ -497,13 +499,15 @@ class MoneyOutController extends Controller
             if($result['status'] && $result['status'] == 'success'){
                 try{
                     $user = auth()->user();
+                    
                     $inserted_id = $this->insertRecordManual($moneyOutData,$gateway,$get_values = null);
                     $this->insertChargesManual($moneyOutData,$inserted_id);
                     $this->insertDeviceManual($moneyOutData,$inserted_id);
+                    
                     $track->delete();
                     //send notifications
                     if( $basic_setting->email_notification == true){
-                        $user->notify(new WithdrawMail($user,$moneyOutData));
+                        // $user->notify(new WithdrawMail($user,$moneyOutData));
                     }
                     $message =  ['success'=>['Withdraw money request send successfully']];
                     return Helpers::onlysuccess($message);
@@ -530,7 +534,7 @@ class MoneyOutController extends Controller
         $error =  ['error'=>$validator->errors()->all()];
         return Helpers::validation($error);
     }
-    $track = TemporaryData::where('identifier',request()->trx)->where('type',PaymentGatewayConst::TYPEMONEYOUT)->first();
+    $track = TemporaryData::where('identifier',request()->trx)->where('type',PaymentGatewayConst::TYPEWITHDRAW)->first();
     if(!$track){
         $error = ['error'=>["Sorry, your payment information is invalid"]];
         return Helpers::error($error);

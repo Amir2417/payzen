@@ -24,6 +24,7 @@ use App\Http\Controllers\User\ReceiveMoneyController;
 use App\Http\Controllers\User\ReferralController;
 use App\Http\Controllers\User\SudoVirtualCardController;
 use App\Http\Controllers\User\SupportTicketController;
+use App\Http\Controllers\User\WithdrawController;
 
 Route::prefix("user")->name("user.")->group(function(){
     Route::post("info",[GlobalController::class,'userInfo'])->name('info');
@@ -105,6 +106,8 @@ Route::prefix("user")->name("user.")->group(function(){
             Route::post('get/receiver/wallet','getReceiverWallet')->name('get.receiver.wallet');
         });
     });
+    //money out
+    
     Route::middleware('module:virtual-card')->group(function(){
         //virtual card flutterwave
         Route::middleware('virtual_card_method:flutterwave')->group(function(){

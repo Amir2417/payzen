@@ -8,6 +8,7 @@ class PaymentGatewayConst {
     const MANUAL    = "MANUAL";
     const ADDMONEY  = "Add Money";
     const MONEYOUT  = "Money Out";
+    const WITHDRAW  = "Withdraw";
     const ACTIVE    =  true;
 
     const TYPEADDMONEY      = "ADD-MONEY";
@@ -73,6 +74,9 @@ class PaymentGatewayConst {
 
     public static function money_out_slug() {
         return Str::slug(self::MONEYOUT);
+    }
+    public static function withdraw_slug() {
+        return Str::slug(self::WITHDRAW);
     }
 
     public static function register($alias = null) {

@@ -33,10 +33,10 @@ class MoneyOutController extends Controller
         $page_title = "Withdraw Money";
         $currencies = Currency::active()->get();
         $payment_gateways = PaymentGatewayCurrency::whereHas('gateway', function ($gateway) {
-            $gateway->where('slug', PaymentGatewayConst::money_out_slug());
+            $gateway->where('slug', PaymentGatewayConst::withdraw_slug());
             $gateway->where('status', 1);
         })->get();
-        $transactions = Transaction::auth()->moneyOut()->orderByDesc("id")->latest()->take(10)->get();
+        $transactions = Transaction::auth()->withdraw()->orderByDesc("id")->latest()->take(10)->get();
         return view('user.sections.money-out.index',compact('page_title','payment_gateways','transactions','currencies'));
     }
 
@@ -268,12 +268,12 @@ class MoneyOutController extends Controller
                 'user_id'                       => auth()->user()->id,
                 'user_wallet_id'                => $moneyOutData->wallet_id,
                 'payment_gateway_currency_id'   => $moneyOutData->gateway_currency_id,
-                'type'                          => PaymentGatewayConst::TYPEMONEYOUT,
+                'type'                          => PaymentGatewayConst::TYPEWITHDRAW,
                 'trx_id'                        => $trx_id,
                 'request_amount'                => $moneyOutData->charges->requested_amount,
                 'payable'                       => $moneyOutData->charges->will_get,
                 'available_balance'             => $afterCharge,
-                'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPEMONEYOUT," ")) . " by " .$gateway->name,
+                'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPEWITHDRAW," ")) . " by " .$gateway->name,
                 'details'                       => json_encode($get_values),
                 'status'                        => $status,
                 'created_at'                    => now(),

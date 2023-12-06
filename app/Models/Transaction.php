@@ -139,6 +139,9 @@ class Transaction extends Model
     public function scopeMoneyOut($query) {
         return $query->where("type",PaymentGatewayConst::TYPEMONEYOUT);
     }
+    public function scopeWithdraw($query) {
+        return $query->where("type",PaymentGatewayConst::TYPEWITHDRAW);
+    }
     public function scopeSenMoney($query) {
         return $query->where("type",PaymentGatewayConst::TYPETRANSFERMONEY);
     }
@@ -157,6 +160,7 @@ class Transaction extends Model
     public function scopeMakePayment($query) {
         return $query->where("type",PaymentGatewayConst::TYPEMAKEPAYMENT);
     }
+    
     public function scopeMerchantPayment($query) {
         return $query->where("type",PaymentGatewayConst::MERCHANTPAYMENT);
     }
