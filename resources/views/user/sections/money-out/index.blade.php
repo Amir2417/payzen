@@ -251,7 +251,7 @@
         var currencyFixedCharge             = $("select[name=gateway] :selected").attr("data-fixed_charge");
         var currencyPercentCharge           = $("select[name=gateway] :selected").attr("data-percent_charge");
         var senderCurrency                  = $("select[name=wallet_currency] :selected").val();;
-        var senderCurrency_rate             = $("select[name=wallet_currency] :selected").attr("data-rate");;
+        var senderCurrency_rate             = $("select[name=wallet_currency] :selected").attr("data-rate");
 
         // var sender_select = $("input[name=from_wallet_id] :selected");
 

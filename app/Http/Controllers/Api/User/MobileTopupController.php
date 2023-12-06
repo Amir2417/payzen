@@ -26,9 +26,9 @@ class MobileTopupController extends Controller
         $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
             return[
                 'balance' => getAmount($data->balance,2),
-                'currency' => get_default_currency_code(),
+                'currency' => $data->currency->code,
             ];
-        })->first();
+        });
         $topupCharge = TransactionSetting::where('slug','mobile_topup')->where('status',1)->get()->map(function($data){
             return[
                 'id' => $data->id,
@@ -82,11 +82,13 @@ class MobileTopupController extends Controller
             'topup_type' => 'required|string',
             'mobile_number' => 'required|min:10|max:13',
             'amount' => 'required|numeric|gt:0',
+            'sender_currency'   => "required|string|exists:currencies,code",
         ]);
         if($validator->fails()){
             $error =  ['error'=>$validator->errors()->all()];
             return Helpers::validation($error);
         }
+        $validated  = $validator->validate();
         $basic_setting = BasicSettings::first();
         $user = auth()->user();
         if($basic_setting->kyc_verification){
@@ -111,16 +113,19 @@ class MobileTopupController extends Controller
         $mobile_number = $request->mobile_number;
         $user = auth()->user();
         $topupCharge = TransactionSetting::where('slug','mobile_topup')->where('status',1)->first();
-        $userWallet = UserWallet::where('user_id',$user->id)->first();
+        $userWallet = UserWallet::auth()->whereHas("currency",function($q) use ($validated) {
+            $q->where("code",$validated['sender_currency'])->active();
+        })->active()->first();
         if(!$userWallet){
             $error = ['error'=>['wallet not found']];
             return Helpers::error($error);
         }
-        $baseCurrency = Currency::default();
+        $baseCurrency = $userWallet->currency;
         if(!$baseCurrency){
              $error = ['error'=>['Default currency not found']];
             return Helpers::error($error);
         }
+        $charges_values = $this->topupCharge($validated['amount'],$topupCharge,$userWallet);
         $rate = $baseCurrency->rate;
         $minLimit =  $topupCharge->min_limit *  $rate;
         $maxLimit =  $topupCharge->max_limit *  $rate;
@@ -151,7 +156,7 @@ class MobileTopupController extends Controller
               ];
                //send notifications
             $user = auth()->user();
-            $sender = $this->insertSender( $trx_id,$user,$userWallet,$amount, $topup_type, $mobile_number,$payable);
+            $sender = $this->insertSender( $trx_id,$user,$userWallet,$amount, $topup_type, $mobile_number,$payable,$charges_values);
             $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$user,$sender);
             //send notifications
             if( $basic_setting->email_notification == true){
@@ -165,15 +170,27 @@ class MobileTopupController extends Controller
         }
 
     }
-    public function insertSender( $trx_id,$user,$userWallet,$amount, $topup_type, $mobile_number,$payable) {
+    public function topupCharge($sender_amount,$charges,$sender_wallet) {
+        $data['sender_amount']          = $sender_amount;
+        $data['sender_currency']        = $sender_wallet->currency->code;
+        $data['sender_currency_rate']   = $sender_wallet->currency->rate;
+        $data['percent_charge']         = ($sender_amount / 100) * $charges->percent_charge ?? 0;
+        $data['fixed_charge']           = $sender_wallet->currency->rate * $charges->fixed_charge ?? 0;
+        $data['total_charge']           = $data['percent_charge'] + $data['fixed_charge'];
+        $data['sender_wallet_balance']  = $sender_wallet->balance;
+        $data['payable']                = $sender_amount + $data['total_charge'];
+        return $data;
+    }
+    public function insertSender( $trx_id,$user,$userWallet,$amount, $topup_type, $mobile_number,$payable,$charges_values) {
         $trx_id = $trx_id;
         $authWallet = $userWallet;
-        $afterCharge = ($authWallet->balance - $payable);
+        $afterCharge = ($authWallet->balance - $charges_values['payable']);
         $details =[
             'topup_type_id' => $topup_type->id??'',
             'topup_type_name' => $topup_type->name??'',
             'mobile_number' => $mobile_number,
             'topup_amount' => $amount??"",
+            'charges'   => $charges_values
         ];
         DB::beginTransaction();
         try{

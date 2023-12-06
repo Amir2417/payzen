@@ -29,9 +29,10 @@ class MakePaymentController extends Controller
     }
     public function index() {
         $page_title = "Make Payment";
+        $currencies = Currency::active()->get();
         $makePaymentCharge = TransactionSetting::where('slug','make-payment')->where('status',1)->first();
         $transactions = Transaction::auth()->makePayment()->latest()->take(10)->get();
-        return view('user.sections.make-payment.index',compact("page_title",'makePaymentCharge','transactions'));
+        return view('user.sections.make-payment.index',compact("page_title",'currencies','makePaymentCharge','transactions'));
     }
     public function checkUser(Request $request){
         $email = $request->email;
@@ -44,11 +45,14 @@ class MakePaymentController extends Controller
         return response($exist);
     }
     public function confirmed(Request $request){
+        
         $request->validate([
-            'amount' => 'required|numeric|gt:0',
-            'email' => 'required|email'
+            'amount'            => 'required|numeric|gt:0',
+            'email'             => 'required|email',
+            'wallet_currency'   => 'required'
         ]);
         $basic_setting = BasicSettings::first();
+        $wallet_currency = $request->wallet_currency;
         $user = auth()->user();
         if($basic_setting->kyc_verification){
             if( $user->kyc_verified == 0){
@@ -62,11 +66,14 @@ class MakePaymentController extends Controller
         $amount = $request->amount;
         $user = auth()->user();
         $makePaymentCharge = TransactionSetting::where('slug','make-payment')->where('status',1)->first();
-        $userWallet = UserWallet::where('user_id',$user->id)->first();
+        $userWallet = UserWallet::auth()->whereHas("currency",function($q) use ($wallet_currency) {
+            $q->where("code",$wallet_currency)->active();
+        })->active()->first();
+       
         if(!$userWallet){
             return back()->with(['error' => ['Sender wallet not found']]);
         }
-        $baseCurrency = Currency::default();
+        $baseCurrency = $userWallet->currency;
         if(!$baseCurrency){
             return back()->with(['error' => ['Default currency not found']]);
         }
@@ -91,13 +98,14 @@ class MakePaymentController extends Controller
         $total_charge = $fixedCharge + $percent_charge;
         $payable = $total_charge + $amount;
         $recipient = $amount;
+        $charges = $this->transferCharges($amount,$fixedCharge,$percent_charge,$total_charge,$userWallet);
         if($payable > $userWallet->balance ){
             return back()->with(['error' => ['Sorry, insufficient balance']]);
         }
-
+        
         try{
             $trx_id = $this->trx_id;
-            $sender = $this->insertSender( $trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver);
+            $sender = $this->insertSender( $trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver,$charges);
             if($sender){
                  $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$user,$sender,$receiver);
             }
@@ -116,7 +124,7 @@ class MakePaymentController extends Controller
                 $user->notify(new SenderMail($user,(object)$notifyDataSender));
             }
 
-            $receiverTrans = $this->insertReceiver( $trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver,$receiverWallet);
+            $receiverTrans = $this->insertReceiver( $trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver,$receiverWallet,$charges);
             if($receiverTrans){
                  $this->insertReceiverCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$user,$receiverTrans,$receiver);
             }
@@ -140,11 +148,16 @@ class MakePaymentController extends Controller
     }
 
      //sender transaction
-    public function insertSender($trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver) {
+    public function insertSender($trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver,$charges) {
         $trx_id = $trx_id;
         $authWallet = $userWallet;
         $afterCharge = ($authWallet->balance - $payable);
         $details =[
+            'receiver_username'=> $receiver->username,
+            'receiver_email'=> $receiver->email,
+            'sender_username'=> $user->username,
+            'sender_email'=> $user->email,
+            'charges' => $charges,
             'recipient_amount' => $recipient,
             'receiver' => $receiver,
         ];
@@ -210,13 +223,18 @@ class MakePaymentController extends Controller
         }
     }
     //Receiver Transaction
-    public function insertReceiver($trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver,$receiverWallet) {
+    public function insertReceiver($trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver,$receiverWallet,$charges) {
         $trx_id = $trx_id;
         $receiverWallet = $receiverWallet;
         $recipient_amount = ($receiverWallet->balance + $recipient);
         $details =[
-            'sender_amount' => $amount,
-            'sender' => $user,
+            'receiver_username'=> $receiver->username,
+            'receiver_email'=> $receiver->email,
+            'sender_username'=> $user->username,
+            'sender_email'=> $user->email,
+            'charges' => $charges,
+            'recipient_amount' => $recipient,
+            'receiver' => $receiver,
         ];
         DB::beginTransaction();
         try{
@@ -278,5 +296,17 @@ class MakePaymentController extends Controller
             DB::rollBack();
             throw new Exception($e->getMessage());
         }
+    }
+    public function transferCharges($amount,$fixedCharge,$percent_charge,$total_charge,$userWallet) {
+        $data['sender_amount']          = $amount;
+        $data['sender_currency']        = $userWallet->currency->code;
+        $data['receiver_amount']        = $amount;
+        $data['receiver_currency']      = $userWallet->currency->code;
+        $data['percent_charge']         = $percent_charge ?? 0;
+        $data['fixed_charge']           = $fixedCharge ?? 0;
+        $data['total_charge']           = $data['percent_charge'] + $data['fixed_charge'];
+        $data['sender_wallet_balance']  = $userWallet->balance;
+        $data['payable']                = $amount + $data['total_charge'];
+        return $data;
     }
 }

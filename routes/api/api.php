@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\User\MobileTopupController;
 use App\Http\Controllers\Api\User\MoneyOutController;
 use App\Http\Controllers\Api\User\ReceiveMoneyController;
 use App\Http\Controllers\Api\User\RecipientController;
+use App\Http\Controllers\Api\User\ReferralController;
 use App\Http\Controllers\Api\User\RemittanceController;
 use App\Http\Controllers\Api\User\SecurityController;
 use App\Http\Controllers\Api\User\SendMoneyController;
@@ -181,7 +182,13 @@ Route::prefix('user')->group(function(){
                 Route::get('info','topUpInfo');
                 Route::post('confirmed','topUpConfirmed');
             });
-             //Saved Recipient
+
+            //referral user
+            Route::controller(ReferralController::class)->prefix('referral-user')->group(function(){
+                Route::get('info','referralUser');
+            });
+
+            //Saved Recipient
             Route::controller(RecipientController::class)->prefix('recipient')->group(function(){
                 Route::get('list','recipientList');
                 Route::get('save/info','saveRecipientInfo');

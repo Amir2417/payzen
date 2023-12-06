@@ -8,6 +8,7 @@ class ModuleSetting {
     const REMITTANCE_MONEY = "remittance-money";
     const ADD_MONEY = "add-money";
     const WITHDRAW_MONEY = "withdraw-money";
+    const MONEY_OUT = "money-out";
     const MAKE_PAYMENT = "make-payment";
     const VIRTUAL_CARD = "virtual-card";
     const BILL_PAY = "bill-pay";

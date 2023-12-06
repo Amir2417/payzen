@@ -35,9 +35,9 @@ class RemittanceController extends Controller
         $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
             return[
                 'balance' => getAmount($data->balance,2),
-                'currency' => get_default_currency_code(),
+                'currency' => $data->currency->code,
             ];
-        })->first();
+        });
         $transactionType = [
             [
                 'id'    => 1,
@@ -304,12 +304,13 @@ class RemittanceController extends Controller
             'transaction_type'           =>'required|string',
             'recipient'                  =>'required',
             'send_amount'                =>"required|numeric",
-            'receive_amount'
+            'sender_wallet'              => 'required'
         ]);
         if($validator->fails()){
             $error =  ['error'=>$validator->errors()->all()];
             return Helpers::validation($error);
         }
+        $validated  = $validator->validate();
         $basic_setting = BasicSettings::first();
         $user = auth()->user();
         if($basic_setting->kyc_verification){
@@ -325,12 +326,13 @@ class RemittanceController extends Controller
             }
         }
         $exchangeCharge = TransactionSetting::where('slug','remittance')->where('status',1)->first();
-        $userWallet = UserWallet::where('user_id',$user->id)->first();
+        $userWallet = UserWallet::where('user_id',$user->id)->where("id",$validated['sender_wallet'])->active()->first();
+        
         if(!$userWallet){;
             $error = ['error'=>['Wallet not found!']];
             return Helpers::error($error);
         }
-        $baseCurrency = Currency::default();
+        $baseCurrency = $userWallet->currency;
         if(!$baseCurrency){
             $error = ['error'=>['Default currency not found!']];
             return Helpers::error($error);
@@ -440,10 +442,19 @@ class RemittanceController extends Controller
             $details =[
                 'recipient_amount' => $receiver_will_get,
                 'receiver' => $receipient,
+                'sender' => [
+                    'first_name'        => $user->firstname,
+                    'last_name'         => $user->lastname,
+                ],
+                'sender_currency'   => [
+                    'code'          => $userWallet->currency->code,
+                    'rate'          => $userWallet->currency->rate,
+                    'country'       => $form_country,
+                ],
                 'form_country' => $form_country,
                 'to_country' => $to_country,
                 'remitance_type' => $transaction_type,
-                 'sender' => $user,
+                'sender' => $user,
             ];
             if($transaction_type == Str::slug(GlobalConst::TRX_WALLET_TO_WALLET_TRANSFER)){
                 $status = 1;

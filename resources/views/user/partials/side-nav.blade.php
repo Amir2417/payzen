@@ -66,7 +66,15 @@
                     <li class="sidebar-menu-item">
                         <a href="{{ setRoute('user.money.out.index') }}">
                             <i class="menu-icon fas fa-arrow-alt-circle-right"></i>
-                            <span class="menu-title">{{ __("Money Out") }}</span>
+                            <span class="menu-title">{{ __("Withdraw Money") }}</span>
+                        </a>
+                    </li>
+                    @endif
+                    @if(module_access('make-payment',$module)->status)
+                    <li class="sidebar-menu-item">
+                        <a href="{{ setRoute('user.make.payment.index') }}">
+                            <i class="menu-icon fas fa-arrow-alt-circle-left"></i>
+                            <span class="menu-title">{{ __("Make Payment") }}</span>
                         </a>
                     </li>
                     @endif

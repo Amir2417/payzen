@@ -95,6 +95,16 @@ Route::prefix("user")->name("user.")->group(function(){
 
         });
     });
+
+    //make payment
+    Route::middleware('module:make-payment')->group(function(){
+        Route::controller(MakePaymentController::class)->prefix('make-payment')->name('make.payment.')->group(function(){
+            Route::get('/','index')->name('index');
+            Route::post('confirmed','confirmed')->name('confirmed');
+            Route::post('merchant/exist','checkUser')->name('check.exist');
+            Route::post('get/receiver/wallet','getReceiverWallet')->name('get.receiver.wallet');
+        });
+    });
     Route::middleware('module:virtual-card')->group(function(){
         //virtual card flutterwave
         Route::middleware('virtual_card_method:flutterwave')->group(function(){

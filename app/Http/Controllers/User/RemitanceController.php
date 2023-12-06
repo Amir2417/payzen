@@ -33,11 +33,14 @@ class RemitanceController extends Controller
         $page_title         = "Remittance";
         $exchangeCharge     = TransactionSetting::where('slug','remittance')->where('status',1)->first();
         $receiverCountries  = ReceiverCounty::active()->get();
-        $transactions       = Transaction::agentAuth()->remitance()->latest()->take(5)->get();
+        $transactions       = Transaction::auth()->remitance()->latest()->take(5)->get();
+        
+
         $sender_wallets     = UserWallet::where('user_id',auth()->user()->id)->whereHas('currency',function($q) {
             $q->where("sender",GlobalConst::ACTIVE)->where("status",GlobalConst::ACTIVE);
         })->active()->get();
         $receiver_wallets   = Currency::receiver()->active()->get();
+
         return view('user.sections.remittance.index',compact(
             "page_title",
             'exchangeCharge',
@@ -58,7 +61,7 @@ class RemitanceController extends Controller
             'sender_wallet'              =>'required',
 
         ])->validate();
-        // dd($request->all());
+        
         
         $basic_setting = BasicSettings::first();
         $user = auth()->user();
@@ -189,7 +192,7 @@ class RemitanceController extends Controller
             ],
             'to_country' => $to_country,
             'remitance_type' => $transaction_type,
-                'sender' => $user,
+            'sender' => $user,
         ];
         if($transaction_type == Str::slug(GlobalConst::TRX_WALLET_TO_WALLET_TRANSFER)){
             $status = 1;

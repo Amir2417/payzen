@@ -23,6 +23,7 @@ class ModuleSettingSeeder extends Seeder
             ModuleSetting::REMITTANCE_MONEY         => 'Remittance Money',
             ModuleSetting::ADD_MONEY                => 'Add Money',
             ModuleSetting::WITHDRAW_MONEY           => 'Withdraw Money',
+            ModuleSetting::MONEY_OUT                => 'Money Out',
             ModuleSetting::MAKE_PAYMENT             => 'Make Payment',
             ModuleSetting::VIRTUAL_CARD             => 'Virtual Card',
             ModuleSetting::BILL_PAY                 => 'Bill Pay',
@@ -45,7 +46,7 @@ class ModuleSettingSeeder extends Seeder
             ModuleSetting::MERCHANT_RECEIVE_MONEY            => 'Merchant Receive Money',
             ModuleSetting::MERCHANT_WITHDRAW_MONEY           => 'Merchant Withdraw Money',
             ModuleSetting::MERCHANT_APIKEY                   => 'Merchant API Key',
-            ModuleSetting::MERCHANT_GATEWAY                   => 'Merchant Gateway Settings'
+            ModuleSetting::MERCHANT_GATEWAY                  => 'Merchant Gateway Settings'
 
         ];
         $create = [];
