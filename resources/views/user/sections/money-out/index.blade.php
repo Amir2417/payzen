@@ -17,49 +17,43 @@
 <div class="body-wrapper">
     <div class="dashboard-area mt-10">
         <div class="dashboard-header-wrapper">
-            <h3 class="title">{{__($page_title)}}</h3>
+            <h3 class="title">{{__(@$page_title)}}</h3>
         </div>
     </div>
     <div class="row mb-30-none">
-        <div class="col-lg-6 mb-30">
+        <div class="col-xl-6 mb-30">
             <div class="dash-payment-item-wrapper">
                 <div class="dash-payment-item active">
                     <div class="dash-payment-title-area">
                         <span class="dash-payment-badge">!</span>
-                        <h5 class="title">{{ __($page_title) }}</h5>
+                        <h5 class="title">{{ __(@$page_title) }}</h5>
                     </div>
                     <div class="dash-payment-body">
-                        <form class="card-form" action="{{ setRoute("user.money.out.insert") }}" method="POST">
+                        <form class="card-form" action="{{ setRoute('user.withdraw.confirmed') }}" method="POST">
                             @csrf
                             <div class="row">
                                 <div class="col-xl-12 col-lg-12 form-group text-center">
                                     <div class="exchange-area">
-                                        <code class="d-block text-center"><span>{{ __("Exchange Rate") }}</span> <span class="rate-show">--</span></code>
+                                        <code class="d-block text-center"><span class="fees-show">--</span> <span class="limit-show">--</span></code>
                                     </div>
                                 </div>
-                                <div class="col-xl-6 col-lg-6 form-group">
-                                    <label>{{ __("Payment Gateway") }}<span>*</span></label>
-                                    <select class="form--control nice-select gateway-select" name="gateway">
-                                        @foreach ($payment_gateways ?? [] as $item)
-                                            <option
-                                                value="{{ $item->alias  }}"
-                                                data-currency="{{ $item->currency_code }}"
-                                                data-min_amount="{{ $item->min_limit }}"
-                                                data-max_amount="{{ $item->max_limit }}"
-                                                data-percent_charge="{{ $item->percent_charge }}"
-                                                data-fixed_charge="{{ $item->fixed_charge }}"
-                                                data-rate="{{ $item->rate }}"
-                                                >
-                                                {{ $item->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-xl-6 col-lg-6 form-group">
+                                <div class="col-xxl-6 col-xl-12 col-lg-6 form-group paste-wrapper">
+                                    <label>{{ __("Email Address") }} ({{ __("Agent") }})<span class="text--base">*</span></label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text copytext">{{ __("Email") }}</span>
+                                        </div>
+                                        <input type="email" name="email" class="form--control checkUser" id="username" placeholder="Enter Email Address" value="{{ old('email') }}" />
+                                    </div>
+                                    <button type="button" class="paste-badge scan"  data-toggle="tooltip" title="Scan QR"><i class="fas fa-camera"></i></button>
+                                    <label class="exist text-start"></label>
 
+                                </div>
+
+                                <div class="col-xxl-6 col-xl-12 col-lg-6 form-group">
                                     <label>{{ __("Amount") }}<span>*</span></label>
                                     <div class="input-group">
-                                        <input type="text" class="form--control" placeholder="Enter Amount" required name="amount" value="{{ old("amount") }}">
+                                        <input type="number" class="form--control" required placeholder="Enter Amount" name="amount" value="{{ old("amount") }}">
                                         <select class="form--control nice-select" name ="wallet_currency">
                                             @foreach($currencies ?? [] as $key => $currency)
                                             <option value="{{ $currency->code }}" data-rate="{{ $currency->rate }}">{{ $currency->code }}</option>
@@ -69,14 +63,9 @@
                                     </div>
                                     <code class="d-block mt-10 text-end text--warning balance-show">{{ __("Available Balance") }} {{ authWalletBalance() }} {{ get_default_currency_code() }}</code>
                                 </div>
-                                <div class="col-xl-12 col-lg-12 form-group">
-                                    <div class="note-area">
-                                        <code class="d-block limit-show">--</code>
-                                        <code class="d-block fees-show">--</code>
-                                    </div>
-                                </div>
+
                                 <div class="col-xl-12 col-lg-12">
-                                    <button type="submit" class="btn--base w-100 btn-loading">{{ __("Withdraw Money") }} <i class="fas fa-plus-circle ms-1"></i></button>
+                                    <button type="submit" class="btn--base w-100 btn-loading transfer">{{ __("Confirm Payment") }} <i class="fas fa-paper-plane ms-1"></i></i></button>
                                 </div>
                             </div>
                         </form>
@@ -84,20 +73,21 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-6 mb-30">
+        <div class="col-xl-6 mb-30">
             <div class="dash-payment-item-wrapper">
                 <div class="dash-payment-item active">
                     <div class="dash-payment-title-area">
                         <span class="dash-payment-badge">!</span>
-                        <h5 class="title">{{ __($page_title) }} {{__("Preview")}}</h5>
+                        <h5 class="title">{{__("Payment Preview")}}</h5>
                     </div>
                     <div class="dash-payment-body">
                         <div class="preview-list-wrapper">
+
                             <div class="preview-list-item">
                                 <div class="preview-list-left">
                                     <div class="preview-list-user-wrapper">
                                         <div class="preview-list-user-icon">
-                                            <i class="las la-receipt"></i>
+                                            <i class="las la-coins"></i>
                                         </div>
                                         <div class="preview-list-user-content">
                                             <span>{{ __("Entered Amount") }}</span>
@@ -105,7 +95,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="request-amount">--</span>
+                                    <span class="fw-bold request-amount">--</span>
                                 </div>
                             </div>
                             <div class="preview-list-item">
@@ -115,7 +105,7 @@
                                             <i class="las la-battery-half"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span>{{ __("Total Fees & Charges") }}</span>
+                                            <span>{{ __("Total Fees") }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -123,20 +113,19 @@
                                     <span class="fees">--</span>
                                 </div>
                             </div>
-
                             <div class="preview-list-item">
                                 <div class="preview-list-left">
                                     <div class="preview-list-user-wrapper">
                                         <div class="preview-list-user-icon">
-                                            <i class="las la-money-check-alt"></i>
+                                            <i class="las la-receipt"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span class="">{{ __("Will Get") }}</span>
+                                            <span>{{ __("Recipient Received") }}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="text--success will-get">--</span>
+                                    <span class="recipient-get">--</span>
                                 </div>
                             </div>
                             <div class="preview-list-item">
@@ -146,15 +135,16 @@
                                             <i class="las la-money-check-alt"></i>
                                         </div>
                                         <div class="preview-list-user-content">
-                                            <span class="last">{{ __("Payable Amount") }}</span>
+                                            <span>{{__("Total Payable")}}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="text--warning last pay-in-total">--</span>
+                                    <span class="last payable-total text-warning">--</span>
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -162,10 +152,10 @@
     </div>
     <div class="dashboard-list-area mt-20">
         <div class="dashboard-header-wrapper">
-            <h4 class="title ">{{__("Withdraw Money Log")}}</h4>
+            <h4 class="title ">{{__("Money Out Log")}}</h4>
             <div class="dashboard-btn-wrapper">
                 <div class="dashboard-btn mb-2">
-                    <a href="{{ setRoute('user.transactions.index','withdraw') }}" class="btn--base">{{__("View More")}}</a>
+                    <a href="{{ setRoute('user.transactions.index','money-out') }}" class="btn--base">{{__("View More")}}</a>
                 </div>
             </div>
         </div>
@@ -174,61 +164,127 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="scanModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+            <div class="modal-body text-center">
+                <video id="preview" class="p-1 border" style="width:300px;"></video>
+            </div>
+            <div class="modal-footer justify-content-center">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">@lang('close')</button>
+            </div>
+      </div>
+    </div>
+</div>
 @endsection
 
 @push('script')
+<script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+<script>
+//  'use strict'
+    (function ($) {
+        $('.scan').click(function(){
+            var scanner = new Instascan.Scanner({ video: document.getElementById('preview'), scanPeriod: 5, mirror: false });
+            scanner.addListener('scan',function(content){
+                var route = '{{url('user/merchant/qr/scan/')}}'+'/'+content
+                $.get(route, function( data ) {
+                    if(data.error){
+                        // alert(data.error)
+                        throwMessage('error',[data.error]);
+                    } else {
+                        $("#username").val(data);
+                        $("#username").focus()
+                    }
+                    $('#scanModal').modal('hide')
+                });
+            });
+
+            Instascan.Camera.getCameras().then(function (cameras){
+                if(cameras.length>0){
+                    $('#scanModal').modal('show')
+                        scanner.start(cameras[0]);
+                } else{
+                    throwMessage('error',["No camera found "]);
+                }
+            }).catch(function(e){
+                throwMessage('error',["No camera found "]);
+            });
+        });
+        $('.checkUser').on('keyup',function(e){
+            var url = '{{ route('user.withdraw.check.exist') }}';
+            var value = $(this).val();
+            
+            var token = '{{ csrf_token() }}';
+            if ($(this).attr('name') == 'email') {
+                var data = {email:value,_token:token}
+
+            }
+            $.post(url,data,function(response) {
+                if(response.own){
+                    if($('.exist').hasClass('text--success')){
+                        $('.exist').removeClass('text--success');
+                    }
+                    $('.exist').addClass('text--danger').text(response.own);
+                    $('.transfer').attr('disabled',true)
+                    return false
+                }
+                if(response['data'] != null){
+                    if($('.exist').hasClass('text--danger')){
+                        $('.exist').removeClass('text--danger');
+                    }
+                    $('.exist').text(`Valid agent for transaction.`).addClass('text--success');
+                    $('.transfer').attr('disabled',false)
+                } else {
+                    if($('.exist').hasClass('text--success')){
+                        $('.exist').removeClass('text--success');
+                    }
+                    $('.exist').text('Agent doesn\'t  exists.').addClass('text--danger');
+                    $('.transfer').attr('disabled',true)
+                    return false
+                }
+
+            });
+        });
+    })(jQuery);
+</script>
 <script>
     var defualCurrency = "{{ get_default_currency_code() }}";
     var defualCurrencyRate = "{{ get_default_currency_rate() }}";
     var userBalanceRoute = "{{ setRoute('user.wallets.balance') }}";
 
-    $('select[name=gateway]').on('change',function(){
-        getExchangeRate($(this));
-        getLimit();
-        getFees();
-        getPreview();
-        getUserBalance();
-    });
-    $('select[name=wallet_currency]').on('change',function(){
-        getExchangeRate($(this));
-        getLimit();
-        getFees();
-        getPreview();
-        getUserBalance();
-    });
     $(document).ready(function(){
-        getExchangeRate();
         getLimit();
         getFees();
-        getUserBalance();
+        getPreview();
     });
     $("input[name=amount]").keyup(function(){
-            getFees();
-            getPreview();
-            getUserBalance();
-    });
-    function getExchangeRate(event) {
-        var element = event;
-        var currencyCode = acceptVar().sCurrency;
-        var currencyRate = acceptVar().sCurrency_rate;
-        var gateway_currency = acceptVar().currencyCode;
-        var gateway_currency_rate = acceptVar().currencyRate;
-        var exchange_rate = parseFloat(currencyRate) / parseFloat(gateway_currency_rate);
-        $('.rate-show').html("1 " + gateway_currency + " = " + parseFloat(exchange_rate).toFixed(4) + " " + currencyCode);
-    }
-    function getLimit() {
-        var gateway_currency = acceptVar().currencyCode;
-        var gateway_currency_rate = acceptVar().currencyRate;
+        getFees();
+        getPreview();
 
-        var sender_currency = acceptVar().sCurrency;
-        var sender_currency_rate = acceptVar().sCurrency_rate;
+    });
+    $("input[name=amount]").focusout(function(){
+        enterLimit();
+
+    });
+    $('select[name=wallet_currency]').on('change',function(){
+        getUserBalance();
+        getLimit();
+        getFees();
+        getPreview();
+    });
+    function getLimit() {
+        var currencyCode = acceptVar().sCurrency;
+        var currencyRate = acceptVar().currencyRate;
 
         var min_limit = acceptVar().currencyMinAmount;
         var max_limit =acceptVar().currencyMaxAmount;
+        
         if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
-            var min_limit_calc = parseFloat((min_limit/gateway_currency_rate) * sender_currency_rate).toFixed(2);
-            var max_limit_clac = parseFloat((max_limit/gateway_currency_rate) * sender_currency_rate).toFixed(2);
-            $('.limit-show').html("Limit " + min_limit_calc + " " + sender_currency + " - " + max_limit_clac + " " + sender_currency);
+            var min_limit_calc = parseFloat(min_limit*currencyRate).toFixed(2);
+            var max_limit_clac = parseFloat(max_limit*currencyRate).toFixed(2);
+            
+            $('.limit-show').html("Limit " + min_limit_calc + " " + currencyCode + " - " + max_limit_clac + " " + currencyCode);
+
             return {
                 minLimit:min_limit_calc,
                 maxLimit:max_limit_clac,
@@ -241,19 +297,15 @@
             };
         }
     }
-
     function acceptVar() {
-        var selectedVal                     = $("select[name=gateway] :selected");
-        var currencyCode                    = $("select[name=gateway] :selected").attr("data-currency");
-        var currencyRate                    = $("select[name=gateway] :selected").attr("data-rate");
-        var currencyMinAmount               = $("select[name=gateway] :selected").attr("data-min_amount");
-        var currencyMaxAmount               = $("select[name=gateway] :selected").attr("data-max_amount");
-        var currencyFixedCharge             = $("select[name=gateway] :selected").attr("data-fixed_charge");
-        var currencyPercentCharge           = $("select[name=gateway] :selected").attr("data-percent_charge");
+        var selectedVal                     = $("select[name=currency] :selected");
+        var currencyCode                    = $("select[name=currency] :selected").val();
+        var currencyRate                    = $("select[name=wallet_currency] :selected").attr("data-rate");
+        var currencyMinAmount               = "{{getAmount($makePaymentCharge->min_limit)}}"
+        var currencyMaxAmount               = "{{getAmount($makePaymentCharge->max_limit)}}"
+        var currencyFixedCharge             = "{{getAmount($makePaymentCharge->fixed_charge)}}"
+        var currencyPercentCharge           = "{{getAmount($makePaymentCharge->percent_charge)}}"
         var senderCurrency                  = $("select[name=wallet_currency] :selected").val();;
-        var senderCurrency_rate             = $("select[name=wallet_currency] :selected").attr("data-rate");
-
-        // var sender_select = $("input[name=from_wallet_id] :selected");
 
         return {
             currencyCode:currencyCode,
@@ -264,14 +316,11 @@
             currencyPercentCharge:currencyPercentCharge,
             selectedVal:selectedVal,
             sCurrency: senderCurrency,
-            sCurrency_rate: senderCurrency_rate,
-
         };
-    }                
-
+    }
     function feesCalculation() {
-        var sender_currency = acceptVar().currencyCode;
-        var sender_currency_rate = acceptVar().currencyRate;
+        var currencyCode = acceptVar().currencyCode;
+        var currencyRate = acceptVar().currencyRate;
         var sender_amount = $("input[name=amount]").val();
         sender_amount == "" ? (sender_amount = 0) : (sender_amount = sender_amount);
 
@@ -279,12 +328,11 @@
         var percent_charge = acceptVar().currencyPercentCharge;
         if ($.isNumeric(percent_charge) && $.isNumeric(fixed_charge) && $.isNumeric(sender_amount)) {
             // Process Calculation
-            var fixed_charge_calc = parseFloat(fixed_charge);
-            var percent_charge_calc = (parseFloat(sender_amount) / 100) * parseFloat(percent_charge);
+            var fixed_charge_calc = parseFloat(currencyRate * fixed_charge);
+            var percent_charge_calc = parseFloat(currencyRate)*(parseFloat(sender_amount) / 100) * parseFloat(percent_charge);
             var total_charge = parseFloat(fixed_charge_calc) + parseFloat(percent_charge_calc);
             total_charge = parseFloat(total_charge).toFixed(2);
             // return total_charge;
-            
             return {
                 total: total_charge,
                 fixed: fixed_charge_calc,
@@ -294,55 +342,78 @@
             // return "--";
             return false;
         }
-    
     }
 
     function getFees() {
-        var sender_currency = acceptVar().currencyCode;
+        var currencyCode = acceptVar().sCurrency;
         var percent = acceptVar().currencyPercentCharge;
         var charges = feesCalculation();
         if (charges == false) {
             return false;
         }
-        $(".fees-show").html("Charge: " + parseFloat(charges.fixed).toFixed(2) + " " + sender_currency + " + " + parseFloat(charges.percent).toFixed(2) + "% = " + parseFloat(charges.total).toFixed(2) + " " + sender_currency);
+        $(".fees-show").html("Payment Fee: " + parseFloat(charges.fixed).toFixed(2) + " " + currencyCode + " + " + parseFloat(charges.percent).toFixed(2) + "%  ");
     }
     function getPreview() {
-        var senderAmount = $("input[name=amount]").val();
-        var gateway_currency = acceptVar().currencyCode;
-        var gateway_currency_rate = acceptVar().currencyRate;
+            var senderAmount = $("input[name=amount]").val();
+            var sender_currency = acceptVar().sCurrency;
+            var sender_currency_rate = acceptVar().currencyRate;
+            senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
+            // Sending Amount
+            $('.request-amount').text(senderAmount + " " + sender_currency);
 
-        var sender_currency = acceptVar().sCurrency;
-        var sender_currency_rate = acceptVar().sCurrency_rate;
+            // Fees
+            var charges = feesCalculation();
+            var total_charge = 0;
+            if(senderAmount == 0){
+                total_charge = 0;
+            }else{
+                total_charge = charges.total;
+            }
 
-        var exchange_rate =   parseFloat(sender_currency_rate).toFixed(16) / parseFloat(gateway_currency_rate).toFixed(16);
+            $('.fees').text(total_charge + " " + sender_currency);
+            // // recipient received
+            var recipient = parseFloat(senderAmount) * parseFloat(sender_currency_rate)
+            var recipient_get = 0;
+            if(senderAmount == 0){
+                    recipient_get = 0;
+            }else{
+                    recipient_get =  parseFloat(recipient);
+            }
+            $('.recipient-get').text(parseFloat(senderAmount).toFixed(2) + " " + sender_currency);
 
-        senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
-
-        // conversion Amount
-        var request_amount = parseFloat(senderAmount)
-        $('.request-amount').text(request_amount.toFixed(2) + " " + sender_currency);
-
-        // conversion Amount
-        var conversion_amount = parseFloat(senderAmount).toFixed(16) / parseFloat(exchange_rate).toFixed(16)
-        $('.conversion-amount').text(conversion_amount.toFixed(2) + " " + gateway_currency);
-
-        // Fees
-        var charges = feesCalculation();
-        // console.log(total_charge + "--");
-        $('.fees').text(charges.total + " " + gateway_currency);
-        
-        // will get amount
-        var willGet = parseFloat(conversion_amount).toFixed(2);
-        $('.will-get').text(willGet + " " + gateway_currency);
-        var payableAmount    = parseFloat(senderAmount) + parseFloat(charges.total);
-        console.log(parseFloat(payableAmount));
-       // Pay In Total
-       $('.pay-in-total').text(parseFloat(payableAmount).toFixed(2) + " " + sender_currency);
-        
+                // Pay In Total
+            var totalPay = parseFloat(senderAmount);
+            var pay_in_total = 0;
+            if(senderAmount == 0){
+                    pay_in_total = 0;
+            }else{
+                    pay_in_total =  parseFloat(totalPay) + parseFloat(total_charge);
+            }
+            $('.payable-total').text(parseFloat(pay_in_total).toFixed(2) + " " + sender_currency);
 
     }
+    function enterLimit(){
+        var min_limit = parseFloat("{{getAmount($makePaymentCharge->min_limit)}}");
+        var max_limit =parseFloat("{{getAmount($makePaymentCharge->max_limit)}}");
+        var currencyRate = acceptVar().currencyRate;
+        min_limit = min_limit * currencyRate;
+        max_limit = max_limit * currencyRate;
+        var sender_amount = parseFloat($("input[name=amount]").val());
+
+        if( sender_amount < min_limit ){
+            throwMessage('error',["Please follow the mimimum limit"]);
+            $('.transfer').attr('disabled',true)
+        }else if(sender_amount > max_limit){
+            throwMessage('error',["Please follow the maximum limit"]);
+            $('.transfer').attr('disabled',true)
+        }else{
+            $('.transfer').attr('disabled',false)
+        }
+    }
+
     function getUserBalance() {
         var selectedCurrency = acceptVar().sCurrency;
+        console.log(selectedCurrency);
         var CSRF = $("meta[name=csrf-token]").attr("content");
         var data = {
             _token      : CSRF,
@@ -363,4 +434,5 @@
     }
 
 </script>
+
 @endpush

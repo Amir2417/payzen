@@ -43,6 +43,14 @@
                                         <h4 class="title">{{ __("Make Payment from @" .@$item->details->sender->username." (".@$item->details->sender->email.")") }} </h4>
                                     @endif
                                 @endif
+                            @elseif ($item->type == payment_gateway_const()::TYPEMONEYOUT)
+                                @if ($item->isAuthUser())
+                                    @if ($item->attribute == payment_gateway_const()::SEND)
+                                        <h4 class="title">{{ __("Make Payment to @" . @$item->details->receiver->username." (".@$item->details->receiver->email.")") }} </h4>
+                                    @elseif ($item->attribute == payment_gateway_const()::RECEIVED)
+                                        <h4 class="title">{{ __("Make Payment from @" .@$item->details->sender->username." (".@$item->details->sender->email.")") }} </h4>
+                                    @endif
+                                @endif
                             @elseif ($item->type == payment_gateway_const()::SENDREMITTANCE)
                                 @if ($item->isAuthUser())
                                     @if ($item->attribute == payment_gateway_const()::SEND)
@@ -99,6 +107,13 @@
                         @elseif ($item->attribute == payment_gateway_const()::RECEIVED)
                         <h6 class="exchange-money fw-bold">{{ get_amount($item->request_amount,$item->details->charges->sender_currency) }}</h6>
                         @endif
+                    @elseif ($item->type == payment_gateway_const()::TYPEMONEYOUT)
+                        @if ($item->attribute == payment_gateway_const()::SEND)
+                        <h6 class="exchange-money text--warning ">{{ get_amount($item->request_amount,$item->details->charges->sender_currency) }}</h6>
+                        <h4 class="main-money fw-bold">{{ get_amount($item->payable,$item->details->charges->sender_currency) }}</h4>
+                        @elseif ($item->attribute == payment_gateway_const()::RECEIVED)
+                        <h6 class="exchange-money fw-bold">{{ get_amount($item->request_amount,$item->details->charges->sender_currency) }}</h6>
+                        @endif
                     @elseif ($item->type == payment_gateway_const()::SENDREMITTANCE)
                         @if ($item->attribute == payment_gateway_const()::SEND)
                         <h6 class="exchange-money text--warning ">{{ get_amount($item->request_amount,$item->details->sender_currency->code) }}</h6>
@@ -133,6 +148,7 @@
                 </div>
                 @if ($item->type != payment_gateway_const()::TYPETRANSFERMONEY )
                 @if ($item->type != payment_gateway_const()::TYPEMAKEPAYMENT )
+                @if ($item->type != payment_gateway_const()::TYPEMONEYOUT )
                 @if ($item->type != payment_gateway_const()::BILLPAY )
                 @if ($item->type != payment_gateway_const()::MOBILETOPUP )
                 @if ($item->type != payment_gateway_const()::VIRTUALCARD )
@@ -173,7 +189,7 @@
                 @endif
                 @endif
                 @endif
-
+                @endif
                 @if ($item->type == payment_gateway_const()::BILLPAY )
                 <div class="preview-list-item">
                     <div class="preview-list-left">
@@ -278,7 +294,7 @@
                     </div>
                 </div> --}}
 
-                @if ($item->type == payment_gateway_const()::TYPETRANSFERMONEY || $item->type == payment_gateway_const()::TYPEMAKEPAYMENT)
+                @if ($item->type == payment_gateway_const()::TYPETRANSFERMONEY || $item->type == payment_gateway_const()::TYPEMAKEPAYMENT  || $item->type == payment_gateway_const()::TYPEMONEYOUT)
                     @if ($item->attribute == payment_gateway_const()::SEND)
                         <div class="preview-list-item">
                             <div class="preview-list-left">

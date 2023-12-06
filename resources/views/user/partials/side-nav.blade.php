@@ -79,6 +79,14 @@
                         </a>
                     </li>
                     @endif
+                    @if(module_access('money-out',$module)->status)
+                    <li class="sidebar-menu-item">
+                        <a href="{{ setRoute('user.withdraw.index') }}">
+                            <i class="menu-icon fas fa-arrow-alt-circle-left"></i>
+                            <span class="menu-title">{{ __("Money Out") }}</span>
+                        </a>
+                    </li>
+                    @endif
                     <li class="sidebar-menu-item sidebar-dropdown">
                         <a href="javascript:void(0)">
                             <i class="menu-icon fas fa-shopping-bag"></i>

@@ -83,7 +83,7 @@ Route::prefix("user")->name("user.")->group(function(){
     });
     //withdraw out
     Route::middleware('module:withdraw-money')->group(function(){
-        Route::controller(MoneyOutController::class)->prefix('withdraw')->name('money.out.')->group(function(){
+        Route::controller(WithdrawController::class)->prefix('withdraw')->name('money.out.')->group(function(){
             Route::get('/','index')->name('index');
             Route::post('insert','paymentInsert')->name('insert');
             Route::get('preview','preview')->name('preview');
@@ -107,7 +107,14 @@ Route::prefix("user")->name("user.")->group(function(){
         });
     });
     //money out
-    
+    Route::middleware('module:money-out')->group(function(){
+        Route::controller(MoneyOutController::class)->prefix('money-out')->name('withdraw.')->group(function(){
+            Route::get('/','index')->name('index');
+            Route::post('confirmed','confirmed')->name('confirmed');
+            Route::post('agent/exist','checkUser')->name('check.exist');
+            Route::post('get/receiver/wallet','getReceiverWallet')->name('get.receiver.wallet');
+        });
+    });
     Route::middleware('module:virtual-card')->group(function(){
         //virtual card flutterwave
         Route::middleware('virtual_card_method:flutterwave')->group(function(){
@@ -184,7 +191,7 @@ Route::prefix("user")->name("user.")->group(function(){
 
     //transactions
     Route::controller(TransactionController::class)->prefix("transactions")->name("transactions.")->group(function(){
-        Route::get('/{slug?}','index')->name('index')->whereIn('slug',['add-money','withdraw','transfer-money','money-exchange','bill-pay','mobile-topup','virtual-card','remittance','make-payment','merchant-payment']);
+        Route::get('/{slug?}','index')->name('index')->whereIn('slug',['add-money','withdraw','transfer-money','money-exchange','bill-pay','mobile-topup','virtual-card','remittance','make-payment','merchant-payment','money-out']);
         // Route::get('log/{slug?}','log')->name('log')->whereIn('slug',['add-money','money-out','transfer-money']);
         Route::post('search','search')->name('search');
     });

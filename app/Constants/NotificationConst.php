@@ -8,6 +8,7 @@ class NotificationConst {
     const BALANCE_UPDATE = "BALANCE_UPDATE";
     const BALANCE_ADDED = "BALANCE_ADDED";
     const MONEY_OUT = "WITHDRAW";
+    const WITHDRAW = "MONEY_OUT";
     const TRANSFER_MONEY = "TRANSFER-MONEY";
     const MAKE_PAYMENT = "MAKE-PAYMENT";
     const SEND_REMITTANCE = "SEND-REMITTANCE";

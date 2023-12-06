@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\User\SudoVirtualCardController;
 use App\Http\Controllers\Api\User\TransactionController;
 use App\Http\Controllers\Api\User\UserController;
 use App\Http\Controllers\Api\User\VirtualCardController;
+use App\Http\Controllers\Api\User\WithdrawController;
 use App\Http\Helpers\Api\Helpers;
 use App\Models\Admin\SetupKyc;
 use App\Providers\Admin\BasicSettingsProvider;
@@ -157,7 +158,7 @@ Route::prefix('user')->group(function(){
                 Route::post('confirmed','confirmedSendMoney');
             });
             //Withdraw Money
-            Route::controller(MoneyOutController::class)->prefix('withdraw')->group(function(){
+            Route::controller(WithdrawController::class)->prefix('withdraw')->group(function(){
                 Route::get('info','moneyOutInfo');
                 Route::post('insert','moneyOutInsert');
                 Route::post('manual/confirmed','moneyOutConfirmed')->name('api.withdraw.manual.confirmed');
