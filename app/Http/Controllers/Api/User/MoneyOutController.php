@@ -1,15 +1,16 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Api\User;
 
 use Exception;
 use App\Models\Agent;
 use App\Models\UserWallet;
+use App\Models\AgentQrCode;
 use App\Models\AgentWallet;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
-use App\Models\Admin\Currency;
 use App\Models\UserNotification;
+use App\Http\Helpers\Api\Helpers;
 use App\Models\AgentNotification;
 use Illuminate\Support\Facades\DB;
 use App\Models\Admin\BasicSettings;
@@ -17,7 +18,8 @@ use App\Constants\NotificationConst;
 use App\Http\Controllers\Controller;
 use App\Constants\PaymentGatewayConst;
 use App\Models\Admin\TransactionSetting;
-use App\Notifications\User\MakePayment\SenderMail;
+use Illuminate\Support\Facades\Validator;
+use App\Notifications\User\SendMoney\SenderMail;
 use App\Notifications\User\MakePayment\ReceiverMail;
 
 class MoneyOutController extends Controller
@@ -27,41 +29,151 @@ class MoneyOutController extends Controller
     {
         $this->trx_id = 'MO'.getTrxNum();
     }
-    public function index() {
-       
-        $page_title = "Money Out";
-        $currencies = Currency::active()->get();
-        $makePaymentCharge = TransactionSetting::where('slug','money-out')->where('status',1)->first();
-        $transactions = Transaction::auth()->MoneyOut()->latest()->take(10)->get();
-        return view('user.sections.money-out.index',compact("page_title",'currencies','makePaymentCharge','transactions'));
-    }
-    public function checkUser(Request $request){
-        $email = $request->email;
-        $exist['data'] = Agent::where('email',$email)->first();
-
+    public function moneyOutInfo(){
         $user = auth()->user();
-        if(@$exist['data'] && $user->email == @$exist['data']->email){
-            return response()->json(['own'=>'Can\'t transfer/request to your own']);
-        }
-        return response($exist);
+        $makePaymentcharge = TransactionSetting::where('slug','money-out')->where('status',1)->get()->map(function($data){
+            return[
+                'id' => $data->id,
+                'slug' => $data->slug,
+                'title' => $data->title,
+                'fixed_charge' => getAmount($data->fixed_charge,2),
+                'percent_charge' => getAmount($data->percent_charge,2),
+                'min_limit' => getAmount($data->min_limit,2),
+                'max_limit' => getAmount($data->max_limit,2),
+            ];
+        })->first();
+        $transactions = Transaction::auth()->MoneyOut()->latest()->take(10)->get()->map(function($item){
+            $statusInfo = [
+                "success" =>      1,
+                "pending" =>      2,
+                "rejected" =>     3,
+                ];
+                if($item->attribute == payment_gateway_const()::SEND){
+                    return[
+                        'id' => @$item->id,
+                        'type' =>$item->attribute,
+                        'trx' => @$item->trx_id,
+                        'transaction_type' => $item->type,
+                        'transaction_heading' => "Money Out to @" . @$item->details->receiver->username." (".@$item->details->receiver->email.")",
+                        'request_amount' => getAmount(@$item->request_amount,2).' '.get_default_currency_code() ,
+                        'total_charge' => getAmount(@$item->charge->total_charge,2).' '.get_default_currency_code(),
+                        'payable' => getAmount(@$item->payable,2).' '.get_default_currency_code(),
+                        'recipient_received' => getAmount(@$item->details->recipient_amount,2).' '.get_default_currency_code(),
+                        'current_balance' => getAmount(@$item->available_balance,2).' '.get_default_currency_code(),
+                        'status' => @$item->stringStatus->value ,
+                        'date_time' => @$item->created_at ,
+                        'status_info' =>(object)@$statusInfo ,
+                    ];
+                }elseif($item->attribute == payment_gateway_const()::RECEIVED){
+                    return[
+                        'id' => @$item->id,
+                        'type' =>$item->attribute,
+                        'trx' => @$item->trx_id,
+                        'transaction_type' => $item->type,
+                        'transaction_heading' => "Received Money from @" .@$item->details->sender->username." (".@$item->details->sender->email.")",
+                        'recipient_received' => getAmount(@$item->request_amount,2).' '.get_default_currency_code(),
+                        'current_balance' => getAmount(@$item->available_balance,2).' '.get_default_currency_code(),
+                        'status' => @$item->stringStatus->value ,
+                        'date_time' => @$item->created_at ,
+                        'status_info' =>(object)@$statusInfo ,
+                    ];
+
+                }
+
+        });
+        $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
+            return[
+                'balance' => getAmount($data->balance,2),
+                'currency' => $data->currency->code,
+            ];
+        });
+        $data =[
+            'base_curr' => get_default_currency_code(),
+            'base_curr_rate' => get_default_currency_rate(),
+            'makePaymentcharge'=> (object)$makePaymentcharge,
+            'userWallet'=>  (object)$userWallet,
+            'transactions'   => $transactions,
+        ];
+        $message =  ['success'=>['Money Out Information']];
+        return Helpers::success($data,$message);
     }
-    public function confirmed(Request $request){
-        
-        $request->validate([
-            'amount'            => 'required|numeric|gt:0',
-            'email'             => 'required|email',
+    public function checkAgent(Request $request){
+        $validator = Validator::make(request()->all(), [
+            'email'     => "required|email",
+        ]);
+        if($validator->fails()){
+            $error =  ['error'=>$validator->errors()->all()];
+            return Helpers::validation($error);
+        }
+        $exist = Agent::where('email',$request->email)->first();
+        if( !$exist){
+            $error = ['error'=>['Agent not found']];
+            return Helpers::error($error);
+        }
+        $user = auth()->user();
+        if(@$exist && $user->email == @$exist->email){
+             $error = ['error'=>['Can\'t transfer/request to your own']];
+            return Helpers::error($error);
+        }
+        $data =[
+            'exist_agent'   => $exist,
+            ];
+        $message =  ['success'=>['Valid Agent for transaction.']];
+        return Helpers::success($data,$message);
+    }
+    public function qrScan(Request $request)
+    {
+        $validator = Validator::make(request()->all(), [
+            'qr_code'     => "required",
+        ]);
+        if($validator->fails()){
+            $error =  ['error'=>$validator->errors()->all()];
+            return Helpers::validation($error);
+        }
+        $qr_code = $request->qr_code;
+        $qrCode = AgentQrCode::where('qr_code',$qr_code)->first();
+        if(!$qrCode){
+            $error = ['error'=>['Invalid Request!']];
+            return Helpers::error($error);
+        }
+        $user = Agent::find($qrCode->merchant_id);
+        if(!$user){
+            $error = ['error'=>['Agent not found']];
+            return Helpers::error($error);
+        }
+        if( $user->email == auth()->user()->email){
+            $error = ['error'=>['Can\'t transfer/request to your own']];
+            return Helpers::error($error);
+        }
+        $data =[
+            'agent_email'   => $user->email,
+            ];
+        $message =  ['success'=>['QR Scan Result.']];
+        return Helpers::success($data,$message);
+    }
+    public function confirmedPayment(Request $request){
+        $validator = Validator::make(request()->all(), [
+            'amount' => 'required|numeric|gt:0',
+            'email' => 'required|email',
             'wallet_currency'   => 'required'
         ]);
+        if($validator->fails()){
+            $error =  ['error'=>$validator->errors()->all()];
+            return Helpers::validation($error);
+        }
         $basic_setting = BasicSettings::first();
         $wallet_currency = $request->wallet_currency;
         $user = auth()->user();
         if($basic_setting->kyc_verification){
             if( $user->kyc_verified == 0){
-                return redirect()->route('user.profile.index')->with(['error' => ['Please submit kyc information']]);
+                $error = ['error'=>['Please submit kyc information']];
+                return Helpers::error($error);
             }elseif($user->kyc_verified == 2){
-                return redirect()->route('user.profile.index')->with(['error' => ['Please wait before admin approved your kyc information']]);
+                $error = ['error'=>['Please wait before admin approved your kyc information']];
+                return Helpers::error($error);
             }elseif($user->kyc_verified == 3){
-                return redirect()->route('user.profile.index')->with(['error' => ['Admin rejected your kyc information, Please re-submit again']]);
+                $error = ['error'=>['Admin rejected your kyc information, Please re-submit again']];
+                return Helpers::error($error);
             }
         }
         $amount = $request->amount;
@@ -70,28 +182,31 @@ class MoneyOutController extends Controller
         $userWallet = UserWallet::auth()->whereHas("currency",function($q) use ($wallet_currency) {
             $q->where("code",$wallet_currency)->active();
         })->active()->first();
-       
         if(!$userWallet){
-            return back()->with(['error' => ['Sender wallet not found']]);
+            $error = ['error'=>['Sender wallet not found']];
+            return Helpers::error($error);
         }
         $baseCurrency = $userWallet->currency;
         if(!$baseCurrency){
-            return back()->with(['error' => ['Default currency not found']]);
+            $error = ['error'=>['Default currency not found']];
+            return Helpers::error($error);
         }
         $rate = $baseCurrency->rate;
         $receiver = Agent::where('email', $request->email)->first();
         if(!$receiver){
-            return back()->with(['error' => ['Receiver not exist']]);
+            $error = ['error'=>['Receiver not exist']];
+            return Helpers::error($error);
         }
         $receiverWallet = AgentWallet::where('agent_id',$receiver->id)->first();
         if(!$receiverWallet){
-            return back()->with(['error' => ['Receiver wallet not found']]);
+            $error = ['error'=>['Receiver wallet not found']];
+            return Helpers::error($error);
         }
-
         $minLimit =  $makePaymentCharge->min_limit *  $rate;
         $maxLimit =  $makePaymentCharge->max_limit *  $rate;
         if($amount < $minLimit || $amount > $maxLimit) {
-            return back()->with(['error' => ['Please follow the transaction limit']]);
+            $error = ['error'=>['Please follow the transaction limit']];
+            return Helpers::error($error);
         }
         //charge calculations
         $fixedCharge = $makePaymentCharge->fixed_charge *  $rate;
@@ -101,55 +216,55 @@ class MoneyOutController extends Controller
         $recipient = $amount;
         $charges = $this->transferCharges($amount,$fixedCharge,$percent_charge,$total_charge,$userWallet);
         if($payable > $userWallet->balance ){
-            return back()->with(['error' => ['Sorry, insufficient balance']]);
+            $error = ['error'=>['Sorry, insufficient balance']];
+            return Helpers::error($error);
         }
-        
         try{
             $trx_id = $this->trx_id;
+            //sender notifications
+            $notifyDataSender = [
+                'trx_id'  => $trx_id,
+                'title'  => "Money Out to @" . @$receiver->username." (".@$receiver->email.")",
+                'request_amount'  => getAmount($amount,4).' '.get_default_currency_code(),
+                'payable'   =>  getAmount($payable,4).' ' .get_default_currency_code(),
+                'charges'   => getAmount( $total_charge, 2).' ' .get_default_currency_code(),
+                'received_amount'  => getAmount( $recipient, 2).' ' .get_default_currency_code(),
+                'status'  => "Success",
+              ];
+
             $sender = $this->insertSender( $trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver,$charges);
             if($sender){
                  $this->insertSenderCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$user,$sender,$receiver);
             }
-            //Sender notifications
-            if( $basic_setting->email_notification == true){ 
-                $notifyDataSender = [
-                    'trx_id'  => $trx_id,
-                    'title'  => "Money Out to @" . @$receiver->username." (".@$receiver->email.")",
-                    'request_amount'  => getAmount($amount,4).' '.get_default_currency_code(),
-                    'payable'   =>  getAmount($payable,4).' ' .get_default_currency_code(),
-                    'charges'   => getAmount( $total_charge, 2).' ' .get_default_currency_code(),
-                    'received_amount'  => getAmount( $recipient, 2).' ' .get_default_currency_code(),
-                    'status'  => "Success",
-                ];
-                //sender notifications
+            if( $basic_setting->email_notification == true){
                 $user->notify(new SenderMail($user,(object)$notifyDataSender));
             }
+            //Receiver notifications
+            $notifyDataReceiver = [
+                'trx_id'  => $trx_id,
+                'title'  => "Money Out from @" .@$user->username." (".@$user->email.")",
+                'received_amount'  => getAmount( $recipient, 2).' ' .get_default_currency_code(),
+                'status'  => "Success",
+              ];
 
             $receiverTrans = $this->insertReceiver( $trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver,$receiverWallet,$charges);
             if($receiverTrans){
                  $this->insertReceiverCharges( $fixedCharge,$percent_charge, $total_charge, $amount,$user,$receiverTrans,$receiver);
             }
+            //send notifications
             if( $basic_setting->email_notification == true){
-                //Receiver notifications
-                $notifyDataReceiver = [
-                    'trx_id'  => $trx_id,
-                    'title'  => "Money Out from @" .@$user->username." (".@$user->email.")",
-                    'received_amount'  => getAmount( $recipient, 2).' ' .get_default_currency_code(),
-                    'status'  => "Success",
-                ];
-                //send notifications
                 $receiver->notify(new ReceiverMail($receiver,(object)$notifyDataReceiver));
             }
-
-            return redirect()->route("user.withdraw.index")->with(['success' => ['Money Out successful to '.$receiver->fullname]]);
+            $message = ['success'=>['Money Out successful to '.$receiver->fullname]];
+            return Helpers::onlysuccess($message);
         }catch(Exception $e) {
-            
-            return back()->with(['error' => ["Something is wrong, please try again!"]]);
+            $error = ['error'=>['Something is wrong, please try again!']];
+            return Helpers::error($error);
         }
 
     }
 
-     //sender transaction
+    //sender transaction
     public function insertSender($trx_id,$user,$userWallet,$amount,$recipient,$payable,$receiver,$charges) {
         $trx_id = $trx_id;
         $authWallet = $userWallet;
@@ -185,7 +300,8 @@ class MoneyOutController extends Controller
             DB::commit();
         }catch(Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage());
+            $error = ['error'=>['Something is wrong, please try again!']];
+            return Helpers::error($error);
         }
         return $id;
     }
@@ -221,7 +337,8 @@ class MoneyOutController extends Controller
             DB::commit();
         }catch(Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage());
+            $error = ['error'=>['Something is wrong, please try again!']];
+            return Helpers::error($error);
         }
     }
     //Receiver Transaction
@@ -241,8 +358,8 @@ class MoneyOutController extends Controller
         DB::beginTransaction();
         try{
             $id = DB::table("transactions")->insertGetId([
-                'agent_id'                       => $receiver->id,
-                'agent_wallet_id'                => $receiverWallet->id,
+                'merchant_id'                       => $receiver->id,
+                'merchant_wallet_id'                => $receiverWallet->id,
                 'payment_gateway_currency_id'   => null,
                 'type'                          => PaymentGatewayConst::TYPEMONEYOUT,
                 'trx_id'                        => $trx_id,
@@ -260,7 +377,8 @@ class MoneyOutController extends Controller
             DB::commit();
         }catch(Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage());
+            $error = ['error'=>['Something is wrong, please try again!']];
+            return Helpers::error($error);
         }
         return $id;
     }
@@ -290,13 +408,14 @@ class MoneyOutController extends Controller
 
             AgentNotification::create([
                 'type'      => NotificationConst::WITHDRAW,
-                'agent_id'  => $receiver->id,
+                'merchant_id'  => $receiver->id,
                 'message'   => $notification_content,
             ]);
             DB::commit();
         }catch(Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage());
+            $error = ['error'=>['Something is wrong, please try again!']];
+            return Helpers::error($error);
         }
     }
     public function transferCharges($amount,$fixedCharge,$percent_charge,$total_charge,$userWallet) {
@@ -306,7 +425,7 @@ class MoneyOutController extends Controller
         $data['receiver_currency']      = $userWallet->currency->code;
         $data['percent_charge']         = $percent_charge ?? 0;
         $data['fixed_charge']           = $fixedCharge ?? 0;
-        $data['total_charge']           = $data['percent_charge'] + $data['fixed_charge'];
+        $data['total_charge']           = $total_charge;
         $data['sender_wallet_balance']  = $userWallet->balance;
         $data['payable']                = $amount + $data['total_charge'];
         return $data;

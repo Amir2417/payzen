@@ -173,6 +173,13 @@ Route::prefix('user')->group(function(){
                 Route::post('merchants/scan','qrScan');
                 Route::post('confirmed','confirmedPayment');
             });
+            //Make Payment
+            Route::controller(MoneyOutController::class)->prefix('money-out')->group(function(){
+                Route::get('info','moneyOutInfo');
+                Route::post('check/agent','checkAgent');
+                Route::post('agents/scan','qrScan');
+                Route::post('confirmed','confirmedPayment');
+            });
              //Bill Pay
             Route::controller(BillPayController::class)->prefix('bill-pay')->group(function(){
                 Route::get('info','billPayInfo');
