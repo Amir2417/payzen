@@ -56,6 +56,7 @@ class UserController extends Controller
             return [
                 'name'      =>$data->currency->name,
                 'code'      =>$data->currency->code,
+                'rate'      =>$data->currency->rate,
                 'type'      =>$data->currency->type,
                 'balance'   => $data->balance,
                 'flag'      => $data->currency->flag,
@@ -71,6 +72,7 @@ class UserController extends Controller
             return [
                 'name'          =>$data->currency->name,
                 'code'          =>$data->currency->code,
+                'rate'          =>$data->currency->rate,
                 'type'          =>$data->currency->type,
                 'balance'       => $data->balance,
                 'flag'          => $data->currency->flag,
