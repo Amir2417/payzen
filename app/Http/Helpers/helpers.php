@@ -2168,3 +2168,6 @@ function authGuardApi(){
         ];
     }
 }
+function files_asset_path_basename($slug) {
+    return "public/" . files_path($slug)->path;
+}

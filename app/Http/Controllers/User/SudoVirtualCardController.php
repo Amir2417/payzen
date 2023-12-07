@@ -37,7 +37,9 @@ class SudoVirtualCardController extends Controller
         $cardCharge = TransactionSetting::where('slug','virtual_card')->where('status',1)->first();
         $transactions = Transaction::auth()->virtualCard()->latest()->take(5)->get();
         $cardApi = $this->api;
-        $sender_wallets = Currency::default();
+        
+        $sender_wallets = UserWallet::with(['currency'])->auth()->where('status',true)->get();
+        
         return view('user.sections.virtual-card-sudo.index',compact(
             'page_title','myCards','cardApi',
             'transactions','cardCharge',

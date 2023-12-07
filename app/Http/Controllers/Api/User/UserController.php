@@ -38,12 +38,47 @@ class UserController extends Controller
         $topUps = Transaction::auth()->mobileTopup()->sum('request_amount');
         $totalTransactions =Transaction::auth()->where('status', 1)->count();
 
-        $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
-            return[
-                'balance' => getAmount($data->balance,2),
-                'currency' => $data->currency->code,
+        
+        $fiat_wallets = UserWallet::auth()->whereHas("currency",function($q) {
+            return $q->where("type",GlobalConst::FIAT);
+        })->with('currency','user')->orderByDesc("balance")->limit(8)->get();
+
+        $crypto_wallets = UserWallet::auth()->whereHas("currency",function($q) {
+            return $q->where("type",GlobalConst::CRYPTO);
+        })->with('currency','user')->orderByDesc("balance")->limit(8)->get();
+        
+        $fiat_wallet    = $fiat_wallets->map(function($data){
+            $currency_image_paths = [
+                'base_url'         => url("/"),
+                'path_location'    => files_asset_path_basename("currency-flag"),
+                'default_image'    => files_asset_path_basename("default"),
+            ];
+            return [
+                'name'      =>$data->currency->name,
+                'code'      =>$data->currency->code,
+                'type'      =>$data->currency->type,
+                'balance'   => $data->balance,
+                'flag'      => $data->currency->flag,
+                'image_path'    => $currency_image_paths
             ];
         });
+        $crypto_wallet    = $crypto_wallets->map(function($data){
+            $currency_image_paths = [
+                'base_url'         => url("/"),
+                'path_location'    => files_asset_path_basename("currency-flag"),
+                'default_image'    => files_asset_path_basename("default"),
+            ];
+            return [
+                'name'          =>$data->currency->name,
+                'code'          =>$data->currency->code,
+                'type'          =>$data->currency->type,
+                'balance'       => $data->balance,
+                'flag'          => $data->currency->flag,
+                'image_path'    => $currency_image_paths
+            ];
+        });
+        
+       
 
         $sender_currency    = Currency::where('sender',true)->where('status',true)->get()->map(function($data){
             return[
@@ -126,8 +161,8 @@ class UserController extends Controller
                     'type' =>$item->attribute,
                     'trx' => $item->trx_id,
                     'transaction_type' => $item->type,
-                    'request_amount' => getAmount($item->request_amount,2).' '.get_default_currency_code() ,
-                    'payable' => getAmount($item->payable,2).' '.$item->currency->currency_code,
+                    'request_amount' => getAmount($item->request_amount,2),
+                    'payable' => getAmount($item->payable,2),
                     'status' => $item->stringStatus->value ,
                     'remark' => $item->remark??"",
                     'date_time' => $item->created_at ,
@@ -301,7 +336,8 @@ class UserController extends Controller
         'base_curr'    => get_default_currency_code(),
         'module_access'    => (object)$module_access,
         'active_virtual_system'    => virtual_card_system('flutterwave') == "flutterwave" ? 'flutterwave' :'sudo',
-        'userWallet'   =>   (object)$userWallet,
+        'fiat_wallet'   => $fiat_wallet,
+        'crypto_wallet'   => $crypto_wallet,
         'default_image'    => "public/backend/images/default/profile-default.webp",
         "image_path"  =>  "public/frontend/user",
         'user'         =>   $user,
