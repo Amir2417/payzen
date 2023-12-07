@@ -293,7 +293,7 @@
                             <div class="note-area">
                                 <code class="d-block limit-show">--</code>
                                 <code class="d-block rate-show">--</code>
-                                <code class="d-block fw-bold">{{ __("Available Balance") }}: {{ authWalletBalance() }} </code>
+                                <code class="d-block fw-bold balance-show">--</code>
                             </div>
                         </div>
 
@@ -342,59 +342,65 @@
     var defualCurrencyRate = "{{ get_default_currency_rate() }}";
     var myDefaulCurrency = "USD";
     var myDefaulCurrencyRate = 1;
+    var userBalanceRoute = "{{ setRoute('user.wallets.balance') }}";
+
+    
+
     $('.buyCard').on('click', function () {
         var modal = $('#BuyCardModal');
-    $(document).ready(function(){
-        getLimit();
-        getFees();
-        getExchangeRate();
-        getPreview();
-       });
-    $("select[name=currency]").change(function(){
-        getLimit();
-        getExchangeRate();
-        getFees();
-        getPreview();
-    });
-       $("input[name=card_amount]").keyup(function(){
+        $(document).ready(function(){
+            getLimit();
             getFees();
             getExchangeRate();
-            getLimit();
             getPreview();
-       });
+            getUserBalance();
+        });
+        $("select[name=currency]").change(function(){
+            getUserBalance();
+            getLimit();
+            getExchangeRate();
+            getFees();
+            getPreview();
+        });
+        $("input[name=card_amount]").keyup(function(){
+                getFees();
+                getExchangeRate();
+                getLimit();
+                getPreview();
+        });
 
-       function getLimit() {
-           var currencyCode = acceptVar().currencyCode;
-           var currencyRate = acceptVar().currencyRate;
+        function getLimit() {
+            var currencyCode = acceptVar().currencyCode;
+            var currencyRate = acceptVar().currencyRate;
 
-           var min_limit = acceptVar().currencyMinAmount;
-           var max_limit =acceptVar().currencyMaxAmount;
-           if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
-               var min_limit_calc = parseFloat(min_limit*currencyRate).toFixed(2);
-               var max_limit_clac = parseFloat(max_limit*currencyRate).toFixed(2);
-               $('.limit-show').html("Limit " + min_limit_calc + " " + currencyCode + " - " + max_limit_clac + " " + currencyCode);
+            var min_limit = acceptVar().currencyMinAmount;
+            var max_limit =acceptVar().currencyMaxAmount;
+            if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
+                var min_limit_calc = parseFloat(min_limit*currencyRate).toFixed(2);
+                var max_limit_clac = parseFloat(max_limit*currencyRate).toFixed(2);
+                $('.limit-show').html("Limit " + min_limit_calc + " " + currencyCode + " - " + max_limit_clac + " " + currencyCode);
 
-               return {
-                   minLimit:min_limit_calc,
-                   maxLimit:max_limit_clac,
-               };
-           }else {
-               $('.limit-show').html("--");
-               return {
-                   minLimit:0,
-                   maxLimit:0,
-               };
-           }
-       }
-       function getExchangeRate() {
-        var sender_currency = acceptVar().currencyCode;
-        var sender_currency_rate = acceptVar().currencyRate;
-        var rate = parseFloat(sender_currency_rate);
-        $('.rate-show').html("Exchange Rate:  1 " + sender_currency + " = " + parseFloat(myDefaulCurrencyRate).toFixed(4) + " " + myDefaulCurrency);
+                return {
+                    minLimit:min_limit_calc,
+                    maxLimit:max_limit_clac,
+                };
+            }else {
+                $('.limit-show').html("--");
+                return {
+                    minLimit:0,
+                    maxLimit:0,
+                };
+            }
+        }
+        function getExchangeRate() {
+            var sender_currency = acceptVar().currencyCode;
+            var sender_currency_rate = acceptVar().currencyRate;
+            var rate = parseFloat(sender_currency_rate);
+            $('.rate-show').html("Exchange Rate:  1 " + defualCurrency + " = " + parseFloat(sender_currency_rate).toFixed(4) + " " + sender_currency);
 
-        return rate;
-    }
-       function acceptVar() {
+            return rate;
+        }
+        function acceptVar() {
 
            var currencyCode =  $("select[name=currency] :selected").data('code');
            var currencyRate = $("select[name=currency] :selected").data('rate');
@@ -402,7 +408,7 @@
            var currencyMaxAmount = "{{getAmount($cardCharge->max_limit)}}";
            var currencyFixedCharge = "{{getAmount($cardCharge->fixed_charge)}}";
            var currencyPercentCharge = "{{getAmount($cardCharge->percent_charge)}}";
-
+       
 
            return {
                currencyCode:currencyCode,
@@ -413,10 +419,10 @@
                currencyPercentCharge:currencyPercentCharge,
 
            };
-       }
-       function feesCalculation() {
-           var currencyCode = myDefaulCurrencyRate;
-           var currencyRate = myDefaulCurrencyRate;
+        }
+        function feesCalculation() {
+           var currencyCode = acceptVar().currencyCode;
+           var currencyRate = acceptVar().currencyRate;
            var sender_amount = $("input[name=card_amount]").val();
            sender_amount == "" ? (sender_amount = 0) : (sender_amount = sender_amount);
 
@@ -438,48 +444,66 @@
                // return "--";
                return false;
            }
-       }
+        }
 
-       function getFees() {
+        function getFees() {
            var currencyCode = acceptVar().currencyCode;
            var percent = acceptVar().currencyPercentCharge;
            var charges = feesCalculation();
            if (charges == false) {
                return false;
            }
-           $(".fees-show").html("Fees: " + parseFloat(charges.fixed).toFixed(2) + " " + myDefaulCurrency + " + " + parseFloat(charges.percent).toFixed(2) + "% = " + parseFloat(charges.total).toFixed(2) + " " + myDefaulCurrency);
-       }
-       function getPreview() {
-               var senderAmount = $("input[name=card_amount]").val();
-               var charges = feesCalculation();
-               var sender_currency = acceptVar().currencyCode;
-               var sender_currency_rate = acceptVar().currencyRate;
+           $(".fees-show").html("Fees: " + parseFloat(charges.fixed).toFixed(2) + " " + currencyCode + " + " + parseFloat(charges.percent).toFixed(2) + "% = " + parseFloat(charges.total).toFixed(2) + " " + currencyCode);
+        }
+        function getPreview() {
+            var senderAmount = $("input[name=card_amount]").val();
+            var charges = feesCalculation();
+            var sender_currency = acceptVar().currencyCode;
+            var sender_currency_rate = acceptVar().currencyRate;
 
-               senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
-               // Sending Amount
-               $('.request-amount').html("Card Amount: " + senderAmount + " " + sender_currency);
+            senderAmount == "" ? senderAmount = 0 : senderAmount = senderAmount;
+            // Sending Amount
+            $('.request-amount').html("Card Amount: " + senderAmount + " " + sender_currency);
 
-                 // Fees
-                var charges = feesCalculation();
-               var total_charge = 0;
-               if(senderAmount == 0){
-                   total_charge = 0;
-               }else{
-                   total_charge = charges.total;
-               }
-               var totalPay = parseFloat(senderAmount) * parseFloat(myDefaulCurrencyRate)
-               var pay_in_total = 0;
-               if(senderAmount == 0 ||  senderAmount == ''){
-                    pay_in_total = 0;
-               }else{
-                    pay_in_total =  parseFloat(totalPay) + parseFloat(charges.total);
-               }
-               $('.payable-total').html("Payable: " + parseFloat(pay_in_total).toFixed(2)  + " " + myDefaulCurrency);
+                // Fees
+            var charges = feesCalculation();
+            var total_charge = 0;
+            if(senderAmount == 0){
+                total_charge = 0;
+            }else{
+                total_charge = charges.total;
+            }
+            var totalPay = parseFloat(senderAmount);
+            
+            var pay_in_total =  parseFloat(totalPay) + parseFloat(charges.total);
+            
+            $('.payable-total').html("Payable: " + parseFloat(pay_in_total).toFixed(2)  + " " + sender_currency);
 
-       }
+        }
+        function getUserBalance() {
+            var selectedCurrency = acceptVar().currencyCode;
+            
+            var CSRF = $("meta[name=csrf-token]").attr("content");
+            var data = {
+                _token      : CSRF,
+                target      : selectedCurrency,
+            };
+            // Make AJAX request for getting user balance
+            $.post(userBalanceRoute,data,function() {
+                // success
+            }).done(function(response){
+                var balance = response.data;
+                balance = parseFloat(balance).toFixed(2);
+                $(".balance-show").html("Available Balance " + balance + " " + selectedCurrency);
 
+            }).fail(function(response) {
+                var response = JSON.parse(response.responseText);
+                throwMessage(response.type,response.message.error);
+            });
+        }
         modal.modal('show');
     });
+    
    $('.fundCard').on('click', function () {
        var modal = $('#FundCardModal');
        $(document).ready(function(){

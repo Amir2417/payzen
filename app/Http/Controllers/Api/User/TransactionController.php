@@ -49,6 +49,7 @@ class TransactionController extends Controller
         // start transaction now
         $bill_pay           = Transaction::auth()->billPay()->orderByDesc("id")->get();
         $mobileTopUp        = Transaction::auth()->mobileTopup()->orderByDesc("id")->get();
+        
         $addMoney           = Transaction::auth()->addMoney()->orderByDesc("id")->latest()->get();
         $moneyOut           = Transaction::auth()->moneyOut()->orderByDesc("id")->get();
         $sendMoney          = Transaction::auth()->senMoney()->orderByDesc("id")->get();
@@ -87,6 +88,7 @@ class TransactionController extends Controller
 
         ];
         $transaction_types = (object)$transaction_types;
+        
         $data =[
             'transaction_types' => $transaction_types,
             'transactions'=> $transactions,

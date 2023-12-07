@@ -161,7 +161,7 @@ function create_sudo_customer($api_key,$base_url,$user){
     }
 }
 function create_virtual_card($api_key,$base_url,$customerId, $currency,$bankCode, $debitAccountId, $issuerCountry){
-
+   
     $curl = curl_init();
     curl_setopt_array($curl, [
         CURLOPT_URL => $base_url."/cards",
@@ -191,7 +191,7 @@ function create_virtual_card($api_key,$base_url,$customerId, $currency,$bankCode
 
     $response = curl_exec($curl);
     $err = curl_error($curl);
-
+    dd($response);
     curl_close($curl);
 
     if ($err) {

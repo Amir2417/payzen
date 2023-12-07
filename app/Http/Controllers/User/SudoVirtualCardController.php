@@ -147,8 +147,10 @@ class SudoVirtualCardController extends Controller
     {
         $request->validate([
             'card_amount' => 'required|numeric|gt:0',
+            'currency'    => 'required'
         ]);
         $basic_setting = BasicSettings::first();
+        $wallet_currency = $request->currency;
         $user = auth()->user();
         if($basic_setting->kyc_verification){
             if( $user->kyc_verified == 0){
@@ -160,12 +162,14 @@ class SudoVirtualCardController extends Controller
             }
         }
         $amount = $request->card_amount;
-        $wallet = UserWallet::where('user_id',$user->id)->first();
+        $wallet = UserWallet::auth()->whereHas("currency",function($q) use ($wallet_currency) {
+            $q->where("code",$wallet_currency)->active();
+        })->active()->first();
         if(!$wallet){
             return back()->with(['error' => ['Wallet not found']]);
         }
         $cardCharge = TransactionSetting::where('slug','virtual_card')->where('status',1)->first();
-        $baseCurrency = Currency::default();
+        $baseCurrency = $wallet->currency;
         $rate = $baseCurrency->rate;
         if(!$baseCurrency){
             return back()->with(['error' => ['Default currency not setup yet']]);
@@ -185,6 +189,7 @@ class SudoVirtualCardController extends Controller
         }
         $currency = $baseCurrency->code;
         $funding_sources =  get_funding_source( $this->api->config->sudo_api_key,$this->api->config->sudo_url);
+        
         if(isset( $funding_sources['statusCode'])){
             if($funding_sources['statusCode'] == 403){
                 return back()->with(['error' => [$funding_sources['message']]]);
@@ -198,13 +203,14 @@ class SudoVirtualCardController extends Controller
 
         }
         $bankCode = $funding_sources['data'][0]['_id']??'';
-
         $sudo_accounts =    get_sudo_accounts( $this->api->config->sudo_api_key,$this->api->config->sudo_url);
+        
         $filteredArray = array_filter($sudo_accounts, function($item) use ($currency) {
             return $item['currency'] === $currency;
         });
         $matchingElements = array_values($filteredArray);
         $debitAccountId= $matchingElements[0]['_id']??"";
+        
 
         if(  $debitAccountId == ""){
             //create debit account
@@ -223,14 +229,14 @@ class SudoVirtualCardController extends Controller
             $user->save();
         }
         $debitAccountId = $user->sudo_account->_id??'';
-
+        
         $issuerCountry = '';
         if(get_default_currency_code() == "NGN"){
             $issuerCountry = "NGA";
         }elseif(get_default_currency_code() === "USD"){
             $issuerCountry = "USA";
         }
-
+        
         //check sudo customer have or not
        if( $user->sudo_customer == null){
         //create customer
@@ -246,10 +252,12 @@ class SudoVirtualCardController extends Controller
        }else{
         $customerId = $user->sudo_customer->_id;
        }
+       
        //create card now
        $created_card = create_virtual_card($this->api->config->sudo_api_key,$this->api->config->sudo_url,
                             $customerId, $currency,$bankCode, $debitAccountId, $issuerCountry
                         );
+                        dd($created_card);
        if(isset($created_card['statusCode'])){
         if($created_card['statusCode'] == 400){
             return back()->with(['error' => [$created_card['message']]]);
