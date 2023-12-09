@@ -154,7 +154,6 @@ class AuthorizationController extends Controller
         $request->merge(['token' => $token]);
         $request->validate([
             'token'     => "required|string|exists:user_authorizations,token",
-            // 'code'      => "required|numeric|exists:user_authorizations,code",
             'code'      => "required|array",
             'code.*'    => "required|numeric",
         ]);

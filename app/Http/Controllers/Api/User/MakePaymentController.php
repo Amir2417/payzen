@@ -85,6 +85,7 @@ class MakePaymentController extends Controller
         $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
             return[
                 'balance' => getAmount($data->balance,2),
+                'rate' => $data->currency->rate,
                 'currency' => $data->currency->code,
             ];
         });

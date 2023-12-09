@@ -31,6 +31,7 @@ class WithdrawController extends Controller
         $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
             return[
                 'balance' => getAmount($data->balance,2),
+                'rate' => $data->currency->rate,
                 'currency' => $data->currency->code,
             ];
         });
@@ -63,6 +64,7 @@ class WithdrawController extends Controller
                     'total_charge' => getAmount($item->charge->total_charge,2).' '.$item->currency->currency_code,
                     'current_balance' => getAmount($item->available_balance,2).' '.get_default_currency_code(),
                     'status' => $item->stringStatus->value ,
+                    'item'  => $item,
                     'date_time' => $item->created_at ,
                     'status_info' =>(object)$statusInfo ,
                     'rejection_reason' =>$item->reject_reason??"" ,
@@ -222,6 +224,8 @@ class WithdrawController extends Controller
                 'trx' =>  $identifier,
                 'gateway_currency_name' =>  $gate->name,
                 'request_amount' => getAmount($request->amount,2),
+                'wallet_currency'   => $request->wallet_currency,
+                'gateway_code'      => $gate->code,
                 'conversion_amount' =>  getAmount($conversion_amount,2),
                 'total_charge' => getAmount($charge,2),
                 'will_get' => getAmount($will_get,2),
