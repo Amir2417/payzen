@@ -100,7 +100,12 @@
                             <span class="menu-title">{{ __("Saved My Receiver") }}</span>
                         </a>
                     </li> --}}
-
+                    <li class="sidebar-menu-item {{ Route::is('agent.refer.index') ? 'active' : '' }}">
+                        <a href="{{ setRoute('agent.refer.index') }}">
+                            <i class="menu-icon las la-user-circle"></i>
+                            <span class="menu-title">{{ __("My Status") }}</span>
+                        </a>
+                    </li>
                     <li class="sidebar-menu-item">
                         <a href="{{ setRoute('agent.security.google.2fa') }}">
                             <i class="menu-icon fas fa-qrcode"></i>

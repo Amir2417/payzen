@@ -22,6 +22,7 @@ use App\Http\Controllers\Agent\ReceiveMoneyController;
 use App\Http\Controllers\Agent\SupportTicketController;
 use App\Http\Controllers\Agent\SenderRecipientController;
 use App\Http\Controllers\Agent\ReceiverRecipientController;
+use App\Http\Controllers\Agent\ReferralController;
 use App\Http\Controllers\Agent\StripeCardController;
 use App\Http\Controllers\User\PaymentGateway\StripeController;
 
@@ -156,7 +157,10 @@ Route::prefix("agent")->name("agent.")->middleware(['checkStatus'])->group(funct
         Route::post('get/recipient/transaction/type','getRecipientByTransType')->name('get.recipient.transtype');
         
     });
-
+    //referral for user status
+    Route::controller(ReferralController::class)->prefix('status')->name('refer.')->group(function(){
+        Route::get('/','index')->name('index');
+    });
 
     //transactions
     Route::controller(TransactionController::class)->prefix("transactions")->name("transactions.")->group(function(){

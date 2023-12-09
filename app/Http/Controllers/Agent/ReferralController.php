@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Agent;
 
 use App\Http\Controllers\Controller;
-use App\Models\ReferredUser;
+use App\Models\AgentReferredUser;
 use Illuminate\Http\Request;
 
 class ReferralController extends Controller
@@ -15,12 +15,11 @@ class ReferralController extends Controller
     public function index(){
         $page_title     = "Refer Page";
         $auth_user      =  auth()->user();
-        $refer_users    = ReferredUser::where('refer_user_id',$auth_user->id)->with(['user' => function($query){
-            $query->with(['referUsers']);
+        $refer_users    = AgentReferredUser::where('refer_agent_id',$auth_user->id)->with(['agent' => function($query){
+            $query->with(['referAgents']);
         }])->paginate(10);
-        
 
-        return view('user.sections.refer.index',compact(
+        return view('agent.sections.refer.index',compact(
             'page_title',
             'auth_user',
             'refer_users'
