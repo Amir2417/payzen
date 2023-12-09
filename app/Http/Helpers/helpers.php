@@ -22,6 +22,7 @@ use Illuminate\Http\UploadedFile;
 use App\Models\Admin\AdminHasRole;
 use App\Models\AgentAuthorization;
 use Illuminate\Support\Facades\DB;
+use App\Models\Admin\BasicSettings;
 use App\Models\Admin\ModuleSetting;
 use Illuminate\Support\Facades\App;
 use App\Constants\NotificationConst;
@@ -41,8 +42,8 @@ use function PHPUnit\Framework\returnSelf;
 use App\Models\Merchants\MerchantNotification;
 use App\Providers\Admin\BasicSettingsProvider;
 use Illuminate\Validation\ValidationException;
-use App\Models\Merchants\MerchantAuthorization;
 
+use App\Models\Merchants\MerchantAuthorization;
 use Pusher\PushNotifications\PushNotifications;
 use App\Notifications\User\Auth\SendAuthorizationCode;
 use App\Notifications\Merchant\Auth\SendAuthorizationCode as AuthSendAuthorizationCode;
@@ -1553,6 +1554,33 @@ function merchantMailVerificationTemplateApi($user) {
       return Helpers::error($error);
 
 }
+function agentMailVerificationTemplateApi($user) {
+    $basic_settings = BasicSettingsProvider::get();
+
+    $data = [
+        'agent_id'       => $user->id,
+        'code'          => generate_random_code(),
+        'token'         => generate_unique_string("agent_authorizations","token",200),
+        'created_at'    => now(),
+    ];
+
+    DB::beginTransaction();
+    try{
+        if( $basic_settings->email_notification == true){
+            $user->notify(new AuthSendAuthorizationCode((object) $data));
+        }
+        AgentAuthorization::where("agent_id",$user->id)->delete();
+        DB::table("agent_authorizations")->insert($data);
+        DB::commit();
+    }catch(Exception $e) {
+        DB::rollBack();
+        $error = ['error'=>['Something went worng! Please try again']];
+        return Helpers::error($error);
+    }
+      $error = ['errors'=>['Email verification is required']];
+      return Helpers::error($error);
+
+}
 
 function extension_const() {
     return ExtensionConst::class;
@@ -2179,5 +2207,23 @@ function virtual_card_system($name)
         return  $method->config->name;
     }else{
         return false;
+    }
+}
+
+function sendSms($user, $type, $shortCodes = [])
+{
+
+    $general = BasicSettings::first();
+    $smsTemplate = SmsTemplate::where('act', $type)->where('sms_status', 1)->first();
+    $gateway = $general->sms_config->name;
+    $sendSms = new SendSms;
+    if ($general->sms_notification == 1 && $smsTemplate) {
+        $template = $smsTemplate->sms_body;
+        foreach ($shortCodes as $code => $value) {
+            $template = shortCodeReplacer('{{' . $code . '}}', $value, $template);
+        }
+        $message = shortCodeReplacer("{{message}}", $template, $general->sms_api);
+        $message = shortCodeReplacer("{{name}}", $user->username, $message);
+        $sendSms->$gateway($user->full_mobile,$general->site_name,$message,$general->sms_config);
     }
 }

@@ -30,7 +30,7 @@ class CheckStatusApi
                 $error = ['errors'=>['Account Is Deactivated']];
                 return Helpers::error($error);
             }elseif($user->email_verified == 0){;
-                return merchantMailVerificationTemplateApi($user);
+                return agentMailVerificationTemplateApi($user);
             }else if($user->sms_verified == 0){
                 $error = ['errors'=>['Sms verification is required']];
                 return Helpers::error($error);

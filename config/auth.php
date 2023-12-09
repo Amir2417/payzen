@@ -60,6 +60,10 @@ return [
             'driver' => 'passport',
             'provider' => 'merchants',
         ],
+        'agent_api' => [
+            'driver' => 'passport',
+            'provider' => 'agents',
+        ]
 
     ],
 

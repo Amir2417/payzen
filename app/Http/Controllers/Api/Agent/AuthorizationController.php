@@ -30,7 +30,6 @@ class AuthorizationController extends Controller
     }
     public function sendMailCode()
     {
-        
         $user = auth()->user();
         $resend = AgentAuthorization::where("agent_id",$user->id)->first();
         if( $resend){
@@ -42,7 +41,7 @@ class AuthorizationController extends Controller
         }
 
         $data = [
-            'agent_id'      =>  $user->id,
+            'agent_id'       =>  $user->id,
             'code'          => generate_random_code(),
             'token'         => generate_unique_string("agent_authorizations","token",200),
             'created_at'    => now(),
@@ -52,14 +51,15 @@ class AuthorizationController extends Controller
             if($resend) {
                 AgentAuthorization::where("agent_id", $user->id)->delete();
             }
+            dd($data);
             DB::table("agent_authorizations")->insert($data);
             $user->notify(new SendAuthorizationCode((object) $data));
             DB::commit();
             $message =  ['success'=>['Verification code send success']];
             return Helpers::onlysuccess($message);
         }catch(Exception $e) {
-            DB::rollBack();
             dd($e->getMessage());
+            DB::rollBack();
             $error = ['error'=>['Something went wrong! Please try again']];
             return Helpers::error($error);
         }

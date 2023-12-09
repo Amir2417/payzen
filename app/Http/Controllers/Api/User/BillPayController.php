@@ -27,6 +27,7 @@ class BillPayController extends Controller
             return[
                 'balance' => getAmount($data->balance,2),
                 'currency' => $data->currency->code,
+                'rate' => $data->currency->rate,
             ];
         });
         $billPayCharge = TransactionSetting::where('slug','bill_pay')->where('status',1)->get()->map(function($data){
