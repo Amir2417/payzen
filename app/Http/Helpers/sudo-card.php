@@ -2,18 +2,7 @@
 
 //sudo virtual card system
 
-use App\Models\VirtualCardApi;
-
-function virtual_card_system($name)
-{
-    $method = VirtualCardApi::first();
-    if( $method->config->name == $name){
-        return  $method->config->name;
-    }else{
-        return false;
-    }
-
-}
+use App\Models\Admin\VirtualCardApi;
 
 function get_funding_source($api_key,$base_url){
     $curl = curl_init();
@@ -70,6 +59,8 @@ function create_sudo_account($api_key,$base_url, $currency){
 
     curl_close($curl);
 
+    dd(json_decode( $response,true));
+
     if ($err) {
         $result = json_decode( $response,true);
         return  $result;
@@ -95,15 +86,20 @@ function get_sudo_accounts($api_key,$base_url){
     ],
     ]);
     $response = curl_exec($curl);
-    $err = curl_error($curl);
     curl_close($curl);
-    if ($err) {
+    $result = json_decode($response, true);
+    if ($result['statusCode'] != 200) {
         $result = json_decode( $response,true);
-        return  $result['data'];
+        return  $result;
     } else {
         $result = json_decode( $response,true);
-        return  $result['data'];
+        $account_type = 'account';
+        $filteredArray = array_filter($result['data'], function($item) use ($account_type) {
+            return $item['type'] === $account_type;
+        });
+        return  $filteredArray??[];
     }
+
 }
 function create_sudo_customer($api_key,$base_url,$user){
     $curl = curl_init();
@@ -150,9 +146,7 @@ function create_sudo_customer($api_key,$base_url,$user){
     $err = curl_error($curl);
     curl_close($curl);
 
-
     if ($err) {
-
         $result = json_decode( $response,true);
         return  $result;
     } else {
@@ -160,8 +154,8 @@ function create_sudo_customer($api_key,$base_url,$user){
         return  $result;
     }
 }
-function create_virtual_card($api_key,$base_url,$customerId, $currency,$bankCode, $debitAccountId, $issuerCountry){
-   
+function create_virtual_card($api_key,$base_url,$customerId, $currency,$bankCode, $debitAccountId, $issuerCountry, $amount){
+    
     $curl = curl_init();
     curl_setopt_array($curl, [
         CURLOPT_URL => $base_url."/cards",
@@ -177,7 +171,7 @@ function create_virtual_card($api_key,$base_url,$customerId, $currency,$bankCode
             'status' => 'active',
             'brand' =>"MasterCard",
             'issuerCountry' => $issuerCountry,
-            'amount' => 100,
+            'amount' => $amount,
             'customerId' => $customerId,
             'bankCode' => $bankCode,
             'debitAccountId' =>$debitAccountId
@@ -247,13 +241,9 @@ function getCardToken($api_key,$base_url,$card_id){
         "accept: application/json"
     ],
     ]);
-
     $response = curl_exec($curl);
     $err = curl_error($curl);
-
-
     curl_close($curl);
-
     if ($err) {
      $result = json_decode($response,true);
      return $result;
@@ -294,6 +284,14 @@ function getSudoBalance(){
     $method = VirtualCardApi::first();
     $currency = get_default_currency_code();
     $sudo_accounts = get_sudo_accounts( $method->config->sudo_api_key,$method->config->sudo_url);
+    if(isset($sudo_accounts['statusCode'])){
+        $data =[
+            'amount' => 0,
+            'status' => false,
+            'message' => $sudo_accounts['message'],
+       ];
+        return $data;
+    }
     $filteredArray = array_filter($sudo_accounts, function($item) use ($currency) {
         return $item['currency'] === $currency;
     });
@@ -344,4 +342,3 @@ function getSudoBalance(){
 
 
 }
-

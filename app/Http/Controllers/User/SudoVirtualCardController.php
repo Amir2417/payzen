@@ -238,34 +238,34 @@ class SudoVirtualCardController extends Controller
         }
         
         //check sudo customer have or not
-       if( $user->sudo_customer == null){
-        //create customer
-        $store_customer = create_sudo_customer($this->api->config->sudo_api_key,$this->api->config->sudo_url,$user);
+        if( $user->sudo_customer == null){
+            //create customer
+            $store_customer = create_sudo_customer($this->api->config->sudo_api_key,$this->api->config->sudo_url,$user);
 
-        if( isset($store_customer['error'])){
-            return back()->with(['error' => ["Customer doesn't created properly,Contact with owner"]]);
+            if( isset($store_customer['error'])){
+                return back()->with(['error' => ["Customer doesn't created properly,Contact with owner"]]);
+            }
+            $user->sudo_customer =   (object)$store_customer['data'];
+            $user->save();
+            $customerId = $user->sudo_customer->_id;
+
+        }else{
+            $customerId = $user->sudo_customer->_id;
         }
-        $user->sudo_customer =   (object)$store_customer['data'];
-        $user->save();
-        $customerId = $user->sudo_customer->_id;
-
-       }else{
-        $customerId = $user->sudo_customer->_id;
-       }
        
-       //create card now
-       $created_card = create_virtual_card($this->api->config->sudo_api_key,$this->api->config->sudo_url,
-                            $customerId, $currency,$bankCode, $debitAccountId, $issuerCountry
+        //create card now
+        $created_card = create_virtual_card($this->api->config->sudo_api_key,$this->api->config->sudo_url,
+                            $customerId, $currency,$bankCode, $debitAccountId, $issuerCountry,$amount
                         );
                         dd($created_card);
-       if(isset($created_card['statusCode'])){
-        if($created_card['statusCode'] == 400){
-            return back()->with(['error' => [$created_card['message']]]);
+        if(isset($created_card['statusCode'])){
+            if($created_card['statusCode'] == 400){
+                return back()->with(['error' => [$created_card['message']]]);
+            }
+
+
         }
-
-
-       }
-       if($created_card['statusCode']  = 200){
+        if($created_card['statusCode']  = 200){
             $card_info = (object)$created_card['data'];
             $v_card = new SudoVirtualCard();
             $v_card->user_id = $user->id;
@@ -311,7 +311,7 @@ class SudoVirtualCardController extends Controller
                 return back()->with(['error' => ["The email cannot be sent as the recipient's email address is invalid."]]);
             }
 
-       }
+        }
 
     }
 

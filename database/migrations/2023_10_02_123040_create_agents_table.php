@@ -36,6 +36,7 @@ return new class extends Migration
             $table->boolean('two_factor_status')->default(false);
             $table->string('two_factor_secret')->nullable();
             $table->string('device_id')->nullable();
+            $table->string('referral_id')->nullable();
             $table->text('firebase_token')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();

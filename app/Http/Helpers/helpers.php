@@ -2171,3 +2171,13 @@ function authGuardApi(){
 function files_asset_path_basename($slug) {
     return "public/" . files_path($slug)->path;
 }
+
+function virtual_card_system($name)
+{
+    $method = VirtualCardApi::first();
+    if( $method->config->name == $name){
+        return  $method->config->name;
+    }else{
+        return false;
+    }
+}

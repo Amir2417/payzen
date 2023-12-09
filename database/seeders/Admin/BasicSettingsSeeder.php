@@ -48,7 +48,7 @@ class BasicSettingsSeeder extends Seeder
             'email_verification'    => true,
             'user_registration'     => true,
             'agree_policy'          => true,
-            'email_notification'    => true,
+            'email_notification'    => false,
             'site_logo_dark'        => "seeder/logo-dark.png",
             'site_logo'             => "seeder/logo-white.png",
             'site_fav_dark'         => "seeder/favicon-dark.png",
