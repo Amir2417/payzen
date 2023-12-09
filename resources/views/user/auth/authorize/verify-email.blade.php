@@ -12,49 +12,49 @@
     <div class="container">
         <div class="row justify-content-center align-items-center">
             <div class="col-xxl-5 col-xl-6 col-lg-7 col-md-12">
-    <div class="account-wrapper">
-        <div class="account-form-area text-center">
-            <div class="account-logo text-center">
-                <a href="{{ setRoute('index') }}" class="site-logo site-title theme-change">
-                    <img src="{{ get_logo($basic_settings) }}" white-img="{{ get_logo($basic_settings) }}"
-                    dark-img="{{ get_logo($basic_settings,'dark') }}" alt="logo">
-                </a>
-            </div>
-            <h4 class="title">{{ __("Please enter the code") }}</h4>
-            {{-- @dd($data->email) --}}
-            <p>{{ __("We sent a 6 digit code here") }} <span class="text--base">{{ @$data->email }}</span></p>
-            <form class="account-form" action="{{ setRoute('user.verify.code',$token) }}" method="POST">
-                @csrf
-                <div class="row ml-b-20">
-                    <div class="col-lg-12 form-group">
-                        <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(1)'
-                            maxlength=1 required>
-                        <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(2)'
-                            maxlength=2 required>
-                        <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(3)'
-                            maxlength=1 required>
-                        <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(4)'
-                            maxlength=1 required>
-                        <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(5)'
-                            maxlength=1 required>
-                        <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(6)'
-                            maxlength=1 required>
-                    </div>
-                    <div class="col-lg-12 form-group text-end">
-                        <div class="time-area">{{ __("You can resend the code after") }} <span id="time"></span></div>
-                    </div>
-                    <div class="col-lg-12 form-group text-center">
-                        <button type="submit" class="btn--base w-100">{{ __("Submit") }}</button>
-                    </div>
-                    <div class="col-lg-12">
-                        <div class="account-item text-center mt-10">
-                            <label>{{ __("Already Have An Account?") }} <a href="{{ setRoute('user.login') }}" class="text--base">{{ __("Login Now") }}</a></label>
+                <div class="account-wrapper">
+                    <div class="account-form-area text-center">
+                        <div class="account-logo text-center">
+                            <a href="{{ setRoute('index') }}" class="site-logo site-title theme-change">
+                                <img src="{{ get_logo($basic_settings) }}" white-img="{{ get_logo($basic_settings) }}"
+                                dark-img="{{ get_logo($basic_settings,'dark') }}" alt="logo">
+                            </a>
                         </div>
+                        <h4 class="title">{{ __("Please enter the code") }}</h4>
+                    
+                        <p>{{ __("We sent a 6 digit code here") }} <span class="text--base">{{ @$data->email }}</span></p>
+                        <form class="account-form" action="{{ setRoute('user.verify.code',$token) }}" method="POST">
+                            @csrf
+                            <div class="row ml-b-20">
+                                <div class="col-lg-12 form-group">
+                                    <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(1)'
+                                        maxlength=1 required>
+                                    <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(2)'
+                                        maxlength=2 required>
+                                    <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(3)'
+                                        maxlength=1 required>
+                                    <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(4)'
+                                        maxlength=1 required>
+                                    <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(5)'
+                                        maxlength=1 required>
+                                    <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(6)'
+                                        maxlength=1 required>
+                                </div>
+                                <div class="col-lg-12 form-group text-end">
+                                    <div class="time-area">{{ __("You can resend the code after") }} <span id="time"></span></div>
+                                </div>
+                                <div class="col-lg-12 form-group text-center">
+                                    <button type="submit" class="btn--base w-100">{{ __("Submit") }}</button>
+                                </div>
+                                <div class="col-lg-12">
+                                    <div class="account-item text-center mt-10">
+                                        <label>{{ __("Already Have An Account?") }} <a href="{{ setRoute('user.login') }}" class="text--base">{{ __("Login Now") }}</a></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
-            </form>
-        </div>
-    </div>
             </div>
         </div>
     </div>

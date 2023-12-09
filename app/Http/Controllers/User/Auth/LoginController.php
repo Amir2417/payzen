@@ -3,14 +3,11 @@
 namespace App\Http\Controllers\User\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin\Currency;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
-use App\Models\UserWallet;
 use App\Traits\User\LoggedInUsers;
-use Exception;
 
 class LoginController extends Controller
 {

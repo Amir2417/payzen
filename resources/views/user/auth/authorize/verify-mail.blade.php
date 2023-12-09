@@ -1,78 +1,71 @@
-@extends('layouts.master')
+@extends('user.layouts.user_auth')
 
 @push('css')
 
 @endpush
 
 @section('content')
-
-    <section class="account">
-        <div class="account-area">
-            <div class="account-wrapper">
-                <div class="account-logo text-center">
-                    <a class="site-logo" href="{{ setRoute('index') }}">
-                        <img src="{{ get_logo($basic_settings) }}"  data-white_img="{{ get_logo($basic_settings,'white') }}"
-                        data-dark_img="{{ get_logo($basic_settings,'dark') }}"
-                            alt="site-logo">
-                    </a>
-                </div>
-                <h3 class="title">{{ __("Account Authorization") }}</h3>
-                <p>{{ __("Need to verify your account. Please check your mail inbox to get the authorization code") }}</p>
-                <form action="{{ setRoute('user.authorize.mail.verify',$token) }}" class="account-form" method="POST">
-                    @csrf
-                    <div id="recaptcha-container"></div>
-                    <div class="row ml-b-20">
-                        <div class="col-lg-12 form-group">
-                            <input class="otp" name="code[]" type="text" oninput='digitValidate(this)' onkeyup='tabChange(1)'
-                            maxlength=1 required>
-                        <input class="otp" name="code[]" type="text" oninput='digitValidate(this)' onkeyup='tabChange(2)'
-                            maxlength=1 required>
-                        <input class="otp" name="code[]" type="text" oninput='digitValidate(this)' onkeyup='tabChange(3)'
-                            maxlength=1 required>
-                        <input class="otp" name="code[]" type="text" oninput='digitValidate(this)' onkeyup='tabChange(4)'
-                            maxlength=1 required>
-                        <input class="otp" name="code[]" type="text" oninput='digitValidate(this)' onkeyup='tabChange(5)'
-                            maxlength=1 required>
-                        <input class="otp" name="code[]" type="text" oninput='digitValidate(this)' onkeyup='tabChange(6)'
-                            maxlength=1 required>
-                        @error("code")
-                            <span class="invalid-feedback d-block" role="alert">
-                                <strong>{{ $message }}</strong>
-                            </span>
-                        @enderror
-
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Start Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+<section class="account-section login">
+    <div class="container">
+        <div class="row justify-content-center align-items-center">
+            <div class="col-xxl-5 col-xl-6 col-lg-7 col-md-12">
+                <div class="account-wrapper">
+                    <div class="account-form-area text-center">
+                        <div class="account-logo text-center">
+                            <a href="{{ setRoute('index') }}" class="site-logo site-title theme-change">
+                                <img src="{{ get_logo($basic_settings) }}" white-img="{{ get_logo($basic_settings) }}"
+                                dark-img="{{ get_logo($basic_settings,'dark') }}" alt="logo">
+                            </a>
                         </div>
-                        <div class="col-lg-12 form-group text-end">
-                            <div class="time-area">{{ __("You can resend the code after") }} <span id="time"></span></div>
-                        </div>
-                        <div class="col-lg-12 form-group text-start">
-                            <div class="forgot-item">
-                                <label><a href="{{ setRoute('user.login') }}" class="text--base">{{ __("Back to Login") }}</a></label>
+                        <h4 class="title">{{ __("Please enter the code") }}</h4>
+                    
+                        <p>{{ __("We sent a 6 digit code here") }} <span class="text--base">{{ @$data->email }}</span></p>
+                        <form class="account-form" action="{{ setRoute('user.authorize.mail.verify',$token) }}" method="POST">
+                            @csrf
+                            <div class="row ml-b-20">
+                                <div class="col-lg-12 form-group">
+                                    <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(1)'
+                                        maxlength=1 required>
+                                    <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(2)'
+                                        maxlength=2 required>
+                                    <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(3)'
+                                        maxlength=1 required>
+                                    <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(4)'
+                                        maxlength=1 required>
+                                    <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(5)'
+                                        maxlength=1 required>
+                                    <input class="otp" type="text" name="code[]" oninput='digitValidate(this)' onkeyup='tabChange(6)'
+                                        maxlength=1 required>
+                                </div>
+                                <div class="col-lg-12 form-group text-end">
+                                    <div class="time-area">{{ __("You can resend the code after") }} <span id="time"></span></div>
+                                </div>
+                                <div class="col-lg-12 form-group text-center">
+                                    <button type="submit" class="btn--base w-100">{{ __("Submit") }}</button>
+                                </div>
+                                <div class="col-lg-12">
+                                    <div class="account-item text-center mt-10">
+                                        <label>{{ __("Already Have An Account?") }} <a href="{{ setRoute('user.login') }}" class="text--base">{{ __("Login Now") }}</a></label>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-lg-12 form-group text-center">
-                            <button type="submit" class="btn--base w-100 btn-loading">{{ __("Authorize") }}</button>
-                        </div>
+                        </form>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
-    </section>
-    <ul class="bg-bubbles">
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-    </ul>
+    </div>
+</section>
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    End Account
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 @endsection
 
 @push('script')
+
 <script>
     let digitValidate = function (ele) {
         ele.value = ele.value.replace(/[^0-9]/g, '');
@@ -103,7 +96,7 @@
                 // alert();
                 clearInterval(x);
                 // document.getElementById("time").innerHTML = "RESEND";
-                document.querySelector(".time-area").innerHTML = "Didn't get the code? <a href='{{ setRoute('user.authorize.resend.code') }}' onclick='resendOtp()' class='text--danger'>Resend</a>";
+                document.querySelector(".time-area").innerHTML = "Didn't get the code? <a href='{{ setRoute('user.resend.code') }}' onclick='resendOtp()' class='text--danger'>Resend</a>";
             }
 
             second--
@@ -112,23 +105,6 @@
 
     resetTime();
 </script>
-<script>
-    $(".otp").parents("form").find("input[type=submit],button[type=submit]").click(function(e){
-        // e.preventDefault();
-        var otps = $(this).parents("form").find(".otp");
-        var result = true;
-        $.each(otps,function(index,item){
-            if($(item).val() == "" || $(item).val() == null) {
-                result = false;
-            }
-        });
 
-        if(result == false) {
-            $(this).parents("form").find(".otp").addClass("required");
-        }else {
-            $(this).parents("form").find(".otp").removeClass("required");
-            $(this).parents("form").submit();
-        }
-    });
-</script>
+
 @endpush

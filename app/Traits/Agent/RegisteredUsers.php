@@ -19,6 +19,7 @@ use App\Providers\Admin\BasicSettingsProvider;
 trait RegisteredUsers {
     protected function createUserWallets($user) {
         $currencies = Currency::active()->roleHasOne()->pluck("id")->toArray();
+        
         $wallets = [];
         foreach($currencies as $currency_id) {
             $wallets[] = [

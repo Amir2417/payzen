@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\Agent\Auth\ForgotPasswordController as AuthForgotPasswordController;
+use App\Http\Controllers\Api\Agent\Auth\LoginController as AuthLoginController;
 use App\Http\Controllers\Api\Agent\AuthorizationController as AgentAuthorizationController;
 use App\Http\Controllers\Api\AppSettingsController;
 use App\Http\Controllers\Api\User\AddMoneyController;
@@ -49,6 +51,19 @@ Route::get('/clear-cache', function() {
 Route::get('get/basic/data', function() {
     $basic_settings = BasicSettingsProvider::get();
     $user_kyc = SetupKyc::userKyc()->first();
+    $data =[
+        'email_verification' => $basic_settings->email_verification,
+        'kyc_verification' => $basic_settings->kyc_verification,
+        'mobile_code' => getDialCode(),
+        'register_kyc_fields' =>$user_kyc,
+        'countries' =>get_all_countries()
+    ];
+    $message =  ['success'=>['Basic information fetch successfully']];
+    return Helpers::success($data,$message);
+});
+Route::get('get/agent/basic/data', function() {
+    $basic_settings = BasicSettingsProvider::get();
+    $user_kyc = SetupKyc::agentKyc()->first();
     $data =[
         'email_verification' => $basic_settings->email_verification,
         'kyc_verification' => $basic_settings->kyc_verification,
@@ -239,5 +254,24 @@ Route::prefix('agent')->group(function(){
         Route::post('send/otp', [AgentAuthorizationController::class,'sendEmailOtp']);
         Route::post('verify/otp',[AgentAuthorizationController::class,"verifyEmailOtp"]);
         Route::post('resend/otp',[AgentAuthorizationController::class,"resendEmailOtp"]);
+    });
+
+    //forget password for email
+    Route::prefix('forget')->group(function(){
+        Route::post('password', [AuthForgotPasswordController::class,'sendCode']);
+        Route::post('verify/otp', [AuthForgotPasswordController::class,'verifyCode']);
+        Route::post('reset/password', [AuthForgotPasswordController::class,'resetPassword']);
+    });
+
+    Route::post('register',[AuthLoginController::class,'register']);
+    Route::post('login',[AuthLoginController::class,'login']);
+
+    
+    Route::middleware(['auth.api','verification.guard.api'])->group(function(){
+        Route::get('logout', [AuthLoginController::class,'logout']);
+        Route::get('kyc', [AgentAuthorizationController::class,'showKycFrom']);
+        Route::post('kyc/submit', [AgentAuthorizationController::class,'kycSubmit']);
+        Route::post('google/2fa/verify', [SecurityController::class,'verifyGoogle2Fa']);
+
     });
 });

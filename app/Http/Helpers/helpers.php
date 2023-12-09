@@ -1472,7 +1472,7 @@ function mailVerificationTemplateAgent($agent) {
         DB::rollBack();
         return back()->with(['error' => ['Something went worng! Please try again']]);
     }
-    return redirect()->route('user.authorize.mail',$data['token'])->with(['warning' => ['Please verify your mail address. Check your mail inbox to get verification code']]);
+    return redirect()->route('agent.authorize.mail',$data['token'])->with(['warning' => ['Please verify your mail address. Check your mail inbox to get verification code']]);
 }
 function mailVerificationTemplateMerchant($merchant) {
     $basic_settings = BasicSettingsProvider::get();

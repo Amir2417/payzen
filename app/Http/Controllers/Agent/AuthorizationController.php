@@ -28,6 +28,7 @@ class AuthorizationController extends Controller
      */
     public function showMailFrom($token)
     {
+        
         $page_title = "Mail Authorization";
         return view('agent.auth.authorize.verify-mail',compact("page_title","token"));
     }
@@ -153,14 +154,14 @@ class AuthorizationController extends Controller
     {
         $request->merge(['token' => $token]);
         $request->validate([
-            'token'     => "required|string|exists:user_authorizations,token",
+            'token'     => "required|string|exists:agent_authorizations,token",
             'code'      => "required|array",
             'code.*'    => "required|numeric",
         ]);
         $code = $request->code;
         $code = implode("",$code);
         $otp_exp_sec = BasicSettingsProvider::get()->otp_exp_seconds ?? GlobalConst::DEFAULT_TOKEN_EXP_SEC;
-        $auth_column = UserAuthorization::where("token",$request->token)->where("code",$code)->first();
+        $auth_column = AgentAuthorization::where("token",$request->token)->where("code",$code)->first();
         if(!$auth_column){
             return back()->with(['error' => ['Verification code does not match']]);
         }
@@ -172,37 +173,38 @@ class AuthorizationController extends Controller
         }
 
         try{
-            $auth_column->user->update([
+            $auth_column->agent->update([
                 'email_verified'    => true,
             ]);
             $auth_column->delete();
         }catch(Exception $e) {
+            
             $this->authLogout($request);
-            return redirect()->route('user.login')->with(['error' => ['Something went worng! Please try again']]);
+            return redirect()->route('agent.login')->with(['error' => ['Something went worng! Please try again']]);
         }
 
-        return redirect()->intended(route("user.dashboard"))->with(['success' => ['Account successfully verified']]);
+        return redirect()->intended(route("agent.dashboard"))->with(['success' => ['Account successfully verified']]);
     }
     public function resendCode()
     {
         $user = auth()->user();
-        $resend = UserAuthorization::where("user_id",$user->id)->first();
+        $resend = AgentAuthorization::where("agent_id",$user->id)->first();
         if(Carbon::now() <= $resend->created_at->addMinutes(GlobalConst::USER_VERIFY_RESEND_TIME_MINUTE)) {
             throw ValidationException::withMessages([
                 'code'      => 'You can resend verification code after '.Carbon::now()->diffInSeconds($resend->created_at->addMinutes(GlobalConst::USER_VERIFY_RESEND_TIME_MINUTE)). ' seconds',
             ]);
         }
         $data = [
-            'user_id'       =>  $user->id,
+            'agent_id'       =>  $user->id,
             'code'          => generate_random_code(),
-            'token'         => generate_unique_string("user_authorizations","token",200),
+            'token'         => generate_unique_string("agent_authorizations","token",200),
             'created_at'    => now(),
         ];
 
         DB::beginTransaction();
         try{
-            UserAuthorization::where("user_id",$user->id)->delete();
-            DB::table("user_authorizations")->insert($data);
+            AgentAuthorization::where("agent_id",$user->id)->delete();
+            DB::table("agent_authorizations")->insert($data);
             $user->notify(new SendAuthorizationCode((object) $data));
             DB::commit();
         }catch(Exception $e) {
@@ -210,7 +212,7 @@ class AuthorizationController extends Controller
             return back()->with(['error' => ['Something went worng! Please try again']]);
         }
 
-        return redirect()->route('user.authorize.mail',$data['token'])->with(['success' => ['Varification code resend success!']]);
+        return redirect()->route('agent.authorize.mail',$data['token'])->with(['success' => ['Varification code resend success!']]);
 
     }
 

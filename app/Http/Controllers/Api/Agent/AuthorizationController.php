@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Traits\ControlDynamicInputFields;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Notification;
 use App\Providers\Admin\BasicSettingsProvider;
 use App\Notifications\User\Auth\SendVerifyCode;
 use App\Notifications\Agent\Auth\SendAuthorizationCode;
@@ -42,9 +42,9 @@ class AuthorizationController extends Controller
         }
 
         $data = [
-            'user_id'       =>  $user->id,
+            'agent_id'      =>  $user->id,
             'code'          => generate_random_code(),
-            'token'         => generate_unique_string("user_authorizations","token",200),
+            'token'         => generate_unique_string("agent_authorizations","token",200),
             'created_at'    => now(),
         ];
         DB::beginTransaction();
@@ -59,6 +59,7 @@ class AuthorizationController extends Controller
             return Helpers::onlysuccess($message);
         }catch(Exception $e) {
             DB::rollBack();
+            dd($e->getMessage());
             $error = ['error'=>['Something went wrong! Please try again']];
             return Helpers::error($error);
         }
