@@ -53,7 +53,10 @@ class RegisterController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function showRegistrationForm() {
+    public function showRegistrationForm($refer = null) {
+        if($refer && !Agent::where('referral_id',$refer)->exists()) {
+            $refer = "";
+        }
         $client_ip = request()->ip() ?? false;
         $user_country = geoip()->getLocation($client_ip)['country'] ?? "";
 
@@ -61,6 +64,7 @@ class RegisterController extends Controller
         return view('agent.auth.register',compact(
             'page_title',
             'user_country',
+            'refer'
         ));
     }
     //========================before registration======================================
@@ -185,10 +189,13 @@ class RegisterController extends Controller
         }
         return redirect()->route('agent.email.verify',$data['token'])->with(['success' => ['Verification code resend success!']]);
     }
-    public function registerKyc(Request $request){
+    public function registerKyc(Request $request,$refer = null){
         $email =   session()->get('register_email');
         if($email == null){
             return redirect()->route('agent.register');
+        }
+        if($refer && !Agent::where('referral_id',$refer)->exists()) {
+            $refer = "";
         }
         $user_kyc = SetupKyc::agentKyc()->first();
         if(!$user_kyc) return back();
@@ -199,7 +206,7 @@ class RegisterController extends Controller
         }
         $page_title = "Agent Registration KYC";
         return view('agent.auth.register-kyc',compact(
-            'page_title','email','kyc_fields'
+            'page_title','email','kyc_fields','refer'
 
         ));
     }
@@ -245,6 +252,7 @@ class RegisterController extends Controller
         $validated['kyc_verified']      = ($basic_settings->kyc_verification == true) ? false : true;
         $validated['password']          = Hash::make($validated['password']);
         $validated['username']          = make_username($validated['firstname'],$validated['lastname']);
+        $validated['referral_id']       = generate_unique_string('agents','referral_id',8,'number');
         $validated['address']           = [
                                             'country' => $validated['country'],
                                             'city' => $validated['city'],
@@ -317,6 +325,7 @@ class RegisterController extends Controller
             'phone_code'    => 'required|string|max:10',
             'phone'         => 'required|string|max:20',
             'zip_code'         => 'required|string|max:6',
+            'refer'         => 'nullable|string|exists:agents,referral_id',
             'agree'         =>  $agree,
         ]);
     }
@@ -343,8 +352,18 @@ class RegisterController extends Controller
      */
     protected function registered(Request $request, $user)
     {
-        $user->createQr();
-        $this->createUserWallets($user);
+        try{
+            $user->createQr();
+            $this->createUserWallets($user);
+            $this->createAsReferUserIfExists($request, $user);
+            $this->createNewUserRegisterBonus($user);
+        }catch(Exception $e) {
+            
+            $this->guard()->logout();
+            $user->delete();
+            dd($e->getMessage());
+            return redirect()->back()->with(['error' => ['Something went wrong! Please try again']]);
+        }
         return redirect()->intended(route('agent.dashboard'));
     }
 }

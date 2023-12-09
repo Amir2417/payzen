@@ -29,6 +29,7 @@ return new class extends Migration
             $table->enum('user_type',[
                 GlobalConst::USER,
                 GlobalConst::ADMIN,
+                GlobalConst::AGENT,
             ])->nullable()->comment("transaction creator");
             $table->enum("type",[
                 PaymentGatewayConst::TYPEADDMONEY,
@@ -57,6 +58,7 @@ return new class extends Migration
             $table->enum('receiver_type',[
                 GlobalConst::USER,
                 GlobalConst::ADMIN,
+                GlobalConst::AGENT,
             ])->nullable()->comment("Uses maybe money transfer, make payment");
             $table->unsignedBigInteger('receiver_id')->nullable()->comment("Uses maybe money transfer, make payment");
             $table->decimal('available_balance', 28, 8)->default(0);

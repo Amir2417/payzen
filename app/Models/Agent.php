@@ -180,4 +180,7 @@ class Agent extends Authenticatable
     public function scopeNotAuth($query) {
         $query->whereNot("id",auth()->user()->id);
     }
+    public function referAgents() {
+        return $this->hasMany(AgentReferredUser::class,'refer_agent_id','id');
+    }
 }

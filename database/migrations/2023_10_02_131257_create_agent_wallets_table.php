@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('agent_id');
             $table->unsignedBigInteger('currency_id');
             $table->decimal('balance', 28, 8);
+            $table->decimal('profit_balance', 28, 8)->default(0);
             $table->boolean('status')->default(true);
             $table->timestamps();
 

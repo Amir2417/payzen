@@ -19,6 +19,7 @@ class AgentWallet extends Model
         'agent_id' => 'integer',
         'currency_id' => 'integer',
         'balance' => 'double',
+        'profit_balance'    => 'double',
         'status' => 'integer',
     ];
 
