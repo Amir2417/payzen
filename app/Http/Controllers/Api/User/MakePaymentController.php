@@ -56,11 +56,11 @@ class MakePaymentController extends Controller
                         'trx' => @$item->trx_id,
                         'transaction_type' => $item->type,
                         'transaction_heading' => "Make Payment to @" . @$item->details->receiver->username." (".@$item->details->receiver->email.")",
-                        'request_amount' => getAmount(@$item->request_amount,2).' '.get_default_currency_code() ,
-                        'total_charge' => getAmount(@$item->charge->total_charge,2).' '.get_default_currency_code(),
-                        'payable' => getAmount(@$item->payable,2).' '.get_default_currency_code(),
-                        'recipient_received' => getAmount(@$item->details->recipient_amount,2).' '.get_default_currency_code(),
-                        'current_balance' => getAmount(@$item->available_balance,2).' '.get_default_currency_code(),
+                        'request_amount' => getAmount(@$item->request_amount,2),
+                        'total_charge' => getAmount(@$item->charge->total_charge,2),
+                        'payable' => getAmount(@$item->payable,2),
+                        'recipient_received' => getAmount(@$item->details->recipient_amount,2),
+                        'current_balance' => getAmount(@$item->available_balance,2),
                         'status' => @$item->stringStatus->value ,
                         'date_time' => @$item->created_at ,
                         'status_info' =>(object)@$statusInfo ,
@@ -72,8 +72,8 @@ class MakePaymentController extends Controller
                         'trx' => @$item->trx_id,
                         'transaction_type' => $item->type,
                         'transaction_heading' => "Received Money from @" .@$item->details->sender->username." (".@$item->details->sender->email.")",
-                        'recipient_received' => getAmount(@$item->request_amount,2).' '.get_default_currency_code(),
-                        'current_balance' => getAmount(@$item->available_balance,2).' '.get_default_currency_code(),
+                        'recipient_received' => getAmount(@$item->request_amount,2),
+                        'current_balance' => getAmount(@$item->available_balance,2),
                         'status' => @$item->stringStatus->value ,
                         'date_time' => @$item->created_at ,
                         'status_info' =>(object)@$statusInfo ,
@@ -226,10 +226,10 @@ class MakePaymentController extends Controller
             $notifyDataSender = [
                 'trx_id'  => $trx_id,
                 'title'  => "Make Payment to @" . @$receiver->username." (".@$receiver->email.")",
-                'request_amount'  => getAmount($amount,4).' '.get_default_currency_code(),
-                'payable'   =>  getAmount($payable,4).' ' .get_default_currency_code(),
-                'charges'   => getAmount( $total_charge, 2).' ' .get_default_currency_code(),
-                'received_amount'  => getAmount( $recipient, 2).' ' .get_default_currency_code(),
+                'request_amount'  => getAmount($amount,4),
+                'payable'   =>  getAmount($payable,4),
+                'charges'   => getAmount( $total_charge, 2),
+                'received_amount'  => getAmount( $recipient, 2),
                 'status'  => "Success",
               ];
 
@@ -244,7 +244,7 @@ class MakePaymentController extends Controller
             $notifyDataReceiver = [
                 'trx_id'  => $trx_id,
                 'title'  => "Make Payment from @" .@$user->username." (".@$user->email.")",
-                'received_amount'  => getAmount( $recipient, 2).' ' .get_default_currency_code(),
+                'received_amount'  => getAmount( $recipient, 2),
                 'status'  => "Success",
               ];
 
