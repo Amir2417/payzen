@@ -43,6 +43,7 @@ class AuthorizationController extends Controller
         $data = [
             'agent_id'       =>  $user->id,
             'code'          => generate_random_code(),
+            'email'         => $user->email,
             'token'         => generate_unique_string("agent_authorizations","token",200),
             'created_at'    => now(),
         ];
@@ -51,8 +52,8 @@ class AuthorizationController extends Controller
             if($resend) {
                 AgentAuthorization::where("agent_id", $user->id)->delete();
             }
-            dd($data);
             DB::table("agent_authorizations")->insert($data);
+            
             $user->notify(new SendAuthorizationCode((object) $data));
             DB::commit();
             $message =  ['success'=>['Verification code send success']];
@@ -88,7 +89,7 @@ class AuthorizationController extends Controller
             return Helpers::error($error);
         }
         try{
-            $auth_column->user->update([
+            $auth_column->agent->update([
                 'email_verified'    => true,
             ]);
             $auth_column->delete();

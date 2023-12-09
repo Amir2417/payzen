@@ -27,6 +27,7 @@ class MobileTopupController extends Controller
             return[
                 'balance' => getAmount($data->balance,2),
                 'currency' => $data->currency->code,
+                'rate' => $data->currency->rate,
             ];
         });
         $topupCharge = TransactionSetting::where('slug','mobile_topup')->where('status',1)->get()->map(function($data){

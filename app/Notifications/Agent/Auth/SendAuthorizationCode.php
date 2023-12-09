@@ -16,7 +16,7 @@ class SendAuthorizationCode extends Notification
      *
      * @return void
      */
-    public function __construct()
+    public function __construct($data)
     {
         $this->data = $data;
     }
@@ -42,6 +42,7 @@ class SendAuthorizationCode extends Notification
     {
         $fullname = $notifiable->fullname;
         $data = $this->data;
+   
         return (new MailMessage)
                     ->subject("Account Authorization")
                     ->greeting("Hello ".$fullname . "!")
