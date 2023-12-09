@@ -53,7 +53,7 @@
     <div class="table-area pt-40 pb-30">
         <div class="d-flex justify-content-between align-items-center my-escrow">
             <div class="dash-section-title">
-                <h4>{{ __("Referral Users") }}</h4>
+                <h4>{{ __("Referral Agents") }}</h4>
             </div>
         </div>
         <div class="row justify-content-center">
@@ -62,10 +62,10 @@
                     <table class="custom-table">
                         <thead>
                             <tr>
-                                <th>User Name</th>
-                                <th>Refer Code</th>
-                                <th>Joined Date</th>
-                                <th>Referred Users</th>
+                                <th>{{ __("User Name") }}</th>
+                                <th>{{ __("Refer Code") }}</th>
+                                <th>{{ __("Joined Date") }}</th>
+                                <th>{{ __("Referred Agents") }}</th>
                             </tr>
                         </thead>
                         <tbody>

@@ -221,12 +221,11 @@ class WithdrawController extends Controller
             $payment_informations =[
                 'trx' =>  $identifier,
                 'gateway_currency_name' =>  $gate->name,
-                'request_amount' => getAmount($request->amount,2).' '.get_default_currency_code(),
-                'exchange_rate' => "1".' '.get_default_currency_code().' = '.getAmount($gate->rate).' '.$gate->currency_code,
-                'conversion_amount' =>  getAmount($conversion_amount,2).' '.$gate->currency_code,
-                'total_charge' => getAmount($charge,2).' '.$gate->currency_code,
-                'will_get' => getAmount($will_get,2).' '.$gate->currency_code,
-                'payable' => getAmount($reduceAbleTotal,2).' '.get_default_currency_code(),
+                'request_amount' => getAmount($request->amount,2),
+                'conversion_amount' =>  getAmount($conversion_amount,2),
+                'total_charge' => getAmount($charge,2),
+                'will_get' => getAmount($will_get,2),
+                'payable' => getAmount($reduceAbleTotal,2),
 
             ];
             if($gate->gateway->type == "AUTOMATIC"){

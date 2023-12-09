@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Agent\AuthorizationController as AgentAuthorizationController;
 use App\Http\Controllers\Api\AppSettingsController;
 use App\Http\Controllers\Api\User\AddMoneyController;
 use App\Http\Controllers\Api\User\Auth\ForgotPasswordController;
@@ -229,4 +230,14 @@ Route::prefix('user')->group(function(){
 
     });
 
+});
+
+Route::prefix('agent')->group(function(){
+    //email verify before register
+    Route::prefix('register')->group(function(){
+        Route::post('check/exist',[AgentAuthorizationController::class,'checkExist']);
+        Route::post('send/otp', [AgentAuthorizationController::class,'sendEmailOtp']);
+        Route::post('verify/otp',[AgentAuthorizationController::class,"verifyEmailOtp"]);
+        Route::post('resend/otp',[AgentAuthorizationController::class,"resendEmailOtp"]);
+    });
 });
