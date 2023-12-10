@@ -29,7 +29,7 @@ class AgentController extends Controller
         $this->api =  $cardApi;
     }
     public function home(){
-        dd("test");
+        
         $user = auth()->user();
         $totalAddMoney = Transaction::agentAuth()->addMoney()->where('status',1)->sum('request_amount');
         $totalReceiveRemittance =Transaction::agentAuth()->remitance()->where('attribute',"RECEIVED")->sum('request_amount');
@@ -350,7 +350,7 @@ class AgentController extends Controller
         'totalTransactions'   =>  $totalTransactions,
         'transactions'   =>   $transactions,
         ];
-        $message =  ['success'=>['Ahent Dashboard']];
+        $message =  ['success'=>['Agent Dashboard']];
         return Helpers::success($data,$message);
     }
     public function profile(){
