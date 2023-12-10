@@ -102,9 +102,10 @@ class SudoVirtualCardController extends Controller
         $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
             return[
                 'balance' => getAmount($data->balance,2),
-                'currency' => get_default_currency_code(),
+                'code' => $data->currency->code,
+                'rate' => $data->currency->rate,
             ];
-        })->first();
+        });
 
         $data =[
             'base_curr' => get_default_currency_code(),
@@ -331,6 +332,7 @@ class SudoVirtualCardController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'card_amount' => 'required|numeric|gt:0',
+            'currency'    => 'required'
         ]);
         if($validator->fails()){
             $error =  ['error'=>$validator->errors()->all()];
@@ -350,8 +352,11 @@ class SudoVirtualCardController extends Controller
                 return Helpers::error($error);
             }
         }
-        $amount = $request->card_amount;
-        $wallet = UserWallet::where('user_id',$user->id)->first();
+        $amount = (float) $request->card_amount;
+        $wallet_currency = $request->currency;
+        $wallet = UserWallet::auth()->whereHas("currency",function($q) use ($wallet_currency) {
+            $q->where("code",$wallet_currency)->active();
+        })->active()->first();
         if(!$wallet){
             $error = ['error'=>['Wallet Not Found']];
             return Helpers::error($error);
@@ -448,7 +453,7 @@ class SudoVirtualCardController extends Controller
        }
        //create card now
        $created_card = create_virtual_card($this->api->config->sudo_api_key,$this->api->config->sudo_url,
-                            $customerId, $currency,$bankCode, $debitAccountId, $issuerCountry
+       $customerId, $currency,$bankCode, $debitAccountId, $issuerCountry,$amount
                         );
        if(isset($created_card['statusCode'])){
         if($created_card['statusCode'] == 400){
