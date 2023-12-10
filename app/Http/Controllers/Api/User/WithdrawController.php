@@ -176,16 +176,31 @@ class WithdrawController extends Controller
             $error = ['error'=>['Please follow the transaction limit!']];
             return Helpers::error($error);
         }
-        //gateway charge
-        $fixedCharge = $gate->fixed_charge;
-        $percent_charge =  (((($request->amount * $gate->rate)/ 100) * $gate->percent_charge));
-        $charge = $fixedCharge + $percent_charge;
-        $conversion_amount = $request->amount * $gate->rate;
-        $will_get = $conversion_amount -  $charge;
-        //base_cur_charge
-        $baseFixedCharge = $gate->fixed_charge;
-        $basePercent_charge = ($request->amount / 100) * $gate->percent_charge;
-        $base_total_charge = $baseFixedCharge + $basePercent_charge;
+        $charges = $this->chargeCalculate( $gate,$userWallet,$amount);
+        $currency   = $gate;
+        $receiver_currency  = $userWallet->currency;
+        $sender_currency_rate = $currency->rate;
+        if($currency != null) {
+            $fixed_charges = $currency->fixed_charge;
+            $percent_charges = $currency->percent_charge;
+        }else {
+            $fixed_charges = 0;
+            $percent_charges = 0;
+        }
+       
+        $fixed_charge_calc =  $fixed_charges;
+        $percent_charge_calc = ($amount / 100 ) * $percent_charges;
+
+        $total_charge = $fixed_charge_calc + $percent_charge_calc;
+        
+        
+        $receiver_currency_rate = $receiver_currency->rate;
+        ($receiver_currency_rate == "" || $receiver_currency_rate == null) ? $receiver_currency_rate = 0 : $receiver_currency_rate;
+        $exchange_rate = ($sender_currency_rate / $receiver_currency_rate);
+        $conversion_amount =  $amount * $exchange_rate;
+        $will_get = $conversion_amount;
+        $payable =  $amount + $total_charge;
+        
         $reduceAbleTotal = $amount;
         if( $reduceAbleTotal > $userWallet->balance){
             $error = ['error'=>['Insuficiant Balance!']];
@@ -193,23 +208,24 @@ class WithdrawController extends Controller
         }
 
         $insertData = [
-            'user_id'=> $user->id,
+            'merchant_id'=> $user->id,
             'gateway_name'=> strtolower($gate->gateway->name),
             'gateway_type'=> $gate->gateway->type,
             'wallet_id'=> $userWallet->id,
             'trx_id'=> 'MO'.getTrxNum(),
             'amount' =>  $amount,
-            'base_cur_charge' => $base_total_charge,
+            'base_cur_charge' => $total_charge,
             'base_cur_rate' => $baseCurrency->rate,
             'gateway_id' => $gate->gateway->id,
             'gateway_currency_id' => $gate->id,
             'gateway_currency' => strtoupper($gate->currency_code),
-            'gateway_percent_charge' => $percent_charge,
-            'gateway_fixed_charge' => $fixedCharge,
-            'gateway_charge' => $charge,
+            'gateway_percent_charge' => $percent_charge_calc,
+            'gateway_fixed_charge' => $fixed_charge_calc,
+            'gateway_charge' => $total_charge,
             'gateway_rate' => $gate->rate,
             'conversion_amount' => $conversion_amount,
             'will_get' => $will_get,
+            'charges'   => $charges,
             'payable' => $reduceAbleTotal,
         ];
         $identifier = generate_unique_string("transactions","trx_id",16);
@@ -224,12 +240,13 @@ class WithdrawController extends Controller
                 'trx' =>  $identifier,
                 'gateway_currency_name' =>  $gate->name,
                 'request_amount' => getAmount($request->amount,2),
-                'wallet_currency'   => $request->wallet_currency,
-                'gateway_code'      => $gate->code,
                 'conversion_amount' =>  getAmount($conversion_amount,2),
-                'total_charge' => getAmount($charge,2),
+                'total_charge' => getAmount($total_charge,2),
                 'will_get' => getAmount($will_get,2),
                 'payable' => getAmount($reduceAbleTotal,2),
+                'exchange_rate' => getAmount($exchange_rate,2),
+                'wallet_cur_code'   => $receiver_currency->code,
+                'payment_cur_code'  => $currency->currency_code
 
             ];
             if($gate->gateway->type == "AUTOMATIC"){
@@ -283,6 +300,7 @@ class WithdrawController extends Controller
 
         }
         $moneyOutData =  $track->data;
+        
         $gateway = PaymentGateway::where('id', $moneyOutData->gateway_id)->first();
         if($gateway->type != "MANUAL"){
             $error = ['error'=>["Invalid request, it is not manual gateway request"]];
@@ -297,22 +315,27 @@ class WithdrawController extends Controller
         }
         $validated = $validator2->validate();
         $get_values = $this->placeValueWithFields($payment_fields, $validated);
-            try{
-                //send notifications
-                $user = auth()->user();
-                $inserted_id = $this->insertRecordManual($moneyOutData,$gateway,$get_values);
-                $this->insertChargesManual($moneyOutData,$inserted_id);
-                $this->insertDeviceManual($moneyOutData,$inserted_id);
-                $track->delete();
-                if( $basic_setting->email_notification == true){
-                    $user->notify(new WithdrawMail($user,$moneyOutData));
-                }
-                $message =  ['success'=>['Withdraw money request send to admin successfully']];
-                return Helpers::onlysuccess($message);
-            }catch(Exception $e) {
-                $error = ['error'=>["Sorry,something is wrong"]];
-                return Helpers::error($error);
+        try{
+            //send notifications
+            $get_values =[
+                'user_data' => $get_values,
+                'charges' => $moneyOutData->charges,
+
+            ];
+            $user = auth()->user();
+            $inserted_id = $this->insertRecordManual($moneyOutData,$gateway,$get_values);
+            $this->insertChargesManual($moneyOutData,$inserted_id);
+            $this->insertDeviceManual($moneyOutData,$inserted_id);
+            $track->delete();
+            if( $basic_setting->email_notification == true){
+                $user->notify(new WithdrawMail($user,$moneyOutData));
             }
+            $message =  ['success'=>['Withdraw money request send to admin successfully']];
+            return Helpers::onlysuccess($message);
+        }catch(Exception $e) {
+            $error = ['error'=>["Sorry,something is wrong"]];
+            return Helpers::error($error);
+        }
 
     }
     //automatic confirmed
@@ -362,6 +385,9 @@ class WithdrawController extends Controller
         }else{
             $status = 2;
         }
+        $details    = [
+            'charges'   => $moneyOutData->charges,
+        ];
         $trx_id = $moneyOutData->trx_id ??'MO'.getTrxNum();
         $authWallet = UserWallet::where('id',$moneyOutData->wallet_id)->where('user_id',$moneyOutData->user_id)->first();
         $afterCharge = ($authWallet->balance - ($moneyOutData->amount));
@@ -378,7 +404,7 @@ class WithdrawController extends Controller
                 'payable'                       => $moneyOutData->will_get,
                 'available_balance'             => $afterCharge,
                 'remark'                        => ucwords(remove_speacial_char(PaymentGatewayConst::TYPEWITHDRAW," ")) . " by " .$gateway->name,
-                'details'                       => json_encode($get_values),
+                'details'                       => json_encode($details),
                 'status'                        => $status,
                 'created_at'                    => now(),
             ]);
@@ -403,9 +429,9 @@ class WithdrawController extends Controller
         try{
             DB::table('transaction_charges')->insert([
                 'transaction_id'    => $id,
-                'percent_charge'    => $moneyOutData->gateway_percent_charge,
-                'fixed_charge'      => $moneyOutData->gateway_fixed_charge,
-                'total_charge'      => $moneyOutData->gateway_charge,
+                'percent_charge'    => $moneyOutData->charges->percent_charge,
+                'fixed_charge'      => $moneyOutData->charges->fixed_charge,
+                'total_charge'      => $moneyOutData->charges->percent_charge + $moneyOutData->charges->fixed_charge,
                 'created_at'        => now(),
             ]);
             DB::commit();
@@ -465,6 +491,7 @@ class WithdrawController extends Controller
     //fluttrwave
     public function flutterwavePay($gateway,$request, $track){
         $moneyOutData =  $track->data;
+        
         $basic_setting = BasicSettings::first();
         $credentials = $gateway->credentials;
         $data = null;
@@ -529,35 +556,80 @@ class WithdrawController extends Controller
 
     }
      //get flutterwave banks
-   public function getBanks(){
-    $validator = Validator::make(request()->all(), [
-        'trx'  => "required",
-    ]);
-    if($validator->fails()){
-        $error =  ['error'=>$validator->errors()->all()];
-        return Helpers::validation($error);
-    }
-    $track = TemporaryData::where('identifier',request()->trx)->where('type',PaymentGatewayConst::TYPEWITHDRAW)->first();
-    if(!$track){
-        $error = ['error'=>["Sorry, your payment information is invalid"]];
-        return Helpers::error($error);
-    }
-    if($track['data']->gateway_name != "flutterwave"){
-        $error = ['error'=>["Sorry, This Payment Request Is Not For FlutterWave"]];
-        return Helpers::error($error);
-    }
-    $countries = get_all_countries();
-    $currency = $track['data']->gateway_currency;
-    $country = Collection::make($countries)->first(function ($item) use ($currency) {
-        return $item->currency_code === $currency;
-    });
+    public function getBanks(){
+        $validator = Validator::make(request()->all(), [
+            'trx'  => "required",
+        ]);
+        if($validator->fails()){
+            $error =  ['error'=>$validator->errors()->all()];
+            return Helpers::validation($error);
+        }
+        $track = TemporaryData::where('identifier',request()->trx)->where('type',PaymentGatewayConst::TYPEWITHDRAW)->first();
+        if(!$track){
+            $error = ['error'=>["Sorry, your payment information is invalid"]];
+            return Helpers::error($error);
+        }
+        if($track['data']->gateway_name != "flutterwave"){
+            $error = ['error'=>["Sorry, This Payment Request Is Not For FlutterWave"]];
+            return Helpers::error($error);
+        }
+        $countries = get_all_countries();
+        $currency = $track['data']->gateway_currency;
+        $country = Collection::make($countries)->first(function ($item) use ($currency) {
+            return $item->currency_code === $currency;
+        });
 
-    $allBanks = getFlutterwaveBanks($country->iso2);
-    $data =[
-        'bank_info' =>$allBanks??[]
-    ];
-    $message =  ['success'=>["All Bank Fetch Successfully"]];
-    return Helpers::success($data, $message);
+        $allBanks = getFlutterwaveBanks($country->iso2);
+        $data =[
+            'bank_info' =>$allBanks??[]
+        ];
+        $message =  ['success'=>["All Bank Fetch Successfully"]];
+        return Helpers::success($data, $message);
 
-}
+    }
+    public function chargeCalculate($currency,$receiver_currency,$amount) {
+
+        $amount = $amount;
+        $sender_currency_rate = $currency->rate;
+        ($sender_currency_rate == "" || $sender_currency_rate == null) ? $sender_currency_rate = 0 : $sender_currency_rate;
+        ($amount == "" || $amount == null) ? $amount : $amount;
+
+        if($currency != null) {
+            $fixed_charges = $currency->fixed_charge;
+            $percent_charges = $currency->percent_charge;
+        }else {
+            $fixed_charges = 0;
+            $percent_charges = 0;
+        }
+
+        $fixed_charge_calc =  $fixed_charges;
+        $percent_charge_calc = ($amount / 100 ) * $percent_charges;
+
+        $total_charge = $fixed_charge_calc + $percent_charge_calc;
+
+        $receiver_currency = $receiver_currency->currency;
+        $receiver_currency_rate = $receiver_currency->rate;
+        ($receiver_currency_rate == "" || $receiver_currency_rate == null) ? $receiver_currency_rate = 0 : $receiver_currency_rate;
+        $exchange_rate = ($sender_currency_rate / $receiver_currency_rate);
+        $conversion_amount =  $amount * $exchange_rate;
+        $will_get = $conversion_amount;
+        $payable =  $amount + $total_charge;
+
+        $data = [
+            'requested_amount'          => $amount,
+            'gateway_cur_code'          => $currency->currency_code,
+            'gateway_cur_rate'          => $sender_currency_rate ?? 0,
+            'wallet_cur_code'           => $receiver_currency->code,
+            'wallet_cur_rate'           => $receiver_currency->rate ?? 0,
+            'fixed_charge'              => $fixed_charge_calc,
+            'percent_charge'            => $percent_charge_calc,
+            'total_charge'              => $total_charge,
+            'conversion_amount'         => $conversion_amount,
+            'payable'                   => $payable,
+            'exchange_rate'             => $exchange_rate,
+            'will_get'                  => $will_get,
+            'default_currency'          => get_default_currency_code(),
+        ];
+        return (object) $data;
+    }
 }
