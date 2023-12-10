@@ -72,8 +72,8 @@
                         <h4 class="main-money text--warning">{{ get_amount($item->request_amount,$item->info->sender_currency->code) }}</h4>
                         <h6 class="exchange-money fw-bold">{{ get_amount($item->payable,$item->currency->currency_code) }}</h6>
                     @elseif($item->type == payment_gateway_const()::TYPEMONEYOUT)
-                        <h6 class="exchange-money text--warning fw-bold">{{ get_amount($item->request_amount,get_default_currency_code()) }}</h6>
-                        <h4 class="main-money ">{{ get_amount($item->payable,$item->currency->currency_code) }}</h4>
+                        <h6 class="exchange-money text--warning fw-bold">{{ get_amount($item->request_amount,$item->details->charges->wallet_cur_code) }}</h6>
+                        <h4 class="main-money ">{{ get_amount($item->payable,$item->details->charges->gateway_cur_code) }}</h4>
                     @elseif($item->type == payment_gateway_const()::BILLPAY)
                         <h4 class="main-money text--warning">{{ get_amount($item->request_amount,$item->details->charges->sender_currency) }}</h4>
                         <h6 class="exchange-money fw-bold"> {{ get_transaction_numeric_attribute($item->attribute) }} {{  get_amount($item->payable,$item->details->charges->sender_currency) }}</h6>
@@ -164,7 +164,7 @@
                         @elseif ($item->type == payment_gateway_const()::SENDREMITTANCE)
                             <span>1 {{ get_default_currency_code() }} = {{ get_amount($item->details->to_country->rate,$item->details->to_country->code) }}</span>
                         @elseif ($item->type == payment_gateway_const()::TYPEMONEYOUT)
-                            <span>1 {{ get_default_currency_code() }} = {{ get_amount($item->currency->rate,$item->currency->currency_code) }}</span>
+                            <span>1 {{ $item->details->charges->wallet_cur_code }} = {{ get_amount($item->details->charges->exchange_rate,$item->details->charges->gateway_cur_code) }}</span>
                         @elseif ($item->type == payment_gateway_const()::TYPEMONEYEXCHANGE)
                             <span>1 {{ $item->creator_wallet->currency->code }} = {{ get_amount($item->details->exchange_rate,$item->details->exchange_currency) }}</span>
                         @elseif ($item->type == payment_gateway_const()::TYPEADDSUBTRACTBALANCE)
@@ -330,7 +330,7 @@
                             @if ($item->type == payment_gateway_const()::TYPEADDMONEY)
                                 <span>{{ get_amount($item->charge->total_charge,$item->currency->currency_code) }}</span>
                             @elseif ($item->type == payment_gateway_const()::TYPEMONEYOUT)
-                                <span>{{ get_amount($item->charge->total_charge,$item->currency->currency_code) }}</span>
+                                <span>{{ get_amount($item->charge->total_charge,$item->details->charges->wallet_cur_code) }}</span>
                             @elseif ($item->type == payment_gateway_const()::SENDREMITTANCE)
                                 <span>{{ get_amount($item->charge->total_charge,get_default_currency_code()) }}</span>
                             @elseif ($item->type == payment_gateway_const()::BILLPAY)
@@ -385,10 +385,8 @@
                             @elseif ($item->type == payment_gateway_const()::AGENTMONEYOUT)
                                 <span class="text-success">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
                             @elseif ($item->type == payment_gateway_const()::TYPEMONEYOUT)
-                             @php
-                                 $conversionAmount = $item->request_amount * $item->currency->rate;
-                             @endphp
-                                <span>{{ get_amount($conversionAmount,$item->currency->currency_code) }}</span>
+                            
+                                <span>{{ get_amount($item->details->charges->conversion_amount,$item->details->charges->gateway_cur_code) }}</span>
                             @elseif ($item->type == payment_gateway_const()::BILLPAY)
                                 <span class="fw-bold">{{ get_amount($item->payable,get_default_currency_code()) }}</span>
                             @elseif ($item->type == payment_gateway_const()::MOBILETOPUP)
@@ -439,7 +437,7 @@
                             @if ($item->type == payment_gateway_const()::TYPEADDMONEY)
                                 <span class="text--warning">{{ get_amount($item->payable,$item->currency->currency_code) }}</span>
                             @elseif ($item->type == payment_gateway_const()::TYPEMONEYOUT)
-                                <span class="text--danger">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
+                                <span class="text--danger">{{ get_amount($item->available_balance,$item->details->charges->wallet_cur_code) }}</span>
                             @elseif ($item->type == payment_gateway_const()::BILLPAY)
                                 <span class="text--danger">{{ get_amount($item->available_balance,get_default_currency_code()) }}</span>
                             @elseif ($item->type == payment_gateway_const()::MOBILETOPUP)
