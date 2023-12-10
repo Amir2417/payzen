@@ -213,8 +213,8 @@
         var currencyRate = acceptVar().sCurrency_rate;
         var gateway_currency = acceptVar().currencyCode;
         var gateway_currency_rate = acceptVar().currencyRate;
-        var exchange_rate = parseFloat(currencyRate) / parseFloat(gateway_currency_rate);
-        $('.rate-show').html("1 " + gateway_currency + " = " + parseFloat(exchange_rate).toFixed(4) + " " + currencyCode);
+        var exchange_rate = parseFloat(gateway_currency_rate) / parseFloat(currencyRate);
+        $('.rate-show').html("1 " + currencyCode + " = " + parseFloat(exchange_rate).toFixed(4) + " " + gateway_currency);
     }
     function getLimit() {
         var gateway_currency = acceptVar().currencyCode;
@@ -298,7 +298,7 @@
     }
 
     function getFees() {
-        var sender_currency = acceptVar().currencyCode;
+        var sender_currency = acceptVar().sCurrency;
         var percent = acceptVar().currencyPercentCharge;
         var charges = feesCalculation();
         if (charges == false) {
@@ -329,7 +329,7 @@
         // Fees
         var charges = feesCalculation();
         // console.log(total_charge + "--");
-        $('.fees').text(charges.total + " " + gateway_currency);
+        $('.fees').text(charges.total + " " + sender_currency);
         
         // will get amount
         var willGet = parseFloat(conversion_amount).toFixed(2);

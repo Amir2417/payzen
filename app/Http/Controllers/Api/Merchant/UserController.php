@@ -30,9 +30,10 @@ class UserController extends Controller
         $userWallet = MerchantWallet::where('merchant_id',$user->id)->get()->map(function($data){
             return[
                 'balance' => getAmount($data->balance,2),
-                'currency' => get_default_currency_code(),
+                'code' => $data->currency->code,
+                'rate' => $data->currency->rate,
             ];
-        })->first();
+        });
         $transactions = Transaction::merchantAuth()->latest()->take(5)->get()->map(function($item){
             $statusInfo = [
                 "success" =>      1,
@@ -127,9 +128,9 @@ class UserController extends Controller
         'default_image'    => "public/backend/images/default/profile-default.webp",
         "image_path"  =>  "public/frontend/merchant",
         'merchant'         =>   $user,
-        'totalMoneyOut'   =>  getAmount($money_out_amount,2).' '.get_default_currency_code(),
-        'receiveMoney'   =>   getAmount($receive_money,2).' '.get_default_currency_code(),
-        'gateway_amount'   =>   getAmount($gateway_amount,2).' '.get_default_currency_code(),
+        'totalMoneyOut'   =>  getAmount($money_out_amount,2),
+        'receiveMoney'   =>   getAmount($receive_money,2),
+        'gateway_amount'   =>   getAmount($gateway_amount,2),
         'total_transaction'   =>  $total_transaction,
         'transactions'   =>   $transactions,
         ];
@@ -151,7 +152,7 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'firstname'     => "required|string|max:60",
             'lastname'      => "required|string|max:60",
-            'business_name'      => "required|string|max:60",
+            'business_name'      => "nullable|string|max:60",
             'country'       => "required|string|max:50",
             'phone_code'    => "required|string|max:6",
             'phone'         => "required|string|max:20|unique:merchants,mobile,".$user->id,
@@ -242,13 +243,19 @@ class UserController extends Controller
     }
     public function deleteAccount(Request $request) {
         $user = auth()->user();
+        $user->status = false;
+        $user->email_verified = false;
+        $user->sms_verified = false;
+        $user->kyc_verified = false;
+        $user->deleted_at = now();
+        $user->save();
 
         try{
-            $user->delete();
+            $user->token()->revoke();
             $message =  ['success'=>['Merchant deleted successfully']];
             return Helpers::onlysuccess($message);
         }catch(Exception $e) {
-            $error = ['error'=>['Something went wrong! Please try again']];
+            $error = ['error'=>['Something went worng! Please try again']];
             return Helpers::error($error);
         }
     }

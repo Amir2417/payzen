@@ -73,7 +73,7 @@
                                         'value'         => old('zip_code',auth()->user()->address->zip ?? "")
                                     ])
                                 </div>
-                                <div class="col-xl-12 col-lg-12 form-group">
+                                <div class="col-xl-8 col-lg-8 form-group">
                                     <div class="input-group">
                                         <div class="input-group-text phone-code">+</div>
                                         <input class="phone-code" type="hidden" name="phone_code" value="" />

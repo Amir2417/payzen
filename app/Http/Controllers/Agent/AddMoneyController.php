@@ -43,8 +43,10 @@ class AddMoneyController extends Controller
         $transactions = Transaction::agentAuth()->addMoney()->latest()->take(10)->get();
         return view('agent.sections.add-money.index',compact("page_title","transactions","payment_gateways_currencies","user_currencies"));
     }
+    
     public function submit(Request $request) {
         $basic_setting = BasicSettings::first();
+        
         $agent = userGuard()['user'];
         if($basic_setting->kyc_verification){
             if( $agent->kyc_verified == 0){

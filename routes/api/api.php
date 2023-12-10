@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Agent\AddMoneyController as AgentAddMoneyController;
 use App\Http\Controllers\Api\Agent\AgentController;
 use App\Http\Controllers\Api\Agent\Auth\ForgotPasswordController as AuthForgotPasswordController;
 use App\Http\Controllers\Api\Agent\Auth\LoginController as AuthLoginController;
@@ -163,10 +164,12 @@ Route::prefix('user')->group(function(){
                 Route::post('manual/payment/confirmed','manualPaymentConfirmedApi')->name('api.manual.payment.confirmed');
                 
             });
+
             //Receive Money
             Route::controller(ReceiveMoneyController::class)->prefix('receive-money')->group(function(){
                 Route::get('/','index');
             });
+
             //Send Money
             Route::controller(SendMoneyController::class)->prefix('send-money')->group(function(){
                 Route::get('info','sendMoneyInfo');
@@ -284,9 +287,13 @@ Route::prefix('agent')->group(function(){
             Route::post('password/update', [AgentController::class,'passwordUpdate'])->middleware('app.mode.api');
             Route::post('delete/account', [AgentController::class,'deleteAccount'])->middleware('app.mode.api');
             Route::get('notifications', [AgentController::class,'notifications']);
+        
+        
         });
             
 
         
     });
 });
+
+

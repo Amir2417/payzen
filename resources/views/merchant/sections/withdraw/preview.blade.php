@@ -149,7 +149,7 @@
                                     </div>
                                 </div>
                                 <div class="preview-list-right">
-                                    <span class="request-amount">{{ __("1") }} {{ @$moneyOutData->charges->gateway_cur_code }} =  {{ number_format(@$moneyOutData->charges->exchange_rate,4 )}} {{ $moneyOutData->charges->wallet_cur_code }}</span>
+                                    <span class="request-amount">{{ __("1") }} {{ @$moneyOutData->charges->wallet_cur_code }} =  {{ number_format(@$moneyOutData->charges->exchange_rate,4 )}} {{ $moneyOutData->charges->wallet_cur_code }}</span>
                                 </div>
                             </div>
                             <div class="preview-list-item">

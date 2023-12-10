@@ -29,6 +29,7 @@ class AddMoneyController extends Controller
             return[
                 'balance' => getAmount($data->balance,2),
                 'currency' => $data->currency->code,
+                'rate' => $data->currency->rate,
             ];
             });
             $transactions = Transaction::auth()->addMoney()->latest()->take(5)->get()->map(function($item){
@@ -42,11 +43,11 @@ class AddMoneyController extends Controller
                     'trx' => $item->trx_id,
                     'gateway_name' => $item->currency->name,
                     'transaction_type' => $item->type,
-                    'request_amount' => getAmount($item->request_amount,4).' '.get_default_currency_code() ,
+                    'request_amount' => getAmount($item->request_amount,4) ,
                     'payable' => getAmount($item->payable,4).' '.$item->currency->currency_code,
                     'exchange_rate' => '1 ' .get_default_currency_code().' = '.getAmount($item->currency->rate,4).' '.$item->currency->currency_code,
                     'total_charge' => getAmount($item->charge->total_charge,4).' '.$item->currency->currency_code,
-                    'current_balance' => getAmount($item->available_balance,4).' '.get_default_currency_code(),
+                    'current_balance' => getAmount($item->available_balance,4),
                     'status' => $item->stringStatus->value ,
                     'date_time' => $item->created_at ,
                     'status_info' =>(object)$statusInfo ,

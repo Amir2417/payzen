@@ -450,10 +450,10 @@ class WithdrawController extends Controller
         $receiver_currency = $receiver_currency->currency;
         $receiver_currency_rate = $receiver_currency->rate;
         ($receiver_currency_rate == "" || $receiver_currency_rate == null) ? $receiver_currency_rate = 0 : $receiver_currency_rate;
-        $exchange_rate = ($receiver_currency_rate / $sender_currency_rate );
-        $conversion_amount =  $amount / $exchange_rate;
-        $will_get = $conversion_amount  - $total_charge;
-        $payable =  $amount;
+        $exchange_rate = ($sender_currency_rate / $receiver_currency_rate);
+        $conversion_amount =  $amount * $exchange_rate;
+        $will_get = $conversion_amount;
+        $payable =  $amount + $total_charge;
 
         $data = [
             'requested_amount'          => $amount,
@@ -465,7 +465,7 @@ class WithdrawController extends Controller
             'percent_charge'            => $percent_charge_calc,
             'total_charge'              => $total_charge,
             'conversion_amount'         => $conversion_amount,
-            'payable'                   => floatval($payable) + floatval($total_charge),
+            'payable'                   => $payable,
             'exchange_rate'             => $exchange_rate,
             'will_get'                  => $will_get,
             'default_currency'          => get_default_currency_code(),

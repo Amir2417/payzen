@@ -111,7 +111,7 @@ class PaymentGateway {
         $gateway_currency = $output['currency'];
         $requested_amount = $output['amount']->requested_amount;
         $exchange_rate  = $output['amount']->sender_cur_rate / $output['amount']->wallet_currency_rate;
-        $amount = $requested_amount   * $exchange_rate;
+        $amount = $requested_amount * $exchange_rate;
         $min_amount = $gateway_currency->min_limit / $output['amount']->wallet_currency_rate;
         $max_amount = $gateway_currency->max_limit / $output['amount']->wallet_currency_rate;
         
@@ -155,7 +155,7 @@ class PaymentGateway {
         $amount = $this->request_data[$this->amount_input];
         
         $exchange   = $currency->rate / $sender_currency->rate;
-        $request_amount     = $amount * $exchange;
+        $request_amount     = ($amount / $sender_currency->rate) * $currency->rate;
         
         $sender_currency_rate = $currency->rate;
         ($sender_currency_rate == "" || $sender_currency_rate == null) ? $sender_currency_rate = 0 : $sender_currency_rate;
@@ -170,9 +170,9 @@ class PaymentGateway {
         }
         
         $fixed_charge_calc = $fixed_charges;
-        $percent_charge_calc = (($amount / 100 ) * $percent_charges );
+        $percent_charge_calc = (($request_amount / 100 ) * $percent_charges );
         $total_charge = $fixed_charge_calc + $percent_charge_calc;
-       
+        
        
         if($receiver_currency) {
             $receiver_currency_rate = $receiver_currency->rate;

@@ -491,7 +491,7 @@ class AgentController extends Controller
         $data =[
             'notifications'  => $notifications
         ];
-        $message =  ['success'=>['User Notifications']];
+        $message =  ['success'=>['Agent Notifications']];
         return Helpers::success($data,$message);
     }
 }

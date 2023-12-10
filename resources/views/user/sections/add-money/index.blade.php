@@ -235,13 +235,13 @@
         }
         function getLimit() {
             var selectedCurrency       = acceptVar().selectedCurrency;
-            var payment_gate_rate       = acceptVar().currencyRate;
+            var payment_gate_rate       = acceptVar().selectedCurrencyRate;
             
             var min_limit               = acceptVar().currencyMinAmount;
             var max_limit               = acceptVar().currencyMaxAmount;
             if($.isNumeric(min_limit) || $.isNumeric(max_limit)) {
-                var min_limit_calc = parseFloat(min_limit/payment_gate_rate).toFixed(2);
-                var max_limit_clac = parseFloat(max_limit/payment_gate_rate).toFixed(2);
+                var min_limit_calc = parseFloat(min_limit*payment_gate_rate).toFixed(2);
+                var max_limit_clac = parseFloat(max_limit*payment_gate_rate).toFixed(2);
                 
                 $('.limit-show').html("Limit " + min_limit_calc + " " + selectedCurrency + " - " + max_limit_clac + " " + selectedCurrency);
                 return {

@@ -37,7 +37,9 @@ class MoneyOutController extends Controller
             $gateway->where('slug', PaymentGatewayConst::money_out_slug());
             $gateway->where('status', 1);
         })->get();
-        $transactions = Transaction::auth()->moneyOut()->orderByDesc("id")->latest()->take(10)->get();
+        
+        $transactions = Transaction::merchantAuth()->moneyOut()->orderByDesc("id")->latest()->take(10)->get();
+        
 
         return view('merchant.sections.withdraw.index',compact('page_title','payment_gateways','transactions','currencies'));
     }
@@ -123,7 +125,7 @@ class MoneyOutController extends Controller
                 $country = Collection::make($countries)->first(function ($item) use ($currency) {
                     return $item->currency_code === $currency;
                 });
-
+                
                 $allBanks = getFlutterwaveBanks($country->iso2);
                 return view('merchant.sections.withdraw.automatic.'.strtolower($gateway->name),compact('page_title','gateway','moneyOutData','allBanks'));
             }else{
@@ -450,10 +452,10 @@ class MoneyOutController extends Controller
         $receiver_currency = $receiver_currency->currency;
         $receiver_currency_rate = $receiver_currency->rate;
         ($receiver_currency_rate == "" || $receiver_currency_rate == null) ? $receiver_currency_rate = 0 : $receiver_currency_rate;
-        $exchange_rate = ($receiver_currency_rate / $sender_currency_rate );
-        $conversion_amount =  $amount / $exchange_rate;
-        $will_get = $conversion_amount  - $total_charge;
-        $payable =  $amount;
+        $exchange_rate = ($sender_currency_rate / $receiver_currency_rate);
+        $conversion_amount =  $amount * $exchange_rate;
+        $will_get = $conversion_amount;
+        $payable =  $amount + $total_charge;
 
         $data = [
             'requested_amount'          => $amount,

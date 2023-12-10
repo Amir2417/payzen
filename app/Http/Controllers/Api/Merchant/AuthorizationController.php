@@ -44,6 +44,7 @@ class AuthorizationController extends Controller
         $data = [
             'merchant_id'       =>  $user->id,
             'code'          => generate_random_code(),
+            'email'         => $user->email,
             'token'         => generate_unique_string("merchant_authorizations","token",200),
             'created_at'    => now(),
         ];

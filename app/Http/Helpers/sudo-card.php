@@ -2,7 +2,7 @@
 
 //sudo virtual card system
 
-use App\Models\Admin\VirtualCardApi;
+use App\Models\VirtualCardApi;
 
 function get_funding_source($api_key,$base_url){
     $curl = curl_init();
