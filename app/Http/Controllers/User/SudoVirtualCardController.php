@@ -161,7 +161,7 @@ class SudoVirtualCardController extends Controller
                 return redirect()->route('user.profile.index')->with(['error' => ['Admin rejected your kyc information, Please re-submit again']]);
             }
         }
-        $amount = $request->card_amount;
+        $amount = (float) $request->card_amount;
         $wallet = UserWallet::auth()->whereHas("currency",function($q) use ($wallet_currency) {
             $q->where("code",$wallet_currency)->active();
         })->active()->first();
@@ -257,7 +257,7 @@ class SudoVirtualCardController extends Controller
         $created_card = create_virtual_card($this->api->config->sudo_api_key,$this->api->config->sudo_url,
                             $customerId, $currency,$bankCode, $debitAccountId, $issuerCountry,$amount
                         );
-                        dd($created_card);
+                        
         if(isset($created_card['statusCode'])){
             if($created_card['statusCode'] == 400){
                 return back()->with(['error' => [$created_card['message']]]);
