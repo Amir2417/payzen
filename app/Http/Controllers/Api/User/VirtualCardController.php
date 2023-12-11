@@ -92,9 +92,10 @@ class VirtualCardController extends Controller
         $userWallet = UserWallet::where('user_id',$user->id)->get()->map(function($data){
             return[
                 'balance' => getAmount($data->balance,2),
-                'currency' => get_default_currency_code(),
+                'code' => $data->currency->code,
+                'rate' => $data->currency->rate,
             ];
-        })->first();
+        });
         $data =[
             'base_curr' => get_default_currency_code(),
             'card_basic_info' =>(object) $card_basic_info,
@@ -362,6 +363,7 @@ class VirtualCardController extends Controller
     public function cardBuy(Request $request){
         $validator = Validator::make($request->all(), [
             'card_amount' => 'required|numeric|gt:0',
+            'currency' => "nullable|string|exists:currencies,code",
         ]);
         if($validator->fails()){
             $error =  ['error'=>$validator->errors()->all()];
@@ -369,6 +371,7 @@ class VirtualCardController extends Controller
         }
         $basic_setting = BasicSettings::first();
         $user = auth()->user();
+        $wallet_currency = $request->currency;
         if($basic_setting->kyc_verification){
             if( $user->kyc_verified == 0){
                 $error = ['error'=>['Please submit kyc information!']];
@@ -389,12 +392,15 @@ class VirtualCardController extends Controller
 
 
         $amount = $request->card_amount;
-        $wallet = UserWallet::where('user_id',$user->id)->first();
+        $wallet = UserWallet::auth()->whereHas("currency",function($q) use ($wallet_currency) {
+            $q->where("code",$wallet_currency)->active();
+        })->active()->first();
         if(!$wallet){
             $error = ['error'=>['Wallet not found']];
             return Helpers::error($error);
         }
         $cardCharge = TransactionSetting::where('slug','virtual_card')->where('status',1)->first();
+        $charges = $this->virtualCardCharge($request['card_amount'],$cardCharge,$wallet);
         $baseCurrency = Currency::default();
         $rate = $baseCurrency->rate;
         if(!$baseCurrency){
@@ -484,7 +490,7 @@ class VirtualCardController extends Controller
                 $v_card->save();
 
                 $trx_id =  'CB'.getTrxNum();
-                $sender = $this->insertCadrBuy( $trx_id,$user,$wallet,$amount, $v_card ,$payable);
+                $sender = $this->insertCadrBuy( $trx_id,$user,$wallet,$amount, $v_card ,$payable,$charges);
                 $this->insertBuyCardCharge( $fixedCharge,$percent_charge, $total_charge,$user,$sender,$v_card->masked_card);
                 if( $basic_setting->email_notification == true){
                     $notifyDataSender = [
@@ -514,6 +520,7 @@ class VirtualCardController extends Controller
         $validator = Validator::make($request->all(), [
             'card_id' => 'required',
             'fund_amount' => 'required|numeric|gt:0',
+            'wallet_currency' => "required|string|exists:currencies,code",
         ]);
         if($validator->fails()){
             $error =  ['error'=>$validator->errors()->all()];
@@ -521,6 +528,7 @@ class VirtualCardController extends Controller
         }
         $basic_setting = BasicSettings::first();
         $user = auth()->user();
+        $wallet_currency = $request->wallet_currency;
         if($basic_setting->kyc_verification){
             if( $user->kyc_verified == 0){
                 $error = ['error'=>['Please submit kyc information!']];
@@ -541,12 +549,15 @@ class VirtualCardController extends Controller
         }
 
         $amount = $request->fund_amount;
-        $wallet = UserWallet::where('user_id',$user->id)->first();
+        $wallet = UserWallet::auth()->whereHas("currency",function($q) use ($wallet_currency) {
+            $q->where("code",$wallet_currency)->active();
+        })->active()->first();
         if(!$wallet){
             $error = ['error'=>['Wallet not found']];
             return Helpers::error($error);
         }
         $cardCharge = TransactionSetting::where('slug','virtual_card')->where('status',1)->first();
+        $charges = $this->virtualCardCharge($request['fund_amount'],$cardCharge,$wallet);
         $baseCurrency = Currency::default();
         $rate = $baseCurrency->rate;
         if(!$baseCurrency){
@@ -596,7 +607,7 @@ class VirtualCardController extends Controller
             $myCard->amount += $amount;
             $myCard->save();
             $trx_id = 'CF'.getTrxNum();
-            $sender = $this->insertCardFund( $trx_id,$user,$wallet,$amount, $myCard ,$payable);
+            $sender = $this->insertCardFund( $trx_id,$user,$wallet,$amount, $myCard ,$payable,$charges);
             $this->insertFundCardCharge( $fixedCharge,$percent_charge, $total_charge,$user,$sender,$myCard->masked_card,$amount);
             $message =  ['success'=>['Card Funded Successfully']];
             return Helpers::onlysuccess($message);
@@ -607,93 +618,15 @@ class VirtualCardController extends Controller
         }
 
     }
-    // public function cardWithdraw(Request $request){
-
-    //     $validator = Validator::make($request->all(), [
-    //         'card_id' => 'required',
-    //         'withdraw_amount' => 'required|numeric|gt:0',
-    //     ]);
-    //     if($validator->fails()){
-    //         $error =  ['error'=>$validator->errors()->all()];
-    //         return Helpers::validation($error);
-    //     }
-    //     $user = auth()->user();
-    //     $myCard =  VirtualCard::where('user_id',$user->id)->where('card_id',$request->card_id)->first();
-    //     if(!$myCard){
-    //         $error = ['error'=>['Your Card not found']];
-    //         return Helpers::error($error);
-    //     }
-    //     $amount = $request->withdraw_amount;
-    //     $wallet = UserWallet::where('user_id',$user->id)->first();
-    //     if(!$wallet){
-    //         $error = ['error'=>['Wallet not found']];
-    //         return Helpers::error($error);
-    //     }
-    //     $withdrawCharge = TransactionSetting::where('slug','virtual_card_withdraw')->where('status',1)->first();
-    //     $baseCurrency = Currency::default();
-    //     $rate = $baseCurrency->rate;
-    //     if(!$baseCurrency){
-    //         $error = ['error'=>['Default currency not setup yet']];
-    //         return Helpers::error($error);
-    //     }
-    //     $minLimit =  $withdrawCharge->min_limit *  $rate;
-    //     $maxLimit =  $withdrawCharge->max_limit *  $rate;
-    //     if($amount < $minLimit || $amount > $maxLimit) {
-    //         $error = ['error'=>['Please follow the transaction limit']];
-    //         return Helpers::error($error);
-    //     }
-
-    //     $fixedCharge = $withdrawCharge->fixed_charge *  $rate;
-    //     $percent_charge = ($amount / 100) * $withdrawCharge->percent_charge;
-    //     $total_charge = $fixedCharge + $percent_charge;
-    //     $payable = $total_charge + $amount;
-    //     $will_get = $amount * $rate;
-    //     if($payable >  $myCard->amount ){
-    //         $error = ['error'=>['Sorry, insufficient balance in this card']];
-    //         return Helpers::error($error);
-    //     }
-    //     $currency =$baseCurrency->code;
-    //     $curl = curl_init();
-    //     curl_setopt_array($curl, array(
-    //     CURLOPT_URL =>  $this->api->config->flutterwave_url."/"."virtual-cards/".$myCard->card_id."/withdraw",
-    //     CURLOPT_RETURNTRANSFER => true,
-    //     CURLOPT_ENCODING => "",
-    //     CURLOPT_MAXREDIRS => 10,
-    //     CURLOPT_TIMEOUT => 0,
-    //     CURLOPT_FOLLOWLOCATION => true,
-    //     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-    //     CURLOPT_CUSTOMREQUEST => "POST",
-    //     CURLOPT_POSTFIELDS =>"{\n     \"amount\": $amount\n}",
-    //     CURLOPT_HTTPHEADER => array(
-    //         "Content-Type: application/json",
-    //         "Authorization: Bearer " .$this->api->config->flutterwave_secret_key
-    //     ),
-    //     ));
-    //     $response = curl_exec($curl);
-    //     curl_close($curl);
-    //     $result = json_decode($response);
-    //     if(!empty($result->status)  && $result->status == "success"){
-    //         $myCard->amount -= $payable;
-    //         $myCard->save();
-    //         $trx_id = 'CW'.getTrxNum();
-    //         $sender = $this->insertCardWithdraw( $trx_id,$user,$wallet,$amount, $myCard, $payable,$will_get);
-    //         $this->insertWithdrawCardCharge( $fixedCharge,$percent_charge, $total_charge,$user,$sender,$myCard->masked_card,$amount);
-    //         $message =  ['success'=>['Card Withdraw Successfully']];
-    //         return Helpers::onlysuccess($message);
-
-    //     }else{
-    //         $error = ['error'=>[@$result->message??'Please wait a moment & try again later.']];
-    //         return Helpers::error($error);
-    //     }
-
-    // }
+    
     //card buy helper
-    public function insertCadrBuy( $trx_id,$user,$wallet,$amount, $v_card ,$payable) {
+    public function insertCadrBuy( $trx_id,$user,$wallet,$amount, $v_card ,$payable,$charges) {
         $trx_id = $trx_id;
         $authWallet = $wallet;
         $afterCharge = ($authWallet->balance - $payable);
         $details =[
-            'card_info' =>   $v_card??''
+            'card_info' =>   $v_card??'',
+            'charges'   => $charges
         ];
         DB::beginTransaction();
         try{
@@ -729,8 +662,8 @@ class VirtualCardController extends Controller
             DB::table('transaction_charges')->insert([
                 'transaction_id'    => $id,
                 'percent_charge'    => $percent_charge,
-                'fixed_charge'      =>$fixedCharge,
-                'total_charge'      =>$total_charge,
+                'fixed_charge'      => $fixedCharge,
+                'total_charge'      => $total_charge,
                 'created_at'        => now(),
             ]);
             DB::commit();
@@ -826,5 +759,18 @@ class VirtualCardController extends Controller
         $authWalle->update([
             'balance'   => $afterCharge,
         ]);
+    }
+    public function virtualCardCharge($sender_amount,$charges,$sender_wallet) {
+        $data['sender_amount']          = $sender_amount;
+        $data['sender_currency']        = $sender_wallet->currency->code;
+        $data['sender_currency_rate']   = $sender_wallet->currency->rate;
+        $data['percent_charge']         = ($sender_amount / 100) * $charges->percent_charge ?? 0;
+        $data['fixed_charge']           = $sender_wallet->currency->rate * $charges->fixed_charge ?? 0;
+        $data['total_charge']           = $data['percent_charge'] + $data['fixed_charge'];
+        $data['sender_wallet_balance']  = $sender_wallet->balance;
+        $data['payable']                = ($sender_amount * $sender_wallet->currency->rate) + $data['total_charge'];
+        $data['base_currency']          = get_default_currency_code();
+
+        return (object)$data;
     }
 }
