@@ -46,12 +46,7 @@
                             <button type="submit"><i class="far fa-paper-plane"></i></button>
                         </form>    
                     </div>
-                    <ul class="widget-social">
-                        <li><a href="#0"><i class="fab fa-facebook-f"></i></a></li>
-                        <li><a href="#0"><i class="fab fa-instagram"></i></a></li>
-                        <li><a href="#0"><i class="fab fa-twitter"></i></a></li>
-                        <li><a href="#0"><i class="fab fa-pinterest-p"></i></a></li>
-                    </ul>
+                    
                 </div>
             </div>
             <div class="col-xxl-3 col-xl-3 col-md-6 mb-30">
@@ -76,7 +71,7 @@
             </div>
         </div>
         <div class="copyright-area">
-            <span>© 2023 <a href="#0">Payzen</a> - mobile banking. All rights reserved.</span>
+            <span>© 2023 <a href="#0">{{ $basic_settings->site_name }}</a> - mobile banking. All rights reserved.</span>
         </div>
     </div>
 </footer>

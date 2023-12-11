@@ -59,7 +59,7 @@ class ManualMail extends Notification
                     ->line("Your add money request send to admin successfully via ".$data['currency']['name']." , details of add money:")
                     ->line("Request Amount: " . getAmount($data['amount']->requested_amount,2).' '. $data['amount']->sender_cur_code)
                     ->line("Fees & Charges: " . $data['amount']->total_charge.' '. $data['amount']->sender_cur_code)
-                    ->line("Will Get: " . getAmount($data['amount']->will_get,2).' '. $data['amount']->default_currency)
+                    ->line("Will Get: " . getAmount($data['amount']->will_get,2).' '. $data['amount']->sender_cur_code)
                     ->line("Total Payable Amount: " . getAmount($data['amount']->total_amount,2).' '. $data['amount']->sender_cur_code)
                     ->line("Transaction Id: " .$trx_id)
                     ->line("Status: Pending")
