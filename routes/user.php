@@ -121,8 +121,7 @@ Route::prefix("user")->name("user.")->group(function(){
             Route::controller(VirtualcardController::class)->prefix('virtual-card')->name('virtual.card.')->group(function(){
                 Route::get('/','index')->name('index');
                 Route::get('/sudo','indexSudo');
-                Route::get('create','create')->name('create');
-                Route::post('store','store')->name('store');
+                Route::post('create','cardBuy')->name('create');
                 Route::post('fund','cardFundConfirm')->name('fund.confirm');
                 Route::get('details/{card_id}','cardDetails')->name('details');
                 Route::get('transaction/{card_id}','cardTransaction')->name('transaction');

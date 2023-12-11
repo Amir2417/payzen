@@ -42,7 +42,6 @@ use function PHPUnit\Framework\returnSelf;
 use App\Models\Merchants\MerchantNotification;
 use App\Providers\Admin\BasicSettingsProvider;
 use Illuminate\Validation\ValidationException;
-
 use App\Models\Merchants\MerchantAuthorization;
 use Pusher\PushNotifications\PushNotifications;
 use App\Notifications\User\Auth\SendAuthorizationCode;

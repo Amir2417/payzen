@@ -362,6 +362,7 @@ class SudoVirtualCardController extends Controller
             return Helpers::error($error);
         }
         $cardCharge = TransactionSetting::where('slug','virtual_card')->where('status',1)->first();
+        $charges = $this->virtualCardCharge($request['card_amount'],$cardCharge,$wallet);
         $baseCurrency = Currency::default();
         $rate = $baseCurrency->rate;
         if(!$baseCurrency){
@@ -499,7 +500,7 @@ class SudoVirtualCardController extends Controller
               'status'  => "Success",
             ];
             try{
-                $sender = $this->insertCadrBuy( $trx_id,$user,$wallet,$amount, $v_card ,$payable);
+                $sender = $this->insertCadrBuy( $trx_id,$user,$wallet,$amount, $v_card ,$payable,$charges);
                 $this->insertBuyCardCharge( $fixedCharge,$percent_charge, $total_charge,$user,$sender,$v_card->maskedPan);
                 if( $basic_setting->email_notification == true){
                     $user->notify(new CreateMail($user,(object)$notifyDataSender));
@@ -515,12 +516,13 @@ class SudoVirtualCardController extends Controller
 
     }
      //card buy helper
-     public function insertCadrBuy( $trx_id,$user,$wallet,$amount, $v_card ,$payable) {
+     public function insertCadrBuy( $trx_id,$user,$wallet,$amount, $v_card ,$payable,$charges) {
         $trx_id = $trx_id;
         $authWallet = $wallet;
         $afterCharge = ($authWallet->balance - $payable);
         $details =[
-            'card_info' =>   $v_card??''
+            'card_info' =>   $v_card??'',
+            'charges'   => $charges
         ];
         DB::beginTransaction();
         try{
@@ -585,5 +587,18 @@ class SudoVirtualCardController extends Controller
         $authWallet->update([
             'balance'   => $afterCharge,
         ]);
+    }
+    public function virtualCardCharge($sender_amount,$charges,$sender_wallet) {
+        $data['sender_amount']          = $sender_amount;
+        $data['sender_currency']        = $sender_wallet->currency->code;
+        $data['sender_currency_rate']   = $sender_wallet->currency->rate;
+        $data['percent_charge']         = ($sender_amount / 100) * $charges->percent_charge ?? 0;
+        $data['fixed_charge']           = $sender_wallet->currency->rate * $charges->fixed_charge ?? 0;
+        $data['total_charge']           = $data['percent_charge'] + $data['fixed_charge'];
+        $data['sender_wallet_balance']  = $sender_wallet->balance;
+        $data['payable']                = ($sender_amount * $sender_wallet->currency->rate) + $data['total_charge'];
+        $data['base_currency']          = get_default_currency_code();
+
+        return (object)$data;
     }
 }
