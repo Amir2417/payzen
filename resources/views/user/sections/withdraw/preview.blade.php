@@ -1,18 +1,8 @@
 @extends('user.layouts.master')
 
 @push('css')
-<style>
-    .jp-card .jp-card-back, .jp-card .jp-card-front {
 
-      background-image: linear-gradient(160deg, #2583C5 0%, #813FD6 100%) !important;
-      }
-      label{
-          color: #000 !important;
-      }
-      .form--control{
-          color: #000 !important;
-      }
-  </style>
+   
 @endpush
 
 @section('breadcrumb')

@@ -9554,3 +9554,68 @@ input::-webkit-inner-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
+
+/*-------------------------------------------------
+    [ ## switch ]
+*/
+.toggle-container .switch-toggles {
+  position: relative;
+  width: 175px;
+  height: 35px;
+  border-radius: 15px;
+  background-color: #ffffff;
+}
+@media only screen and (max-width: 372px) {
+  .toggle-container .switch-toggles {
+    width: 135px;
+  }
+}
+.toggle-container .switch-toggles::after {
+  position: absolute;
+  content: "";
+  width: 50%;
+  height: 35px;
+  background: var(--primary-color);
+  right: -1px;
+  top: 0;
+  border-radius: 0 15px 15px 0;
+  -webkit-transition: all 0.7s cubic-bezier(0.545, 0, 0.05, 1);
+  transition: all 0.7s cubic-bezier(0.545, 0, 0.05, 1);
+}
+.toggle-container .switch-toggles .switch {
+  position: relative;
+  width: 50%;
+  line-height: 35px;
+  float: left;
+  text-align: center;
+  z-index: 2;
+  cursor: pointer;
+  -webkit-transition: color 0.7s cubic-bezier(0.545, 0, 0.05, 1);
+  transition: color 0.7s cubic-bezier(0.545, 0, 0.05, 1);
+  font-weight: 500;
+  border-radius: 15px;
+  color: #52526C;
+  margin-bottom: 0;
+}
+.toggle-container .switch-toggles .switch:nth-child(odd) {
+  color: #ffffff;
+}
+.toggle-container .switch-toggles.active::after {
+  background: var(--primary-color);
+  right: 50%;
+  border-radius: 15px 0 0 15px;
+}
+.toggle-container .switch-toggles.active .switch {
+  color: #52526C;
+}
+.toggle-container .switch-toggles.active .switch:nth-child(even) {
+  color: #ffffff;
+}
+
+.modal-content {
+  background-color: #03102C;
+}
+body.light-mode .modal-header {
+  background: #fff;
+}

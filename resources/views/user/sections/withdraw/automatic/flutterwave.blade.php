@@ -1,18 +1,7 @@
 @extends('user.layouts.master')
 
 @push('css')
-<style>
-    .jp-card .jp-card-back, .jp-card .jp-card-front {
 
-      background-image: linear-gradient(160deg, #2583C5 0%, #813FD6 100%) !important;
-      }
-      label{
-          color: #000 !important;
-      }
-      .form--control{
-          color: #000 !important;
-      }
-  </style>
 @endpush
 
 @section('breadcrumb')
@@ -53,6 +42,7 @@
                                         @endforeach
                                     </select>
                                 </div>
+                                
                                 <div class="col-lg-12 form-group">
                                     <label for="account_number">{{ __("Account Number") }} <span class="text-danger">*</span></label>
                                     <input type="number" class="form--control check_bank" id="account_number"  name="account_number" value="{{ old('account_number') }}" placeholder="Account Number">
