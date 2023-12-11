@@ -58,9 +58,9 @@ class Approved extends Notification
                     ->subject("Bill Pay For ". $data->bill_type.' ('.$data->bill_number.' )')
                     ->line("Your bill pay request is approved by admin successfully  for ".$data->bill_type." , details of bill pay:")
                     ->line("Transaction Id: " .$trx_id)
-                    ->line("Request Amount: " . getAmount($data->request_amount,4).' '.get_default_currency_code())
-                    ->line("Fees & Charges: " . getAmount($data->charges,4).' '.get_default_currency_code())
-                    ->line("Total Payable Amount: " . get_amount($data->payable,get_default_currency_code(),'4'))
+                    ->line("Request Amount: " . getAmount($data->request_amount,4))
+                    ->line("Fees & Charges: " . getAmount($data->charges,4))
+                    ->line("Total Payable Amount: " . get_amount($data->payable,'4'))
                     ->line("Status: ". $data->status)
                     ->line("Date And Time: " .$dateTime)
                     ->line('Thank you for using our application!');

@@ -340,7 +340,7 @@ use ControlDynamicInputFields;
             $user = auth()->user();
             if( $basic_setting->email_notification == true){
                
-                // $user->notify(new ManualMail($user,$output,$trx_id));
+                $user->notify(new ManualMail($user,$output,$trx_id));
             }
             if(userGuard()['type'] == "AGENT" || authGuardApi()['type']  == "AGENT"){
                 $inserted_id = $this->insertRecordManualAgent($output,$get_values,$trx_id);
