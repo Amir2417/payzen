@@ -26,7 +26,7 @@ class TransactionController extends Controller
             'money-out'             => PaymentGatewayConst::TYPEMONEYOUT,
             'transfer-money'        => PaymentGatewayConst::TYPETRANSFERMONEY,
             'bill-pay'              => PaymentGatewayConst::BILLPAY,
-            'mobile-top-up'          => PaymentGatewayConst::MOBILETOPUP,
+            'mobile-top-up'         => PaymentGatewayConst::MOBILETOPUP,
             'virtual-card'          => PaymentGatewayConst::VIRTUALCARD,
             'remittance'            => PaymentGatewayConst::SENDREMITTANCE,
             'merchant-payment'      => PaymentGatewayConst::MERCHANTPAYMENT,
