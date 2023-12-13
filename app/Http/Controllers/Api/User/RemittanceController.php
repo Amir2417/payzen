@@ -36,6 +36,7 @@ class RemittanceController extends Controller
             return[
                 'balance' => getAmount($data->balance,2),
                 'currency' => $data->currency->code,
+                'rate' => $data->currency->rate,
             ];
         });
         $transactionType = [
