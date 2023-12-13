@@ -345,6 +345,7 @@ class UserController extends Controller
             'add_money' => module_access_api('add-money'),
             'withdraw_money' => module_access_api('withdraw-money'),
             'make_payment' => module_access_api('make-payment'),
+            'money_out' => module_access_api('money-out'),
             'virtual_card' => module_access_api('virtual-card'),
             'bill_pay' => module_access_api('bill-pay'),
             'mobile_top_up' => module_access_api('mobile-top-up'),
