@@ -14,12 +14,15 @@ class ReferralController extends Controller
             return[
                 'name' => $data->user->fullname,
                 'referral_id' => $data->user->referral_id,
-                'referred_user' => count($data->user->referUsers)
+                'referred_user' => count($data->user->referUsers),
+                
             ];
         });
         $data =[
+            'register_url'          => setRoute('user.register',$user->referral_id),
             'total_referral_user'   => count($referralUsers),
             'referralUsers'         => $referralUsers,
+            
         ];
         $message =  ['success'=>['Referral Information']];
         return Helpers::success($data,$message);
