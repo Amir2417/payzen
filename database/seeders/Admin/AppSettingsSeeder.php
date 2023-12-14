@@ -15,7 +15,7 @@ class AppSettingsSeeder extends Seeder
     public function run()
     {
         $app_settings = array(
-            array('id' => '1','version' => '2.2.0','splash_screen_image' => 'seeder/splash_screen.png','url_title' => 'Our App Url','android_url' => 'https://play.google.com','iso_url' => 'https://www.apple.com/store','created_at' => '2023-02-20 05:21:32','updated_at' => '2023-06-11 12:36:09')
+            array('id' => '1','version' => '2.2.0','splash_screen_image' => 'seeder/splash.webp','url_title' => 'Our App Url','android_url' => 'https://play.google.com','iso_url' => 'https://www.apple.com/store','created_at' => '2023-02-20 05:21:32','updated_at' => '2023-06-11 12:36:09')
           );
 
         AppSettings::truncate();
