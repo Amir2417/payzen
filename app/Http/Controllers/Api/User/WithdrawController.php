@@ -380,16 +380,19 @@ class WithdrawController extends Controller
     }
 
     public function insertRecordManual($moneyOutData,$gateway,$get_values) {
+       
         if($moneyOutData->gateway_type == "AUTOMATIC"){
             $status = 1;
         }else{
             $status = 2;
         }
+       
         $details    = [
             'charges'   => $moneyOutData->charges,
         ];
         $trx_id = $moneyOutData->trx_id ??'MO'.getTrxNum();
-        $authWallet = UserWallet::where('id',$moneyOutData->wallet_id)->where('user_id',$moneyOutData->user_id)->first();
+       
+        $authWallet = UserWallet::where('id',$moneyOutData->wallet_id)->where('user_id',auth()->user()->id)->first();
         $afterCharge = ($authWallet->balance - ($moneyOutData->amount));
         
         DB::beginTransaction();
@@ -412,6 +415,7 @@ class WithdrawController extends Controller
             
             DB::commit();
         }catch(Exception $e) {
+           
             DB::rollBack();
             $error = ['error'=>["Sorry,something is wrong"]];
             return Helpers::error($error);
@@ -529,8 +533,9 @@ class WithdrawController extends Controller
             if($result['status'] && $result['status'] == 'success'){
                 try{
                     $user = auth()->user();
-                    
+                   
                     $inserted_id = $this->insertRecordManual($moneyOutData,$gateway,$get_values = null);
+                    
                     $this->insertChargesManual($moneyOutData,$inserted_id);
                     $this->insertDeviceManual($moneyOutData,$inserted_id);
                     
