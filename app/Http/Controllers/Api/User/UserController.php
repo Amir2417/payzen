@@ -176,6 +176,21 @@ class UserController extends Controller
 
                 ];
 
+            }elseif($item->type == payment_gateway_const()::TYPEWITHDRAW){
+                return[
+                    'id' => $item->id,
+                    'type' =>$item->attribute,
+                    'trx' => $item->trx_id,
+                    'transaction_type' => $item->type,
+                    'request_amount' => getAmount($item->request_amount,2),
+                    'currency'          => $item->details->charges->gateway_cur_code,
+                    'payable' => getAmount($item->payable,2),
+                    'status' => $item->stringStatus->value ,
+                    'remark' => $item->remark??"",
+                    'date_time' => $item->created_at ,
+
+                ];
+
             }elseif($item->type == payment_gateway_const()::SENDREMITTANCE){
                 if( @$item->details->remitance_type == "wallet-to-wallet-transfer"){
                     $transactionType = @$basic_settings->site_name." Wallet";
