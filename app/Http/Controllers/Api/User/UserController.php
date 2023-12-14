@@ -279,7 +279,7 @@ class UserController extends Controller
                     'type' =>$item->attribute,
                     'trx' => $item->trx_id,
                     'transaction_type' => "Virtual Card".'('. @$item->remark.')',
-                    'currency'          => $item->details->charges->sender_currency,
+                    'currency'          => $item->details->card_info->currency,
                     'request_amount' => getAmount($item->request_amount,2) ,
                     'payable' => getAmount($item->payable,2),
                     'status' => $item->stringStatus->value ,
